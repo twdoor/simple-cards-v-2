@@ -1,0 +1,40 @@
+[gd_scene load_steps=3 format=3 uid="uid://crmpow3v5eirx"]
+
+[ext_resource type="Script" uid="uid://dm115oleoggyt" path="res://addons/simple_cards/card/card_layout/card_layout.gd" id="1_ay1pi"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0a68r"]
+bg_color = Color(1, 0.30176032, 0.50300115, 0.4862745)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.54846746, 0.035809375, 0.28245476, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+corner_detail = 16
+
+[node name="BackCardLayout" type="SubViewportContainer"]
+offset_right = 80.0
+offset_bottom = 112.0
+script = ExtResource("1_ay1pi")
+metadata/_custom_type_script = "uid://dm115oleoggyt"
+
+[node name="SubViewport" type="SubViewport" parent="."]
+handle_input_locally = false
+size = Vector2i(80, 112)
+render_target_update_mode = 4
+
+[node name="PanelContainer" type="PanelContainer" parent="SubViewport"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_0a68r")
+
+[node name="Label" type="Label" parent="SubViewport/PanelContainer"]
+layout_mode = 2
+text = "Back"
+horizontal_alignment = 1

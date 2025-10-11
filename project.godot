@@ -1,0 +1,30 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="SimpleCardsV2"
+run/main_scene="uid://b6m5nhppbry3y"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+CG="*res://addons/simple_cards/card_global.gd"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/nhb_functions_on_the_fly/plugin.cfg", "res://addons/simple_cards/plugin.cfg")
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.18717614, 0.18717614, 0.18717614, 1)

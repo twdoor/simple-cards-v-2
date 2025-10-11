@@ -1,0 +1,40 @@
+[gd_scene load_steps=3 format=3 uid="uid://dotok77073p27"]
+
+[ext_resource type="Script" uid="uid://dm115oleoggyt" path="res://addons/simple_cards/card/card_layout/card_layout.gd" id="1_0a68r"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0a68r"]
+bg_color = Color(1.347661e-06, 0.6787369, 0.7389835, 0.4862745)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.06594133, 0.29034972, 1.4439226e-07, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+corner_detail = 16
+
+[node name="FrontCardLayout" type="SubViewportContainer"]
+offset_right = 80.0
+offset_bottom = 112.0
+script = ExtResource("1_0a68r")
+metadata/_custom_type_script = "uid://dm115oleoggyt"
+
+[node name="SubViewport" type="SubViewport" parent="."]
+handle_input_locally = false
+size = Vector2i(80, 112)
+render_target_update_mode = 4
+
+[node name="PanelContainer" type="PanelContainer" parent="SubViewport"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_0a68r")
+
+[node name="Label" type="Label" parent="SubViewport/PanelContainer"]
+layout_mode = 2
+text = "Custom"
+horizontal_alignment = 1
