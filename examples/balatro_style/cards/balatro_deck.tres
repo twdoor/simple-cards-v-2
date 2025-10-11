@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CardDeck" load_steps=7 format=3 uid="uid://u1x8i453q018"]
+
+[ext_resource type="Script" uid="uid://c8315v58tr66b" path="res://addons/simple_cards/card/card_resource/card_resource.gd" id="1_pyc1o"]
+[ext_resource type="Script" uid="uid://lhb5ry3o8icy" path="res://addons/simple_cards/deck/card_deck.gd" id="2_2gyh5"]
+[ext_resource type="Resource" uid="uid://dyad7cfasumhn" path="res://examples/balatro_style/cards/ace_clubs.tres" id="2_ajybb"]
+[ext_resource type="Resource" uid="uid://68qc20tgevc2" path="res://examples/balatro_style/cards/ace_diamond.tres" id="3_csqkn"]
+[ext_resource type="Resource" uid="uid://cewwhhwejd4cw" path="res://examples/balatro_style/cards/ace_heart.tres" id="4_0j556"]
+[ext_resource type="Resource" uid="uid://dbnr3j00c2mbo" path="res://examples/balatro_style/cards/ace_spade.tres" id="5_d1hrn"]
+
+[resource]
+script = ExtResource("2_2gyh5")
+deck_name = &"Balatro"
+cards = Array[ExtResource("1_pyc1o")]([ExtResource("2_ajybb"), ExtResource("3_csqkn"), ExtResource("4_0j556"), ExtResource("5_d1hrn"), ExtResource("2_ajybb"), ExtResource("2_ajybb"), ExtResource("3_csqkn"), ExtResource("3_csqkn"), ExtResource("4_0j556"), ExtResource("4_0j556"), ExtResource("5_d1hrn"), ExtResource("5_d1hrn")])
+auto_reshuffle = true
+metadata/_custom_type_script = "uid://lhb5ry3o8icy"

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="SimpleCardsV2"
-run/main_scene="uid://b6m5nhppbry3y"
+run/main_scene="uid://brvun6l03k0hu"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
 

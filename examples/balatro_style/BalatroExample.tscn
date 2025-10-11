@@ -1,0 +1,62 @@
+[gd_scene load_steps=3 format=3 uid="uid://brvun6l03k0hu"]
+
+[ext_resource type="Script" uid="uid://bmc1k8rf2430l" path="res://examples/balatro_style/balatro_example.gd" id="1_ieake"]
+[ext_resource type="Script" uid="uid://f3ybsxom5cmo" path="res://examples/balatro_style/balatro_card_hand.gd" id="2_grswf"]
+
+[node name="BalatroExample" type="CanvasLayer"]
+script = ExtResource("1_ieake")
+
+[node name="CardHand" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 694.0
+offset_top = 665.0
+offset_right = 694.0
+offset_bottom = 665.0
+script = ExtResource("2_grswf")
+shape = 0
+card_spacing = 70.0
+max_hand_size = 7
+metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+offset_left = 1048.0
+offset_top = 38.0
+offset_right = 1133.0
+offset_bottom = 238.0
+
+[node name="GoldButton" type="Button" parent="VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Turn Gold"
+
+[node name="SilvButton" type="Button" parent="VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Turn Silver"
+
+[node name="NoneButton" type="Button" parent="VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Turn None"
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="."]
+offset_left = 39.0
+offset_top = 52.0
+offset_right = 106.0
+offset_bottom = 184.0
+
+[node name="DiscardButton" type="Button" parent="VBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Discard"
+
+[node name="DealButton" type="Button" parent="VBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Deal"
