@@ -1,6 +1,7 @@
 extends Control
 
-
+signal holding_card(card: Card)
+signal dropped_card
 
 const card_ratio: Vector2 = Vector2(2.5 ,3.5)
 const resolution: int = 32
@@ -15,7 +16,13 @@ var _available_layouts: Dictionary = {}
 var _default_layout_path: String = DEFAULT_LAYOUT
 
 var card_index: int
-var current_held_item: Node = null
+var current_held_item: Card = null:
+	set(value):
+		current_held_item = value
+		if value:
+			holding_card.emit(value)
+		else:
+			dropped_card.emit()
 
 
 func get_cursor_position() -> Vector2:

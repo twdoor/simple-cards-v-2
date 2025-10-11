@@ -1,6 +1,7 @@
 @tool @icon("uid://1g0jb8x0i516")
 class_name CardHand extends Control
 
+
 enum _HandShape {
 	##Line
 	LINE,
@@ -50,6 +51,7 @@ enum _HandShape {
 		max_width = value
 		_arrange_cards()
 
+
 var cards: Array[Card] = []
 var card_positions: Array[Vector2] = []
 var dragged_card: Card = null
@@ -61,6 +63,9 @@ func _ready() -> void:
 	for child in children:
 		if child is Card:
 			add_card(child)
+	CG.dropped_card.connect(_on_card_dropped)
+	CG.holding_card.connect(_on_holding_card)
+
 
 func _process(_delta: float) -> void:
 	if enable_reordering and dragged_card:
@@ -78,7 +83,6 @@ func _validate_property(property: Dictionary) -> void:
 
 ##Adds a card to the hand. The card get reparented as a child of the hand. Returns [code]true[/code] if successful.
 func add_card(card: Card) -> bool:
-	# Check if hand is full
 	if max_hand_size >= 0 and cards.size() >= max_hand_size:
 		return false
 	
@@ -94,6 +98,7 @@ func add_card(card: Card) -> bool:
 	_arrange_cards()
 	return true
 
+
 ##Removes specific card from hand. [color=red]DOES NOT FREE THE CARD[/color]
 func remove_card(card: Card) -> void:
 	if cards.has(card):
@@ -102,6 +107,7 @@ func remove_card(card: Card) -> void:
 		if card.get_parent() == self:
 			remove_child(card)
 		_arrange_cards()
+
 
 ##Empties hand. [color=red]DOES NOT FREE THE CARD[/color]
 func clear_hand() -> void:
@@ -113,11 +119,9 @@ func clear_hand() -> void:
 	card_positions.clear()
 
 
+#region Signal Management
+
 func _connect_card_signals(card: Card) -> void:
-	if not card.button_down.is_connected(_on_card_drag_start):
-		card.button_down.connect(_on_card_drag_start.bind(card))
-	if not card.button_up.is_connected(_on_card_drag_end):
-		card.button_up.connect(_on_card_drag_end.bind(card))
 	if not card.focus_entered.is_connected(_on_card_focused):
 		card.focus_entered.connect(_on_card_focused.bind(card))
 	if not card.focus_exited.is_connected(_on_card_unfocused):
@@ -125,34 +129,14 @@ func _connect_card_signals(card: Card) -> void:
 	if not card.card_clicked.is_connected(_handle_clicked_card):
 		card.card_clicked.connect(_handle_clicked_card)
 
+
 func _disconnect_card_signals(card: Card) -> void:
-	if card.button_down.is_connected(_on_card_drag_start):
-		card.button_down.disconnect(_on_card_drag_start)
-	if card.button_up.is_connected(_on_card_drag_end):
-		card.button_up.disconnect(_on_card_drag_end)
 	if card.focus_entered.is_connected(_on_card_focused):
 		card.focus_entered.disconnect(_on_card_focused)
 	if card.focus_exited.is_connected(_on_card_unfocused):
 		card.focus_exited.disconnect(_on_card_unfocused)
 	if card.card_clicked.is_connected(_handle_clicked_card):
 		card.card_clicked.disconnect(_handle_clicked_card)
-
-
-func _on_card_drag_start(card: Card) -> void:
-	if not enable_reordering:
-		return
-	
-	dragged_card = card
-	drag_start_index = cards.find(card)
-	if dragged_card:
-		dragged_card.z_index = 1000
-
-
-func _on_card_drag_end(card: Card) -> void:
-	if dragged_card == card:
-		dragged_card = null
-		drag_start_index = -1
-		_arrange_cards()
 
 
 func _on_card_focused(card: Card) -> void:
@@ -162,6 +146,23 @@ func _on_card_focused(card: Card) -> void:
 
 func _on_card_unfocused(card: Card) -> void:
 	_update_z_indices()
+
+
+##Used when a card fron hand is clicked. [color=red]Overwrite[/color] to implement card action.
+func _handle_clicked_card(card: Card) -> void:
+	print("%s: %s was clicked" %[self.name, card.name])
+
+
+func _on_card_dropped() -> void:
+	_arrange_cards()
+	dragged_card = null
+
+
+func _on_holding_card(card: Card) -> void:
+	dragged_card = card
+	drag_start_index = get_card_index(card)
+
+#endregion
 
 
 func _update_card_reordering() -> void:
@@ -197,6 +198,8 @@ func _find_closest_card_position(cursor_pos: Vector2) -> int:
 	
 	return closest_index
 
+
+#region Arrangement Management
 
 func _arrange_cards() -> void:
 	if cards.is_empty():
@@ -252,7 +255,7 @@ func _arrange_line(skip_dragged: bool = false) -> void:
 		if skip_dragged and card == dragged_card:
 			continue
 		
-		card._set_position(final_pos)
+		card._set_position(final_pos + (card.position_offset.rotated(deg_to_rad(line_rotation))))
 		card.rotation = deg_to_rad(line_rotation)
 
 
@@ -281,9 +284,10 @@ func _arrange_arc(skip_dragged: bool = false) -> void:
 		if skip_dragged and card == dragged_card:
 			continue
 	
-		card._set_position(final_pos)
+		card._set_position(final_pos + (card.position_offset.rotated(angle_rad + deg_to_rad(90)) )  )
 		card.rotation = angle_rad + deg_to_rad(90)
 
+#endregion
 
 func _update_z_indices() -> void:
 	for i in cards.size():
@@ -357,7 +361,3 @@ func get_remaining_space() -> int:
 	if max_hand_size < 0:
 		return -1
 	return max(0, max_hand_size - cards.size())
-
-##Used when a card fron hand is clicked. [color=red]Overwrite[/color] to implement card action.
-func _handle_clicked_card(card: Card) -> void:
-	print("%s: %s was clicked" %[self.name, card.name])

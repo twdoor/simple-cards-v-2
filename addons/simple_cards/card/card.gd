@@ -15,6 +15,8 @@ var dragging_offset: Vector2 = Vector2.ZERO
 var released: bool = true
 var focused: bool = false
 
+var position_offset: Vector2 = Vector2.ZERO
+
 @export var card_data: CardResource:
 	set(value):
 		card_data = value
@@ -93,7 +95,7 @@ func _on_button_up() -> void:
 	else:
 		card_clicked.emit(self)
 
-func _check_for_hold():
+func _check_for_hold() -> bool:
 	if !released and !holding:
 		var current_cursor_pos = CG.get_cursor_position()
 		var drag_distance = cursol_down_pos.distance_to(current_cursor_pos)
@@ -103,7 +105,9 @@ func _check_for_hold():
 			holding = true
 			dragging_offset = center_pos
 			CG.current_held_item = self
-
+			return true
+	return false
+			
 func _on_focus_entered() -> void:
 	_set_scale(Vector2.ONE * 1.2)
 	focused = true
