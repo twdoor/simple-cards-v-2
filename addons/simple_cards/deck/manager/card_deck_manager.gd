@@ -69,6 +69,10 @@ func add_card_to_discard_pile(card: Card) -> void:
 	card.visible = show_cards
 
 
+func add_cards_to_discard_pile(cards: Array[Card]) -> void:
+	for card in cards:
+		add_card_to_discard_pile(card)
+
 ##Draws a card from the top of the draw pile. Returns null if draw pile is empty.
 func draw_card() -> Card:
 	if draw_pile.get_child_count() == 0:

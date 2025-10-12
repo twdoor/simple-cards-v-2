@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="TCGStyleResource" load_steps=3 format=3 uid="uid://bauvatsk1p3jj"]
+
+[ext_resource type="Texture2D" uid="uid://m8i5c137mvoh" path="res://examples/tcg_style/assets/skill_icons40.png" id="1_8rf6h"]
+[ext_resource type="Script" uid="uid://kwp12b1jwkpx" path="res://examples/tcg_style/tcg_style_res.gd" id="1_qomwp"]
+
+[resource]
+script = ExtResource("1_qomwp")
+card_name = &"mayvew"
+art = ExtResource("1_8rf6h")
+metadata/_custom_type_script = "uid://kwp12b1jwkpx"

@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://brvun6l03k0hu"]
+[gd_scene load_steps=6 format=3 uid="uid://brvun6l03k0hu"]
 
 [ext_resource type="Script" uid="uid://bmc1k8rf2430l" path="res://examples/balatro_style/balatro_example.gd" id="1_ieake"]
 [ext_resource type="Script" uid="uid://f3ybsxom5cmo" path="res://examples/balatro_style/balatro_card_hand.gd" id="2_grswf"]
-[ext_resource type="Script" uid="uid://bisyk4bowdvsf" path="res://addons/simple_cards/deck/manager/deck_manager.gd" id="3_hg8is"]
+[ext_resource type="Script" uid="uid://bisyk4bowdvsf" path="res://addons/simple_cards/deck/manager/card_deck_manager.gd" id="3_hg8is"]
 [ext_resource type="Resource" uid="uid://u1x8i453q018" path="res://examples/balatro_style/cards/balatro_deck.tres" id="4_2a7na"]
+[ext_resource type="Script" uid="uid://bbi8i6vef3f6y" path="res://addons/simple_cards/hand/card_hand.gd" id="5_gjekf"]
 
 [node name="BalatroExample" type="CanvasLayer"]
 script = ExtResource("1_ieake")
@@ -21,14 +22,31 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_top = 610.0
-offset_bottom = 610.0
+offset_top = 534.0
+offset_bottom = 534.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_grswf")
 card_spacing = 70.0
 max_hand_size = 7
 line_rotation = 90.0
+metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
+
+[node name="PlayedHand" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_top = -14.0
+offset_bottom = -14.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("5_gjekf")
+shape = 0
+card_spacing = 90.0
+enable_reordering = false
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]

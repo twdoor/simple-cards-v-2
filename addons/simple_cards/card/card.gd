@@ -5,7 +5,7 @@ signal card_clicked(card: Card)
 
 const drag_coef: float = -30
 const max_card_rotation_deg: float = 25
-const drag_threshold: float = .5
+const drag_threshold: float = 10
 
 var cursol_down_pos: Vector2
 var center_pos: Vector2
@@ -16,6 +16,7 @@ var released: bool = true
 var focused: bool = false
 
 var position_offset: Vector2 = Vector2.ZERO
+var rotation_offset: float = 0
 
 @export var card_data: CardResource:
 	set(value):
@@ -144,12 +145,15 @@ func _set_rotation(desired_rotation: float = 0, duration: float = 0.2) -> void:
 	rotation_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
 	rotation_tween.tween_property(self, "rotation_degrees", desired_rotation, duration)
 
-func _set_position(desired_position: Vector2, duration: float = 0.2) -> void:
+func _set_position(desired_position: Vector2, duration: float = 0.2, global: bool = false) -> void:
 	var pos_tween: Tween
 	if pos_tween:
 		pos_tween.kill()
 	pos_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	pos_tween.tween_property(self, "position", desired_position, duration)
+	if global:
+		pos_tween.tween_property(self, "global_position", desired_position, duration)
+	else:
+		pos_tween.tween_property(self, "position", desired_position, duration)
 
 func _set_movement_rotation(delta: float) -> void:
 	var desired_rotation: float = clamp(

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="TCGStyleResource" load_steps=3 format=3 uid="uid://lcvreaewffnv"]
+
+[ext_resource type="Texture2D" uid="uid://u578wf3grlj3" path="res://examples/tcg_style/assets/skill_icons20.png" id="1_7e414"]
+[ext_resource type="Script" uid="uid://kwp12b1jwkpx" path="res://examples/tcg_style/tcg_style_res.gd" id="1_grce2"]
+
+[resource]
+script = ExtResource("1_grce2")
+card_name = &"nope"
+art = ExtResource("1_7e414")
+metadata/_custom_type_script = "uid://kwp12b1jwkpx"

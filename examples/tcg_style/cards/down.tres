@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TCGStyleResource" load_steps=3 format=3 uid="uid://b8pg4087kq5wl"]
+
+[ext_resource type="Script" uid="uid://kwp12b1jwkpx" path="res://examples/tcg_style/tcg_style_res.gd" id="1_ekiwv"]
+[ext_resource type="Texture2D" uid="uid://cgqaypbihbwk3" path="res://examples/tcg_style/assets/item033.png" id="1_thl6y"]
+
+[resource]
+script = ExtResource("1_ekiwv")
+card_name = &"Down"
+art = ExtResource("1_thl6y")
+card_type = 1
+metadata/_custom_type_script = "uid://kwp12b1jwkpx"

@@ -3,6 +3,8 @@ extends CanvasLayer
 
 @onready var card_deck_manager: CardDeckManager = $CardDeckManager
 @onready var card_hand: CardHand = $CardHand
+@onready var played_hand: CardHand = $PlayedHand
+
 
 
 @onready var gold_button: Button = %GoldButton
@@ -62,17 +64,29 @@ func _on_discard_pressed() -> void:
 
 
 func _on_play_button() -> void:
-	pass
+	played_hand.add_cards(card_hand.selected)
+	card_hand.clear_selected()
+	
 
-
+	await get_tree().create_timer(2).timeout ##Replace with VFX
+	deal()
+	card_deck_manager.add_cards_to_discard_pile(played_hand.cards)
+	played_hand.clear_hand()
+	
 func _on_sort_pressed() -> void:
 	card_hand.sort_by_suit()
 
 
 func deal():
-	if card_deck_manager.is_draw_pile_empty():
-		card_deck_manager.reshuffle_discard_and_shuffle()
-	
 	var to_deal: int = min(hand_size, card_hand.get_remaining_space())
-	card_hand.add_cards(card_deck_manager.draw_cards(to_deal))
+	if card_deck_manager.get_draw_pile_size() >= to_deal:
+		card_hand.add_cards(card_deck_manager.draw_cards(to_deal))
+		
+	elif card_deck_manager.get_draw_pile_size() < to_deal:
+		var overflow := to_deal - card_deck_manager.get_draw_pile_size()
+		card_hand.add_cards(card_deck_manager.draw_cards(card_deck_manager.get_draw_pile_size()))
+		card_deck_manager.reshuffle_discard_and_shuffle()
+		if card_deck_manager.get_draw_pile_size() >= overflow:
+			card_hand.add_cards(card_deck_manager.draw_cards(overflow))
+	
 	card_hand.sort_by_suit()

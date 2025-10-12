@@ -1,7 +1,9 @@
 @tool
 extends CardHand
 
+@export var max_selected: int = 5
 var selected: Array[Card]
+
 
 func _handle_clicked_card(card: Card) -> void:
 	toggle_select(card)
@@ -10,7 +12,7 @@ func toggle_select(card: Card):
 	if selected.has(card):
 		selected.erase(card)
 		deselect(card)
-	else:
+	elif selected.size() < max_selected:
 		selected.append(card)
 		select(card)
 	

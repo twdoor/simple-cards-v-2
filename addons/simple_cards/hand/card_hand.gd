@@ -57,7 +57,6 @@ var card_positions: Array[Vector2] = []
 var dragged_card: Card = null
 var drag_start_index: int = -1
 
-
 func _ready() -> void:
 	var children = get_children()
 	for child in children:
@@ -65,7 +64,6 @@ func _ready() -> void:
 			add_card(child)
 	CG.dropped_card.connect(_on_card_dropped)
 	CG.holding_card.connect(_on_holding_card)
-
 
 func _process(_delta: float) -> void:
 	if enable_reordering and dragged_card:
@@ -87,7 +85,9 @@ func add_card(card: Card) -> bool:
 		return false
 	
 	if card.get_parent() != self:
-		if card.get_parent():
+		if card.get_parent() is CardHand:
+			card.get_parent().remove_card(card)
+		elif card.get_parent():
 			card.get_parent().remove_child(card)
 		add_child(card)
 	
@@ -255,8 +255,9 @@ func _arrange_line(skip_dragged: bool = false) -> void:
 		if skip_dragged and card == dragged_card:
 			continue
 		
-		card._set_position(final_pos + (card.position_offset.rotated(deg_to_rad(line_rotation))))
-		card.rotation = deg_to_rad(line_rotation)
+		var pos = final_pos + (card.position_offset.rotated(deg_to_rad(line_rotation)))
+		card._set_position(pos + global_position, .2 , true)
+		card.rotation = deg_to_rad(line_rotation) + card.rotation_offset
 
 
 func _arrange_arc(skip_dragged: bool = false) -> void:
@@ -283,9 +284,10 @@ func _arrange_arc(skip_dragged: bool = false) -> void:
 		card_positions.append(Vector2(x, y))
 		if skip_dragged and card == dragged_card:
 			continue
-	
-		card._set_position(final_pos + (card.position_offset.rotated(angle_rad + deg_to_rad(90)) )  )
-		card.rotation = angle_rad + deg_to_rad(90)
+		
+		var pos = final_pos + (card.position_offset.rotated(angle_rad + deg_to_rad(90)))  
+		card._set_position(pos)
+		card.rotation = angle_rad + deg_to_rad(90) + card.rotation_offset
 
 #endregion
 
@@ -323,7 +325,9 @@ func add_cards(card_array: Array[Card]) -> int:
 			break
 		
 		if card.get_parent() != self:
-			if card.get_parent():
+			if card.get_parent() is CardHand:
+				card.get_parent().remove_card(card)
+			elif card.get_parent():
 				card.get_parent().remove_child(card)
 			add_child(card)
 		
@@ -334,7 +338,6 @@ func add_cards(card_array: Array[Card]) -> int:
 	
 	_arrange_cards()
 	return added_count
-
 
 ##Helper function to get a card by its position index in the hand.
 func get_card(index: int) -> Card:

@@ -1,0 +1,46 @@
+[gd_scene load_steps=16 format=3 uid="uid://dxengo00frxt2"]
+
+[ext_resource type="Script" uid="uid://chwyahvo7iw3a" path="res://examples/tcg_style/tcg_example.gd" id="1_257c1"]
+[ext_resource type="Script" uid="uid://bisyk4bowdvsf" path="res://addons/simple_cards/deck/manager/card_deck_manager.gd" id="2_evs51"]
+[ext_resource type="Script" uid="uid://c8315v58tr66b" path="res://addons/simple_cards/card/card_resource/card_resource.gd" id="3_tg27g"]
+[ext_resource type="Script" uid="uid://lhb5ry3o8icy" path="res://addons/simple_cards/deck/card_deck.gd" id="4_f0kho"]
+[ext_resource type="Resource" uid="uid://b8pg4087kq5wl" path="res://examples/tcg_style/cards/down.tres" id="4_txc6j"]
+[ext_resource type="Resource" uid="uid://cn52yj62rr2rs" path="res://examples/tcg_style/cards/down_plus.tres" id="5_s51ty"]
+[ext_resource type="Resource" uid="uid://8psgfp71h170" path="res://examples/tcg_style/cards/obj_1.tres" id="6_kie2b"]
+[ext_resource type="Resource" uid="uid://lcvreaewffnv" path="res://examples/tcg_style/cards/obj_2.tres" id="7_qbcqn"]
+[ext_resource type="Resource" uid="uid://bauvatsk1p3jj" path="res://examples/tcg_style/cards/obj_3.tres" id="8_uwie3"]
+[ext_resource type="Resource" uid="uid://cn4rrjfpvcnk0" path="res://examples/tcg_style/cards/obj_4.tres" id="9_fpcoe"]
+[ext_resource type="Resource" uid="uid://c03us7j4lfn5b" path="res://examples/tcg_style/cards/obj_5.tres" id="10_j8yxy"]
+[ext_resource type="Resource" uid="uid://cmr8rxcg6gciw" path="res://examples/tcg_style/cards/up.tres" id="11_7p27e"]
+[ext_resource type="Resource" uid="uid://eaj7blxobn1w" path="res://examples/tcg_style/cards/up_plus.tres" id="12_55n11"]
+[ext_resource type="Script" uid="uid://bbi8i6vef3f6y" path="res://addons/simple_cards/hand/card_hand.gd" id="14_si83b"]
+
+[sub_resource type="Resource" id="Resource_2iwd1"]
+script = ExtResource("4_f0kho")
+cards = Array[ExtResource("3_tg27g")]([ExtResource("4_txc6j"), ExtResource("5_s51ty"), ExtResource("6_kie2b"), ExtResource("7_qbcqn"), ExtResource("8_uwie3"), ExtResource("9_fpcoe"), ExtResource("10_j8yxy"), ExtResource("11_7p27e"), ExtResource("12_55n11")])
+metadata/_custom_type_script = "uid://lhb5ry3o8icy"
+
+[node name="TcgExample" type="CanvasLayer"]
+script = ExtResource("1_257c1")
+
+[node name="CardDeckManager" type="Node" parent="."]
+script = ExtResource("2_evs51")
+starting_deck = SubResource("Resource_2iwd1")
+metadata/_custom_type_script = "uid://bisyk4bowdvsf"
+
+[node name="CardHand" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_top = 291.0
+offset_bottom = 291.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("14_si83b")
+card_spacing = 70.0
+max_hand_size = 6
+metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
+metadata/_edit_use_anchors_ = true

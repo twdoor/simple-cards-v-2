@@ -91,13 +91,5 @@ func create_layout(layout_name: String = "") -> CardLayout:
 	return instance
 
 
-func set_default_layout(layout_name: String) -> void:
-	if _available_layouts.has(layout_name):
-		_default_layout_path = _available_layouts[layout_name]
-		print("CardLayoutManager: Default layout set to " + layout_name)
-	else:
-		push_warning("CardLayoutManager: Layout '%s' not found" % layout_name)
-
-
 func refresh_layouts() -> void:
 	_discover_layouts()
