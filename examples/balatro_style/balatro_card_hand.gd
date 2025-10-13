@@ -1,19 +1,21 @@
 @tool
 extends CardHand
 
-@export var max_selected: int = 5
-var selected: Array[Card]
-
+@export var max_selected: int
+var _selected: Array[Card]
+var selected: Array[Card]:
+	get:
+		return _selected.duplicate()
 
 func _handle_clicked_card(card: Card) -> void:
 	toggle_select(card)
 
 func toggle_select(card: Card):
-	if selected.has(card):
-		selected.erase(card)
+	if _selected.has(card):
+		_selected.erase(card)
 		deselect(card)
-	elif selected.size() < max_selected:
-		selected.append(card)
+	elif _selected.size() < max_selected:
+		_selected.append(card)
 		select(card)
 	
 
@@ -26,13 +28,23 @@ func deselect(card: Card):
 	_arrange_cards()
 	
 func sort_by_suit():
-	cards.sort_custom(func(a: Card, b: Card):
-		return a.card_data.card_suit > b.card_data.card_suit)
+	_cards.sort_custom(func(a: Card, b: Card):
+		return a.card_data.card_suit < b.card_data.card_suit)
+	_arrange_cards()
+
+func sort_selected():
+	_selected.sort_custom(func(a: Card, b: Card):
+		return get_card_index(a) < get_card_index(b))
+
+func sort_by_value():
+	_cards.sort_custom(func(a: Card, b: Card):
+		return a.card_data.value < b.card_data.value)
 	_arrange_cards()
 
 
+
 func clear_selected():
-	for card in selected:
+	for card in _selected:
 		deselect(card)
-	selected.clear()
+	_selected.clear()
 	

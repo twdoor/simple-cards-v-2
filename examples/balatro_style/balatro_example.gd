@@ -12,22 +12,26 @@ extends CanvasLayer
 @onready var none_button: Button = %NoneButton
 
 @onready var discard_button: Button = %DiscardButton
-@onready var sort_button: Button = %SortButton
 @onready var play_button: Button = %PlayButton
 
+@onready var sort_suit_button: Button = %SortSuitButton
+@onready var sort_value_button: Button = %SortValueButton
 
-var hand_size:= 7
+
+var hand_size: int
 
 func _ready() -> void:
 	gold_button.pressed.connect(_on_gold_pressed)
 	silv_button.pressed.connect(_on_silv_pressed)
 	none_button.pressed.connect(_on_none_pressed)
 	discard_button.pressed.connect(_on_discard_pressed)
-	sort_button.pressed.connect(_on_sort_pressed)
 	play_button.pressed.connect(_on_play_button)
+	sort_suit_button.pressed.connect(_on_sort_suit_pressed)
+	sort_value_button.pressed.connect(_on_sort_value_pressed)
 	
 	CG.def_front_layout = "balatro_style"
 	
+	hand_size = card_hand.max_hand_size
 	card_deck_manager.setup()
 	deal()
 	
@@ -56,7 +60,6 @@ func _on_none_pressed() -> void:
 
 func _on_discard_pressed() -> void:
 	for card in card_hand.selected:
-		card_hand.remove_card(card)
 		card_deck_manager.add_card_to_discard_pile(card)
 	card_hand.clear_selected()
 	
@@ -64,18 +67,19 @@ func _on_discard_pressed() -> void:
 
 
 func _on_play_button() -> void:
+	card_hand.sort_selected()
 	played_hand.add_cards(card_hand.selected)
 	card_hand.clear_selected()
 	
 
-	await get_tree().create_timer(2).timeout ##Replace with VFX
-	deal()
-	card_deck_manager.add_cards_to_discard_pile(played_hand.cards)
-	played_hand.clear_hand()
+	await get_tree().create_timer(2).timeout ##Replace with VFX/Logic
 	
-func _on_sort_pressed() -> void:
-	card_hand.sort_by_suit()
+	for card in played_hand.cards:
+		card_deck_manager.add_card_to_discard_pile(card)
 
+	played_hand.clear_hand()
+	deal()
+	
 
 func deal():
 	var to_deal: int = min(hand_size, card_hand.get_remaining_space())
@@ -90,3 +94,10 @@ func deal():
 			card_hand.add_cards(card_deck_manager.draw_cards(overflow))
 	
 	card_hand.sort_by_suit()
+
+
+func _on_sort_suit_pressed() -> void:
+	card_hand.sort_by_suit()
+
+func _on_sort_value_pressed() -> void:
+	card_hand.sort_by_value()

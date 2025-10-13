@@ -9,27 +9,49 @@
 [node name="BalatroExample" type="CanvasLayer"]
 script = ExtResource("1_ieake")
 
-[node name="CardDeckManager" type="Node" parent="."]
+[node name="CardDeckManager" type="Node" parent="." node_paths=PackedStringArray("draw_pile", "discard_pile")]
 physics_interpolation_mode = 2
 script = ExtResource("3_hg8is")
+show_cards = true
 starting_deck = ExtResource("4_2a7na")
+draw_pile = NodePath("Draw")
+discard_pile = NodePath("Discards")
 metadata/_custom_type_script = "uid://bisyk4bowdvsf"
+
+[node name="Draw" type="Control" parent="CardDeckManager"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 70.0
+offset_right = 100.0
+offset_bottom = 70.0
+
+[node name="Discards" type="Control" parent="CardDeckManager"]
+layout_mode = 3
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -140.0
+offset_top = 70.0
+offset_right = -140.0
+offset_bottom = 70.0
+grow_horizontal = 0
 
 [node name="CardHand" type="Control" parent="."]
 layout_mode = 3
-anchors_preset = 8
+anchors_preset = 7
 anchor_left = 0.5
-anchor_top = 0.5
+anchor_top = 1.0
 anchor_right = 0.5
-anchor_bottom = 0.5
-offset_top = 534.0
-offset_bottom = 534.0
+anchor_bottom = 1.0
+offset_top = 200.0
+offset_bottom = 200.0
 grow_horizontal = 2
-grow_vertical = 2
+grow_vertical = 0
 script = ExtResource("2_grswf")
+max_selected = 5
 card_spacing = 70.0
 max_hand_size = 7
-line_rotation = 90.0
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
 [node name="PlayedHand" type="Control" parent="."]
@@ -79,21 +101,6 @@ custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 text = "Turn None"
 
-[node name="SortButton" type="Button" parent="."]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -33.5
-offset_top = -64.0
-offset_right = 33.5
-grow_horizontal = 2
-grow_vertical = 0
-text = "Sort"
-
 [node name="VBoxContainer2" type="VBoxContainer" parent="."]
 anchors_preset = 4
 anchor_top = 0.5
@@ -115,3 +122,27 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 text = "Play"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -40.0
+offset_right = 20.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="SortSuitButton" type="Button" parent="HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Sort by Suit"
+
+[node name="SortValueButton" type="Button" parent="HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Sort by Value"

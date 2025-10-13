@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://dotok77073p27"]
+[gd_scene load_steps=4 format=3 uid="uid://dotok77073p27"]
 
 [ext_resource type="Script" uid="uid://cscn0sc5gt01y" path="res://card_layouts/balatro_style.gd" id="1_ccxwp"]
+[ext_resource type="FontFile" uid="uid://fpoco0u13011" path="res://examples/balatro_style/KarenFat.ttf" id="2_eobcc"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0a68r"]
 bg_color = Color(1, 1, 1, 1)
@@ -43,3 +44,24 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 stretch_mode = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="SubViewport"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="ValueLabel" type="Label" parent="SubViewport/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("2_eobcc")
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 2

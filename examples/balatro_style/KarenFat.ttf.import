@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://cup7mdj3b74v6"
-path="res://.godot/imported/quaver.ttf-0e6203055974405a1e7e1e71599b4944.fontdata"
+uid="uid://fpoco0u13011"
+path="res://.godot/imported/KarenFat.ttf-c688da488ef7cec3316a95fdd79a95b9.fontdata"
 
 [deps]
 
-source_file="res://examples/tcg_style/quaver.ttf"
-dest_files=["res://.godot/imported/quaver.ttf-0e6203055974405a1e7e1e71599b4944.fontdata"]
+source_file="res://examples/balatro_style/KarenFat.ttf"
+dest_files=["res://.godot/imported/KarenFat.ttf-c688da488ef7cec3316a95fdd79a95b9.fontdata"]
 
 [params]
 

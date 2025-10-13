@@ -1,10 +1,8 @@
-extends Control
+class_name CardGlobal extends Control
 
 signal holding_card(card: Card)
 signal dropped_card
 
-const card_ratio: Vector2 = Vector2(2.5 ,3.5)
-const resolution: int = 32
 const LAYOUT_FOLDER = "res://card_layouts/"
 const DEFAULT_LAYOUT = "res://addons/simple_cards/card/card_layout/default_card_layout.tscn"
 const DEFAULT_BACK_LAYOUT = "res://addons/simple_cards/card/card_layout/default_card_back_layout.tscn"

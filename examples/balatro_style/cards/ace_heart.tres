@@ -8,4 +8,5 @@ script = ExtResource("1_sgns1")
 name = "Ace of Hearts"
 top_texture = ExtResource("2_s52g0")
 card_suit = 2
+value = 13
 metadata/_custom_type_script = "uid://dox8s17eu2u0u"

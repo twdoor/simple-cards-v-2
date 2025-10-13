@@ -13,10 +13,10 @@ class_name CardDeckManager extends Node
 ##If [code]true[/code], the deck will be shuffled on ready.
 @export var shuffle_on_ready: bool = true
 
-var draw_pile: Node
-var discard_pile: Node
+@export var draw_pile: Node
+@export var discard_pile: Node
 
-
+##Sets necessary 
 func setup():
 	_setup_piles()
 	
@@ -27,15 +27,15 @@ func setup():
 
 
 func _setup_piles() -> void:
-	# Create draw pile container
-	draw_pile = Node.new()
-	draw_pile.name = "DrawPile"
-	add_child(draw_pile)
-	
-	# Create discard pile container
-	discard_pile = Node.new()
-	discard_pile.name = "DiscardPile"
-	add_child(discard_pile)
+	if !draw_pile:
+		draw_pile = Node.new()
+		draw_pile.name = "DrawPile"
+		add_child(draw_pile)
+
+	if !discard_pile:
+		discard_pile = Node.new()
+		discard_pile.name = "DiscardPile"
+		add_child(discard_pile)
 
 
 ##Initializes the deck from a CardDeck resource, creating Card instances.
@@ -49,29 +49,43 @@ func initialize_from_deck(deck: CardDeck) -> void:
 	_update_card_visibility()
 
 
-##Adds a card to the draw pile.
+##Adds a card to the draw pile. [br]If the card is already a child [CardHand] the [member CardHand.remove_card] is used to reparent the card.
 func add_card_to_draw_pile(card: Card) -> void:
-	if card.get_parent():
-		card.get_parent().remove_child(card)
+	# Kill all tweens before reparenting
+	card.kill_all_tweens()
 	
-	draw_pile.add_child(card)
-	card.position = Vector2.ZERO
-	card.visible = show_cards
+	if card.get_parent():
+		if card.get_parent() is CardHand:
+			card.get_parent().remove_card(card, draw_pile)
+		else:
+			card.reparent(draw_pile)
+	else:
+		draw_pile.add_child(card)
 
+	_handle_card_reparanting(card, draw_pile.global_position if draw_pile is Control else Vector2.ZERO)
 
-##Adds a card to the discard pile.
+##Adds a card to the discard pile. [br]If the card is already a child [CardHand] the [member CardHand.remove_card] is used to reparent the card.
 func add_card_to_discard_pile(card: Card) -> void:
-	if card.get_parent():
-		card.get_parent().remove_child(card)
+	# Kill all tweens before reparenting
+	card.kill_all_tweens()
 	
-	discard_pile.add_child(card)
-	card.position = Vector2.ZERO
+	if card.get_parent():
+		if card.get_parent() is CardHand:
+			card.get_parent().remove_card(card, discard_pile)
+		else:
+			card.reparent(discard_pile)
+	else:
+		discard_pile.add_child(card)
+	
+	_handle_card_reparanting(card, discard_pile.global_position if discard_pile is Control else Vector2.ZERO)
+
+
+func _handle_card_reparanting(card: Card, des_position: Vector2 = Vector2.ZERO):
+	card.rotation = 0
+	card.tween_position(des_position, .2, true)
 	card.visible = show_cards
+	card.disabled = true
 
-
-func add_cards_to_discard_pile(cards: Array[Card]) -> void:
-	for card in cards:
-		add_card_to_discard_pile(card)
 
 ##Draws a card from the top of the draw pile. Returns null if draw pile is empty.
 func draw_card() -> Card:
@@ -79,8 +93,17 @@ func draw_card() -> Card:
 		return null
 	
 	var card = draw_pile.get_child(draw_pile.get_child_count() - 1)
+	# Store global position before removing
+	var stored_global_pos = card.global_position if card is Control else Vector2.ZERO
+	
 	draw_pile.remove_child(card)
+	
+	# Restore global position after removing
+	if card is Control:
+		card.global_position = stored_global_pos
+	
 	card.visible = true
+	card.disabled = false
 	return card
 
 
@@ -102,16 +125,17 @@ func draw_cards(count: int) -> Array[Card]:
 func shuffle() -> void:
 	var cards_array: Array[Card] = []
 	
-	# Remove all cards from draw pile
 	for child in draw_pile.get_children():
 		if child is Card:
 			cards_array.append(child)
-			draw_pile.remove_child(child)
 	
-	# Shuffle array
+	# Remove all cards first
+	for card in cards_array:
+		draw_pile.remove_child(card)
+	
 	cards_array.shuffle()
 	
-	# Re-add cards in shuffled order
+	# Re-add in shuffled order
 	for card in cards_array:
 		draw_pile.add_child(card)
 		card.position = Vector2.ZERO
@@ -160,7 +184,10 @@ func peek_top_cards(count: int) -> Array[Card]:
 ##Removes a specific card from the draw pile.
 func remove_card_from_draw_pile(card: Card) -> bool:
 	if card.get_parent() == draw_pile:
+		var stored_global_pos = card.global_position if card is Control else Vector2.ZERO
 		draw_pile.remove_child(card)
+		if card is Control:
+			card.global_position = stored_global_pos
 		return true
 	return false
 
@@ -168,7 +195,10 @@ func remove_card_from_draw_pile(card: Card) -> bool:
 ##Removes a specific card from the discard pile.
 func remove_card_from_discard_pile(card: Card) -> bool:
 	if card.get_parent() == discard_pile:
+		var stored_global_pos = card.global_position if card is Control else Vector2.ZERO
 		discard_pile.remove_child(card)
+		if card is Control:
+			card.global_position = stored_global_pos
 		return true
 	return false
 

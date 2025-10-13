@@ -18,6 +18,12 @@ var focused: bool = false
 var position_offset: Vector2 = Vector2.ZERO
 var rotation_offset: float = 0
 
+var scale_tween: Tween
+var rotation_tween: Tween
+var pos_tween: Tween
+
+@export var undraggable: bool = false
+
 @export var card_data: CardResource:
 	set(value):
 		card_data = value
@@ -101,7 +107,7 @@ func _check_for_hold() -> bool:
 		var current_cursor_pos = CG.get_cursor_position()
 		var drag_distance = cursol_down_pos.distance_to(current_cursor_pos)
 		
-		if drag_distance > drag_threshold:
+		if drag_distance > drag_threshold and !undraggable:
 			rotation = 0
 			holding = true
 			dragging_offset = center_pos
@@ -110,11 +116,11 @@ func _check_for_hold() -> bool:
 	return false
 			
 func _on_focus_entered() -> void:
-	_set_scale(Vector2.ONE * 1.2)
+	tween_scale(Vector2.ONE * 1.2)
 	focused = true
 
 func _on_focus_exited() -> void:
-	_set_scale()
+	tween_scale()
 	focused = false
 
 
@@ -130,23 +136,19 @@ func _on_mouse_exited() -> void:
 
 #region transform functions
 
-func _set_scale(desired_scale: Vector2 = Vector2.ONE, duration: float = 0.2) -> void:
-	var scale_tween: Tween
+func tween_scale(desired_scale: Vector2 = Vector2.ONE, duration: float = 0.2) -> void:
 	if scale_tween:
 		scale_tween.kill()
 	scale_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BOUNCE)
 	scale_tween.tween_property(self, "scale", desired_scale, duration)
 
-
-func _set_rotation(desired_rotation: float = 0, duration: float = 0.2) -> void:
-	var rotation_tween: Tween
+func tween_rotation(desired_rotation: float = 0, duration: float = 0.2) -> void:
 	if rotation_tween:
 		rotation_tween.kill()
 	rotation_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
 	rotation_tween.tween_property(self, "rotation_degrees", desired_rotation, duration)
 
-func _set_position(desired_position: Vector2, duration: float = 0.2, global: bool = false) -> void:
-	var pos_tween: Tween
+func tween_position(desired_position: Vector2, duration: float = 0.2, global: bool = false) -> void:
 	if pos_tween:
 		pos_tween.kill()
 	pos_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
@@ -167,6 +169,17 @@ func _set_movement_rotation(delta: float) -> void:
 		 1 - exp(drag_coef *delta))
 
 	last_pos = global_position 
+
+func kill_all_tweens() -> void:
+	if scale_tween:
+		scale_tween.kill()
+		scale_tween = null
+	if rotation_tween:
+		rotation_tween.kill()
+		rotation_tween = null
+	if pos_tween:
+		pos_tween.kill()
+		pos_tween = null
 
 #endregion
 
