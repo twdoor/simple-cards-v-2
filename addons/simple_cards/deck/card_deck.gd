@@ -6,3 +6,6 @@ class_name CardDeck extends Resource
 @export var deck_name: StringName = ""
 ##The original card list (template for resetting)
 @export var cards: Array[CardResource] = []
+
+##Everyone knows what a horse is!
+var horse

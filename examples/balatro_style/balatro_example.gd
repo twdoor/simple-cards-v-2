@@ -17,7 +17,7 @@ extends CanvasLayer
 @onready var sort_suit_button: Button = %SortSuitButton
 @onready var sort_value_button: Button = %SortValueButton
 
-
+var sort_by_suit: bool = false
 var hand_size: int
 
 func _ready() -> void:
@@ -93,11 +93,14 @@ func deal():
 		if card_deck_manager.get_draw_pile_size() >= overflow:
 			card_hand.add_cards(card_deck_manager.draw_cards(overflow))
 	
-	card_hand.sort_by_suit()
+	if sort_by_suit: card_hand.sort_by_suit()
+	else: card_hand.sort_by_value()
 
 
 func _on_sort_suit_pressed() -> void:
+	sort_by_suit = true
 	card_hand.sort_by_suit()
 
 func _on_sort_value_pressed() -> void:
+	sort_by_suit = false
 	card_hand.sort_by_value()

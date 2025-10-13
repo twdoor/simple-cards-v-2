@@ -12,7 +12,6 @@ script = ExtResource("1_ieake")
 [node name="CardDeckManager" type="Node" parent="." node_paths=PackedStringArray("draw_pile", "discard_pile")]
 physics_interpolation_mode = 2
 script = ExtResource("3_hg8is")
-show_cards = true
 starting_deck = ExtResource("4_2a7na")
 draw_pile = NodePath("Draw")
 discard_pile = NodePath("Discards")

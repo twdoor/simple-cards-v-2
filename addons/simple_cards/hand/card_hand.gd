@@ -1,8 +1,9 @@
+##A card container used to dynamicaly store cards.
 @tool @icon("uid://1g0jb8x0i516")
 class_name CardHand extends Control
 
-
-enum _HandShape {
+##The arrangement of the hand
+enum hand_shape {
 	##Line
 	LINE,
 	##Arc
@@ -10,7 +11,7 @@ enum _HandShape {
 }
 
 ##Shape of card spread. Its either a line shape or a circle arc
-@export var shape: _HandShape = _HandShape.ARC:
+@export var shape: hand_shape = hand_shape.ARC:
 	set(value):
 		shape = value
 		notify_property_list_changed()
@@ -27,14 +28,17 @@ enum _HandShape {
 
 
 @export_group("Arc Settings")
+##The radius of the circle used to create the arc
 @export var arc_radius: float = 400.0:
 	set(value):
 		arc_radius = value
 		_arrange_cards()
+##The angle in deg of the arc
 @export_range(0.0, 360.0, 1) var arc_angle: float = 60.0:
 	set(value):
 		arc_angle = value
 		_arrange_cards()
+##The angle where the circle of the arc is placed
 @export_range(0.0, 360.0, 1) var arc_orientation: float = 270.0:
 	set(value):
 		arc_orientation = value
@@ -42,10 +46,12 @@ enum _HandShape {
 
 
 @export_group("Line Settings")
+##Angle in deg of the line orientation
 @export var line_rotation: float = 0.0:
 	set(value):
 		line_rotation = value
 		_arrange_cards()
+##How long the line is.
 @export var max_width: float = 600.0:
 	set(value):
 		max_width = value
@@ -53,12 +59,13 @@ enum _HandShape {
 
 
 var _cards: Array[Card] = []
+##Stores the cards in the hand. Getter return a duplicate of the array
 var cards: Array[Card]:
 	get:
 		return _cards.duplicate()
-var card_positions: Array[Vector2] = []
-var dragged_card: Card = null
-var drag_start_index: int = -1
+var _card_positions: Array[Vector2] = []
+var _dragged_card: Card = null
+var _drag_start_index: int = -1
 
 func _ready() -> void:
 	if Engine.is_editor_hint(): return
@@ -73,16 +80,16 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if Engine.is_editor_hint(): return
 	
-	if enable_reordering and dragged_card:
+	if enable_reordering and _dragged_card:
 		_update_card_reordering()
 
 
 func _validate_property(property: Dictionary) -> void:
 	if property.name in ["arc_radius", "arc_angle", "arc_orientation"]:
-		if shape != _HandShape.ARC:
+		if shape != hand_shape.ARC:
 			property.usage = PROPERTY_USAGE_NO_EDITOR
 	elif property.name in ["line_rotation", "max_width"]:
-		if shape != _HandShape.LINE:
+		if shape != hand_shape.LINE:
 			property.usage = PROPERTY_USAGE_NO_EDITOR
 
 
@@ -131,7 +138,7 @@ func remove_card(card: Card, new_parent: Node = null) -> void:
 func clear_hand() -> void:
 	var cards_copy = _cards.duplicate()
 	_cards.clear()
-	card_positions.clear()
+	_card_positions.clear()
 	
 	for card in cards_copy:
 		_disconnect_card_signals(card)
@@ -174,12 +181,12 @@ func _on_card_unfocused(card: Card) -> void:
 
 func _on_card_dropped() -> void:
 	_arrange_cards()
-	dragged_card = null
+	_dragged_card = null
 
 
 func _on_holding_card(card: Card) -> void:
-	dragged_card = card
-	drag_start_index = get_card_index(card)
+	_dragged_card = card
+	_drag_start_index = get_card_index(card)
 
 
 ##Used when a card fron hand is clicked. [color=red]Overwrite[/color] to implement card action.
@@ -191,32 +198,32 @@ func _handle_clicked_card(card: Card) -> void:
 
 
 func _update_card_reordering() -> void:
-	if not dragged_card or drag_start_index == -1:
+	if not _dragged_card or _drag_start_index == -1:
 		return
 	
-	if not dragged_card.holding:
+	if not _dragged_card.holding:
 		return
 	
 	var cursor_pos = get_local_mouse_position()
 	var closest_index = _find_closest_card_position(cursor_pos)
 	
-	if closest_index != -1 and closest_index != drag_start_index:
-		_cards.remove_at(drag_start_index)
-		_cards.insert(closest_index, dragged_card)
-		drag_start_index = closest_index
+	if closest_index != -1 and closest_index != _drag_start_index:
+		_cards.remove_at(_drag_start_index)
+		_cards.insert(closest_index, _dragged_card)
+		_drag_start_index = closest_index
 		
 		_arrange_cards_except_dragged()
 
 
 func _find_closest_card_position(cursor_pos: Vector2) -> int:
-	if card_positions.is_empty():
+	if _card_positions.is_empty():
 		return -1
 	
 	var closest_index = 0
-	var closest_distance = cursor_pos.distance_to(card_positions[0])
+	var closest_distance = cursor_pos.distance_to(_card_positions[0])
 	
-	for i in range(1, card_positions.size()):
-		var distance = cursor_pos.distance_to(card_positions[i])
+	for i in range(1, _card_positions.size()):
+		var distance = cursor_pos.distance_to(_card_positions[i])
 		if distance < closest_distance:
 			closest_distance = distance
 			closest_index = i
@@ -230,12 +237,12 @@ func _arrange_cards() -> void:
 	if _cards.is_empty():
 		return
 	
-	card_positions.clear()
+	_card_positions.clear()
 	
 	match shape:
-		_HandShape.LINE:
+		hand_shape.LINE:
 			_arrange_line()
-		_HandShape.ARC:
+		hand_shape.ARC:
 			_arrange_arc()
 	
 	_update_z_indices()
@@ -245,12 +252,12 @@ func _arrange_cards_except_dragged() -> void:
 	if _cards.is_empty():
 		return
 	
-	card_positions.clear()
+	_card_positions.clear()
 	
 	match shape:
-		_HandShape.LINE:
+		hand_shape.LINE:
 			_arrange_line(true)
-		_HandShape.ARC:
+		hand_shape.ARC:
 			_arrange_arc(true)
 	
 	_update_z_indices()
@@ -276,8 +283,8 @@ func _arrange_line(skip_dragged: bool = false) -> void:
 		var rotated_pos = Vector2(x_pos, y_pos).rotated(deg_to_rad(line_rotation))
 		var final_pos = rotated_pos - card.pivot_offset
 		
-		card_positions.append(final_pos + card.pivot_offset)
-		if skip_dragged and card == dragged_card:
+		_card_positions.append(final_pos + card.pivot_offset)
+		if skip_dragged and card == _dragged_card:
 			continue
 		
 		var pos = final_pos + (card.position_offset.rotated(deg_to_rad(line_rotation)))
@@ -306,8 +313,8 @@ func _arrange_arc(skip_dragged: bool = false) -> void:
 		var y = arc_radius * sin(angle_rad)
 		
 		var final_pos = Vector2(x, y) - card.pivot_offset
-		card_positions.append(Vector2(x, y))
-		if skip_dragged and card == dragged_card:
+		_card_positions.append(Vector2(x, y))
+		if skip_dragged and card == _dragged_card:
 			continue
 		
 		var pos = final_pos + (card.position_offset.rotated(angle_rad + deg_to_rad(90)))  
@@ -318,7 +325,7 @@ func _arrange_arc(skip_dragged: bool = false) -> void:
 
 func _update_z_indices() -> void:
 	for i in _cards.size():
-		if _cards[i] == dragged_card:
+		if _cards[i] == _dragged_card:
 			_cards[i].z_index = 1000
 		else:
 			_cards[i].z_index = i

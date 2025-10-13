@@ -38,7 +38,7 @@ func sort_selected():
 
 func sort_by_value():
 	_cards.sort_custom(func(a: Card, b: Card):
-		return a.card_data.value < b.card_data.value)
+		return a.card_data.value > b.card_data.value)
 	_arrange_cards()
 
 

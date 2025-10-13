@@ -1,3 +1,4 @@
+##Manages a [CardDeck].
 @icon("uid://u56pws80lkxh")
 class_name CardDeckManager extends Node
 

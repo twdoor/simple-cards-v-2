@@ -1,19 +1,31 @@
+##The global signelton calls used by the SimpleCards plugin. [color=red]Do not instantiate[/color]
 class_name CardGlobal extends Control
 
+##Emited when a card starts being held/dragged
 signal holding_card(card: Card)
+##Emited when a card stops being held/dragged
 signal dropped_card
 
 const LAYOUT_FOLDER = "res://card_layouts/"
 const DEFAULT_LAYOUT = "res://addons/simple_cards/card/card_layout/default_card_layout.tscn"
 const DEFAULT_BACK_LAYOUT = "res://addons/simple_cards/card/card_layout/default_card_back_layout.tscn"
 
-var def_front_layout: StringName
+##Default front layout name used. [color=blue]Set[/color] this to the layout name you want in wanted scene
+var def_front_layout: StringName:
+	set(value):
+		def_front_layout = value
+		if _available_layouts.has(value):
+			_default_layout_path = _available_layouts[value]
+##Default back layout name used. [color=blue]Set[/color] this to the layout name you want in wanted scene
 var def_back_layout: StringName
 
+##Dictionary used to store all layouts. The key is the file name while the value is the file paths
 var _available_layouts: Dictionary = {}
 var _default_layout_path: String = DEFAULT_LAYOUT
 
+##Use in the _init function of the [Card]. Makes sure every card instantiated has a uninque name.
 var card_index: int
+##General held item system. Makes possible draggin and holding only one card
 var current_held_item: Card = null:
 	set(value):
 		current_held_item = value
@@ -23,6 +35,8 @@ var current_held_item: Card = null:
 			dropped_card.emit()
 
 
+##Global function to get cursor position
+##TODO make controller supported
 func get_cursor_position() -> Vector2:
 	return get_global_mouse_position()
  
@@ -30,6 +44,8 @@ func get_cursor_position() -> Vector2:
 func _ready() -> void: 
 	_discover_layouts()
 
+
+##Will search the [member CardGlobal.LAYOUT_FOLDER] and add any valid layouts to the [member CardGlobal._available_layouts]. [br]Always adds the [color=yellow]"Default"[/color] and [color=yellow]"Default_Back"[/color] layouts.
 func _discover_layouts() -> void:
 	_available_layouts.clear()
 	
@@ -62,10 +78,11 @@ func _discover_layouts() -> void:
 		print("  - %s: %s" % [layout_name, _available_layouts[layout_name]])
 
 
+##Returns all the keys of the available layouts
 func get_available_layouts() -> Array:
 	return _available_layouts.keys()
 
-
+##Given a name, will try to instantiate the layout with that name. If empty or is not a valid layout, it generates the default layout
 func create_layout(layout_name: String = "") -> CardLayout:
 	var layout_path: String
 	
@@ -88,6 +105,6 @@ func create_layout(layout_name: String = "") -> CardLayout:
 	
 	return instance
 
-
+##Scans the folder again to grab the layouts
 func refresh_layouts() -> void:
 	_discover_layouts()
