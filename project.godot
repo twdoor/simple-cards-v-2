@@ -19,6 +19,12 @@ config/icon="res://icon.svg"
 
 CG="*res://addons/simple_cards/card_global.gd"
 
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/simple_cards/plugin.cfg")
