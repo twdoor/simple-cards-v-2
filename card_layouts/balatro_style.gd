@@ -4,7 +4,7 @@ extends CardLayout
 @onready var texture_rect: TextureRect = %TextureRect
 @onready var value_label: Label = %ValueLabel
 
-var res
+var res: BalatroStyleResource
 
 func _update_display() -> void:
 	res = card_resource as BalatroStyleResource

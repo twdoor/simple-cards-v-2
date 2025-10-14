@@ -16,7 +16,7 @@ corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 corner_detail = 16
 
-[node name="FrontCardLayout" type="SubViewportContainer"]
+[node name="BalatorCardLayout" type="SubViewportContainer"]
 offset_right = 80.0
 offset_bottom = 112.0
 script = ExtResource("1_ccxwp")

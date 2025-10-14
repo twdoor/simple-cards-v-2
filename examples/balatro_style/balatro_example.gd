@@ -42,21 +42,21 @@ func _ready() -> void:
 
 
 func _on_gold_pressed() -> void:
-	for card in card_hand.selected:
+	for card: Card in card_hand.selected:
 		card.card_data.current_modiffier = 1
-		card._layout._update_display()
+		card.refresh_layout()
 	card_hand.clear_selected()
 	
 func _on_silv_pressed() -> void:
-	for card in card_hand.selected:
+	for card: Card in card_hand.selected:
 		card.card_data.current_modiffier = 2
-		card._layout._update_display()
+		card.refresh_layout()
 	card_hand.clear_selected()
 	
 func _on_none_pressed() -> void:
 	for card: Card in card_hand.selected:
 		card.card_data.current_modiffier = 0
-		card._layout._update_display()
+		card.refresh_layout()
 	card_hand.clear_selected()
 
 
