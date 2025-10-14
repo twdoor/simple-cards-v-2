@@ -20,6 +20,9 @@ extends CanvasLayer
 var sort_by_suit: bool = false
 var hand_size: int
 
+func _init() -> void:
+	CG.def_front_layout = "balatro_style"
+
 func _ready() -> void:
 	gold_button.pressed.connect(_on_gold_pressed)
 	silv_button.pressed.connect(_on_silv_pressed)

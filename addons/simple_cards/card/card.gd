@@ -69,8 +69,7 @@ func _init(card_resource: CardResource = null) -> void:
 		card_data = card_resource
 		if CG.get_available_layouts().has(card_data.custom_layout_name):
 			front_layout_name = card_data.custom_layout_name
-
-
+		
 func _ready() -> void:
 	button_down.connect(_on_button_down)
 	button_up.connect(_on_button_up)
@@ -78,6 +77,10 @@ func _ready() -> void:
 	focus_exited.connect(_on_focus_exited)
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
+	
+	if CG.get_available_layouts().has(card_data.custom_layout_name):
+			front_layout_name = card_data.custom_layout_name
+	
 	
 	_setup_layout()
 	if size != _layout.size:
