@@ -6,6 +6,8 @@ You can still check the first version here ...
 ## What is SimpleCards?
 This is a card system plugin, made in Godot 4.5 only using UI elements (Control nodes). Because of that, the cards can be used in both 2d and 3d projects.
 
+![Gif of example](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/example.gif)
+
 ### Main features
 
 **Cards** with implemented press and drag & drop functionality.
@@ -36,9 +38,13 @@ If curios you can always check the scripts as well.
 
 In the file manger create a script that extends CardResource. 
 
+![Photo of creating a resource](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_resource.png)
+
 Give it a fancy name and class_name.
 
 Now add everything your card needs. 
+
+![Photo of setting a resource](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/set_resource.png)
 
 And you're done!
 
@@ -47,11 +53,17 @@ And you're done!
 
 Go to "Project/Tools/Create a new card layout". This will create the default template scene of a layout.
 
+![Photo of creating a layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_layout.png)
+
 Give it a name (ex. test_layout.tscn). **This name will be used as a key in the scripts. keep it simple and/or memorable.**
 
 **The scene will be placed in the "card_layouts" folder that will be automatically created. Any layout outside this folder will NOT be read. To change the folder go to the card_globals.gd and change the LAYOUT_FOLDER path to the you want.**
 
+![Photo of default layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/default_layout.png)
+
 Now you can create your perfect card. **The Subview's size will determine the size of the card.**
+
+![Photo of custom layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/customized_layout.png)
 
 To update the visuals, extend the card layer (the root) script. Here overwrite the: 
 ```
@@ -65,7 +77,10 @@ _flip_out()
 ```
 to create transition effects for layouts.
 
-you also have access to the **Card** and its **Resource** as card_instance and card_resource respectively. **This are set after the ready function, if trying to access in ready they will return null or might just crash :)**
+You also have access to the **Card** and its **Resource** as card_instance and card_resource respectively. **This are set after the ready function, if trying to access in ready they will return null or might just crash :)**
+
+![Photo of custom layout code](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/custom_layout_code.png)
+
 
 After you are done you just need to set the layout to the cards:
 1. use the set_layout("name", true) function in the card.
