@@ -21,7 +21,7 @@ CG="*res://addons/simple_cards/card_global.gd"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/nhb_functions_on_the_fly/plugin.cfg", "res://addons/simple_cards/plugin.cfg")
+enabled=PackedStringArray("res://addons/simple_cards/plugin.cfg")
 
 [rendering]
 
