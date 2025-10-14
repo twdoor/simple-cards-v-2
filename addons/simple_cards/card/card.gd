@@ -238,7 +238,7 @@ func set_layout(new_layout_name: String, is_front: bool = true) -> void:
 		front_layout_name = new_layout_name
 	else:
 		back_layout_name = new_layout_name
-
+	_setup_layout()
 
 ##Refreshes layout
 func refresh_layout() -> void:

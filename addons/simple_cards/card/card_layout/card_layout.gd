@@ -12,7 +12,7 @@ signal layout_ready ##Emited at the end of the setup function.
 
 
 ##Refrence to the [CardResource] used to initialize the layout. Use it to further customize the layout. 
-var card_resource: CardResource:
+@export var card_resource: CardResource:
 	set(value):
 		card_resource = value
 		if is_node_ready():

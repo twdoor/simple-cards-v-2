@@ -18,11 +18,11 @@ class_name CardDeckManager extends Node
 @export var discard_pile: Node
 
 ##Sets necessary 
-func setup():
+func setup(deck: CardDeck = starting_deck):
 	_setup_piles()
 	
 	if starting_deck:
-		initialize_from_deck(starting_deck)
+		initialize_from_deck(deck)
 		if shuffle_on_ready:
 			shuffle()
 
