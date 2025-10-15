@@ -1,5 +1,5 @@
 @tool
-extends CardHand
+class_name BalatroHand extends CardHand
 
 @export var max_selected: int
 var _selected: Array[Card]

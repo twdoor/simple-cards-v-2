@@ -36,7 +36,7 @@ offset_right = -140.0
 offset_bottom = 70.0
 grow_horizontal = 0
 
-[node name="CardHand" type="Control" parent="."]
+[node name="BalatroHand" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 7
 anchor_left = 0.5
