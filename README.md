@@ -18,7 +18,7 @@ Management provided by **deck** and **hand** containers.
 
 ### Installation
 
-#### Addon (soon™)
+#### Addon
 1. Install the addon from the Godot asset library
 2. Go to Project/Project Settings/Plugins and enable SimpleCards plugin
 #### Manual
