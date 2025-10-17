@@ -1,9 +1,7 @@
-# Normalize EOL for all files that Git considers text files.
+# Normalize line endings for all files that Git considers text files.
 * text=auto eol=lf
 
-# Enable sparse checkout for this repository
-# Only the addons/simple_cards folder will be downloaded
-* export-ignore
-!/addons export-ignore
-!/addons/simple_cards export-ignore
-!/addons/simple_cards/** export-ignore
+# Only include the addons folder when downloading from the Asset Library.
+/**        export-ignore
+/addons    !export-ignore
+/addons/** !export-ignore
