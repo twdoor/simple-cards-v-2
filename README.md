@@ -135,6 +135,8 @@ Container node used to arrange cards in a specific shape.
 The shapes implemented for now are: 
 - Arc
 - Line
+
+
 Use the add and remove card functions to manage the cards in the hand. 
 
 The handle_clicked_card function also connects to the card_clicked signals of all the cards in the hand. Overwrite it to implement your own functionality.
