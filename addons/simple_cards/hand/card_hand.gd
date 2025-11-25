@@ -178,7 +178,6 @@ func _on_card_focused(card: Card) -> void:
 func _on_card_unfocused(card: Card) -> void:
 	_update_z_indices()
 
-
 func _on_card_dropped() -> void:
 	_arrange_cards()
 	_dragged_card = null

@@ -34,6 +34,15 @@ func _flip_in():
 func _flip_out():
 	pass
 
+##Triggered on a [Card] entering focus.(Scale card by default) [color=red]Overwrite[/color] it to implement custom behaviour.
+func _focus_in():
+	card_instance.tween_scale(Vector2.ONE * 1.2)
+
+##Triggered on a [Card] leaving focus.(Scale card by default) [color=red]Overwrite[/color] it to implement custom behaviour.
+func _focus_out():
+	card_instance.tween_scale()
+	
+
 ##Used when a [Card] initializes a layout, set the refrence of the card its resource and emits [member CardLayout.layout_ready] at the end.
 func setup(card: Card, resource: CardResource) -> void:
 	card_instance = card

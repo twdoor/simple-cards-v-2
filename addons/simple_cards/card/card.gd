@@ -83,12 +83,15 @@ func _ready() -> void:
 	
 	
 	_setup_layout()
+	set_card_size()
+
+
+func set_card_size():
 	if size != _layout.size:
 		size = _layout.size
 	self_modulate.a = 0
 	center_pos = Vector2(size.x/2 , size.y/2)
 	pivot_offset = center_pos
-
 
 func _process(delta: float) -> void:
 	_drag(delta)
@@ -133,11 +136,13 @@ func _check_for_hold() -> bool:
 	return false
 			
 func _on_focus_entered() -> void:
-	tween_scale(Vector2.ONE * 1.2)
+	if _layout:
+		_layout._focus_in()
 	focused = true
 
 func _on_focus_exited() -> void:
-	tween_scale()
+	if _layout:
+		_layout._focus_out()
 	focused = false
 
 
