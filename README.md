@@ -1,7 +1,7 @@
 # Simple Cards V2
 This project is a complete rewrite of the SimpleCards plugin I made a while back. Due to my lack of knowledge and experience, the first version lacked the quality I wanted to deliver. 
 
-You can still check the first version here ...
+You can still check the first version [here](https://github.com/twdoor/simplecards)
 
 ## What is SimpleCards?
 This is a card system plugin, made in Godot 4.5 only using UI elements (Control nodes). Because of that, the cards can be used in both 2d and 3d projects.
