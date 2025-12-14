@@ -55,6 +55,21 @@ func _on_card_dropped() -> void:
 	_held_card_on_drop = null
 
 
+#region Signal Management
+func _connect_card_signals(card: Card) -> void:
+	card.card_clicked.connect(_on_card_clicked)
+
+func _disconnect_card_signals(card: Card) -> void:
+	if card.card_clicked.is_connected(_on_card_clicked):
+		card.card_clicked.disconnect(_on_card_clicked)
+
+##Used when the card in the slot is clicked. [color=red]Overwrite[/color] to implement card action.
+func _on_card_clicked(card: Card) -> void:
+	print("Card clicked in slot: ", card.name)
+
+#endregion
+
+
 ##Handles placing a card in this slot. If slot is occupied, swaps with the occupant.
 func _handle_card_drop(incoming_card: Card) -> void:
 	var current_card = held_card
@@ -68,10 +83,12 @@ func _handle_card_drop(incoming_card: Card) -> void:
 	var original_slot: CardSlot = null if original_parent is not CardSlot else original_parent
 	var incoming_was_in_hand = original_parent is CardHand
 	var incoming_was_in_slot = original_parent is CardSlot
-	
+	_disconnect_card_signals(current_card)
+
 	if incoming_was_in_hand:
 		original_parent.remove_card(incoming_card, self)
 	elif incoming_was_in_slot:
+		original_parent._disconnect_card_signals(incoming_card)
 		original_parent.held_card = null
 		incoming_card.reparent(self)
 	else:
@@ -81,6 +98,7 @@ func _handle_card_drop(incoming_card: Card) -> void:
 			add_child(incoming_card)
 	
 	held_card = incoming_card
+	_connect_card_signals(incoming_card)
 	_position_card_in_center(incoming_card)
 	
 	if incoming_was_in_hand:
@@ -88,6 +106,7 @@ func _handle_card_drop(incoming_card: Card) -> void:
 	elif incoming_was_in_slot:
 		current_card.reparent(original_slot)
 		original_slot.held_card = current_card
+		original_slot._connect_card_signals(current_card)
 		original_slot._position_card_in_center(current_card)
 	
 	card_dropped.emit(incoming_card)
@@ -101,6 +120,7 @@ func _return_card_to_parent(card: Card) -> void:
 	var parent = card.get_parent()
 	
 	if parent is CardHand:
+		_disconnect_card_signals(card)
 		parent._arrange_cards()
 	elif parent is CardSlot:
 		parent._position_card_in_center(card)
@@ -124,17 +144,19 @@ func _place_card(card: Card) -> void:
 		return
 	
 	var current_parent = card.get_parent()
-	if current_parent is CardHand:
-		current_parent.remove_card(card, self)
-	elif current_parent is CardSlot:
+	if current_parent is CardSlot:
+		current_parent._disconnect_card_signals(card)
 		current_parent.held_card = null
 		card.reparent(self)
+	elif current_parent is CardHand:
+		current_parent.remove_card(card, self)
 	else:
 		if current_parent:
 			card.reparent(self)
 		else:
 			add_child(card)
-	
+
 	held_card = card
+	_connect_card_signals(card)
 	_position_card_in_center(card)
 	card_dropped.emit(card)

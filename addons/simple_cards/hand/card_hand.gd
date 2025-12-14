@@ -184,7 +184,7 @@ func _on_holding_card(card: Card) -> void:
 	_drag_start_index = get_card_index(card)
 
 
-##Used when a card fron hand is clicked. [color=red]Overwrite[/color] to implement card action.
+##Used when a card from hand is clicked. [color=red]Overwrite[/color] to implement card action.
 func _handle_clicked_card(card: Card) -> void:
 	print("%s: %s was clicked" %[self.name, card.name])
 

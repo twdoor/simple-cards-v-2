@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://brvun6l03k0hu"]
+[gd_scene load_steps=7 format=3 uid="uid://brvun6l03k0hu"]
 
 [ext_resource type="Script" uid="uid://bmc1k8rf2430l" path="res://examples/balatro_style/balatro_example.gd" id="1_ieake"]
 [ext_resource type="Script" uid="uid://f3ybsxom5cmo" path="res://examples/balatro_style/balatro_card_hand.gd" id="2_grswf"]
 [ext_resource type="Script" uid="uid://bisyk4bowdvsf" path="res://addons/simple_cards/deck/manager/card_deck_manager.gd" id="3_hg8is"]
 [ext_resource type="Resource" uid="uid://u1x8i453q018" path="res://examples/balatro_style/cards/balatro_deck.tres" id="4_2a7na"]
 [ext_resource type="Script" uid="uid://bbi8i6vef3f6y" path="res://addons/simple_cards/hand/card_hand.gd" id="5_gjekf"]
+[ext_resource type="Script" uid="uid://btwakv2103085" path="res://addons/simple_cards/slot/card_slot.gd" id="6_bwu64"]
 
 [node name="BalatroExample" type="CanvasLayer"]
 script = ExtResource("1_ieake")
@@ -142,3 +143,44 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 text = "Sort by Value"
+
+[node name="CardSlot" type="Panel" parent="."]
+custom_minimum_size = Vector2(80, 112)
+anchors_preset = -1
+anchor_left = 0.282
+anchor_top = 0.201
+anchor_right = 0.34500003
+anchor_bottom = 0.35700002
+offset_left = 0.039978027
+offset_top = 0.27999878
+offset_right = -40.600037
+offset_bottom = -72.04001
+script = ExtResource("6_bwu64")
+metadata/_custom_type_script = "uid://btwakv2103085"
+
+[node name="CardSlot2" type="Panel" parent="."]
+custom_minimum_size = Vector2(80, 112)
+anchors_preset = -1
+anchor_left = 0.367
+anchor_top = 0.201
+anchor_right = 0.43
+anchor_bottom = 0.35700002
+offset_left = 0.23999023
+offset_top = 0.27999878
+offset_right = -0.4000244
+offset_bottom = -0.040008545
+script = ExtResource("6_bwu64")
+metadata/_custom_type_script = "uid://btwakv2103085"
+
+[node name="CardSlot3" type="Panel" parent="."]
+custom_minimum_size = Vector2(80, 112)
+anchors_preset = -1
+anchor_left = 0.448
+anchor_top = 0.2
+anchor_right = 0.51000005
+anchor_bottom = 0.356
+offset_left = -0.44000244
+offset_right = 0.19995117
+offset_bottom = -0.32000732
+script = ExtResource("6_bwu64")
+metadata/_custom_type_script = "uid://btwakv2103085"
