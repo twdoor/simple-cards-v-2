@@ -125,10 +125,8 @@ func remove_card(card: Card, new_parent: Node = null) -> void:
 			if new_parent:
 				card.reparent(new_parent)
 			else:
-				# Store global position before removing
 				var stored_global_pos = card.global_position
 				remove_child(card)
-				# Restore global position after removing
 				card.global_position = stored_global_pos
 
 		_arrange_cards()
@@ -143,10 +141,8 @@ func clear_hand() -> void:
 	for card in cards_copy:
 		_disconnect_card_signals(card)
 		if card.get_parent() == self:
-			# Store global position before removing
 			var stored_global_pos = card.global_position
 			remove_child(card)
-			# Restore global position after removing
 			card.global_position = stored_global_pos
 
 
@@ -173,7 +169,7 @@ func _disconnect_card_signals(card: Card) -> void:
 func _on_card_focused(card: Card) -> void:
 	var focus_z = 900
 	card.z_index = focus_z
-
+	
 
 func _on_card_unfocused(card: Card) -> void:
 	_update_z_indices()

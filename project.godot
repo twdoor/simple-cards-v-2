@@ -29,6 +29,13 @@ window/stretch/mode="canvas_items"
 
 enabled=PackedStringArray("res://addons/simple_cards/plugin.cfg")
 
+[input]
+
+yes={
+"deadzone": 0.2,
+"events": []
+}
+
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
