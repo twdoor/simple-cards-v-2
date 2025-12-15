@@ -4,7 +4,9 @@ extends CanvasLayer
 @onready var card_deck_manager: CardDeckManager = $CardDeckManager
 @onready var balatro_hand: BalatroHand = $BalatroHand
 @onready var played_hand: CardHand = $PlayedHand
+@onready var preview_hand: CardHand = %PreviewHand
 
+var preview_visible: bool = false
 
 
 @onready var gold_button: Button = %GoldButton
@@ -13,6 +15,10 @@ extends CanvasLayer
 
 @onready var discard_button: Button = %DiscardButton
 @onready var play_button: Button = %PlayButton
+@onready var preview_discard_button: Button = %PreviewDiscardButton
+@onready var preview_draw_button: Button = %PreviewDrawButton
+
+
 
 @onready var sort_suit_button: Button = %SortSuitButton
 @onready var sort_value_button: Button = %SortValueButton
@@ -31,6 +37,8 @@ func _ready() -> void:
 	play_button.pressed.connect(_on_play_button)
 	sort_suit_button.pressed.connect(_on_sort_suit_pressed)
 	sort_value_button.pressed.connect(_on_sort_value_pressed)
+	preview_discard_button.pressed.connect(_on_preview_discard_pressed)
+	preview_draw_button.pressed.connect(_on_preview_draw_pressed)
 	
 	CG.def_front_layout = "balatro_style"
 
@@ -39,7 +47,8 @@ func _ready() -> void:
 	card_deck_manager.setup()
 	deal()
 	
-	
+	card_deck_manager.hide_pile_preview_hand()
+	preview_visible = false
 
 
 func _on_gold_pressed() -> void:
@@ -67,15 +76,21 @@ func _on_discard_pressed() -> void:
 		card_deck_manager.add_card_to_discard_pile(card)
 	balatro_hand.clear_selected()
 	
+	card_deck_manager.hide_pile_preview_hand()
+	preview_visible = false
+	
 	deal()
 
 
 func _on_play_button() -> void:
+	card_deck_manager.hide_pile_preview_hand()
+	preview_visible = false
+	
 	balatro_hand.sort_selected()
 	played_hand.add_cards(balatro_hand.selected)
 	balatro_hand.clear_selected()
 	
-
+	
 	await get_tree().create_timer(2).timeout ##Replace with VFX/Logic
 	
 	for card in played_hand.cards:
@@ -100,10 +115,14 @@ func deal():
 		if card_deck_manager.get_draw_pile_size() >= overflow:
 			balatro_hand.add_cards(card_deck_manager.draw_cards(overflow))
 	
+	for card in balatro_hand.cards:
+		if !card.is_front_face:
+			card.flip()
+	
 	if sort_by_suit: balatro_hand.sort_by_suit()
 	else: balatro_hand.sort_by_value()
-
-
+	
+	
 func _on_sort_suit_pressed() -> void:
 	sort_by_suit = true
 	balatro_hand.sort_by_suit()
@@ -111,3 +130,31 @@ func _on_sort_suit_pressed() -> void:
 func _on_sort_value_pressed() -> void:
 	sort_by_suit = false
 	balatro_hand.sort_by_value()
+
+func _on_preview_discard_pressed():
+	preview_visible = !preview_visible
+	
+	if preview_visible:
+		card_deck_manager.show_pile_preview_hand(preview_hand, true)
+		complete_sort(preview_hand)
+	else:
+		card_deck_manager.hide_pile_preview_hand()
+	
+func _on_preview_draw_pressed():
+	preview_visible = !preview_visible
+	
+	if preview_visible:
+		card_deck_manager.show_pile_preview_hand(preview_hand, false)
+		complete_sort(preview_hand)
+	else:
+		card_deck_manager.hide_pile_preview_hand()
+
+
+func complete_sort(hand: CardHand) -> void:
+	hand._cards.sort_custom(func(a: Card, b: Card) -> bool:
+		if a.card_data.card_suit != b.card_data.card_suit:
+			return a.card_data.card_suit < b.card_data.card_suit
+		else:
+			return a.card_data.value < b.card_data.value
+	)
+	hand._arrange_cards()

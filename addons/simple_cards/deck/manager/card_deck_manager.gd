@@ -17,6 +17,11 @@ class_name CardDeckManager extends Node
 @export var draw_pile: Node
 @export var discard_pile: Node
 
+@export var front_face_in_draw: bool = true
+@export var front_face_in_discrd: bool = true
+
+var pile_preview_hand: CardHand
+
 ##Sets necessary 
 func setup(deck: CardDeck = starting_deck):
 	_setup_piles()
@@ -54,6 +59,7 @@ func initialize_from_deck(deck: CardDeck) -> void:
 func add_card_to_draw_pile(card: Card) -> void:
 	# Kill all tweens before reparenting
 	card.kill_all_tweens()
+	card.is_front_face = front_face_in_draw
 	
 	if card.get_parent():
 		if card.get_parent() is CardHand:
@@ -69,6 +75,7 @@ func add_card_to_draw_pile(card: Card) -> void:
 func add_card_to_discard_pile(card: Card) -> void:
 	# Kill all tweens before reparenting
 	card.kill_all_tweens()
+	card.is_front_face = front_face_in_discrd
 	
 	if card.get_parent():
 		if card.get_parent() is CardHand:
@@ -249,3 +256,62 @@ func _update_card_visibility() -> void:
 	for child in discard_pile.get_children():
 		if child is Card:
 			child.visible = show_cards
+
+
+##Inserts a card at a specific position in the draw pile (0 = bottom, -1 = top).
+##If from_discard if true it will insert it the discard pile instead.
+func add_card_to_pile_at_index(card: Card, index: int, from_discard: bool = false) -> void:
+	card.kill_all_tweens()
+	
+	var pile = discard_pile if from_discard else draw_pile
+	
+	if card.get_parent():
+		if card.get_parent() is CardHand:
+			card.get_parent().remove_card(card, pile)
+		else:
+			card.reparent(pile)
+	else:
+		pile.add_child(card)
+		
+	var clamped_index = clampi(index, 0, pile.get_child_count() - 1)
+	pile.move_child(card, clamped_index)
+	
+	_handle_card_reparanting(card, pile.global_position if pile is Control else Vector2.ZERO)
+
+
+##Inserts a card at a specific position counting from top of the draw pile.
+##If from_discard if true it will insert it the discard pile instead.
+func add_card_to_pile_at_position_from_top(card: Card, position: int, from_discard: bool = false) -> void:
+	var pile = discard_pile if from_discard else draw_pile
+	var total_cards = pile.get_child_count()
+	var index = max(0, total_cards - position)
+	add_card_to_pile_at_index(card, index, from_discard)
+
+
+##Shows a fanned preview of the draw pile using the provided CardHand.
+##If preview_discard is true it will show the discard pile instead.
+func show_pile_preview_hand(preview_hand: CardHand, preview_discard: bool = false) -> void:
+	pile_preview_hand = preview_hand
+	_update_pile_preview_hand(preview_discard)
+
+
+func _update_pile_preview_hand(preview_discard: bool = false) -> void:
+	if not pile_preview_hand:
+		return
+	
+	pile_preview_hand.clear_hand()
+	
+	var preview_card = discard_pile.get_children() if preview_discard else draw_pile.get_children()
+	for child in preview_card:
+		if child is Card:
+			var card_proxy: Card = Card.new(child.card_data)
+			card_proxy.name = child.name + "_preview"
+			card_proxy.set_meta("source_card", child)
+			pile_preview_hand.add_card(card_proxy)
+
+
+##Hides the draw pile preview
+func hide_pile_preview_hand() -> void:
+	if pile_preview_hand:
+		pile_preview_hand.clear_hand()
+	pile_preview_hand = null
