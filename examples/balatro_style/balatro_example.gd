@@ -8,7 +8,6 @@ extends CanvasLayer
 
 var preview_visible: bool = false
 
-
 @onready var gold_button: Button = %GoldButton
 @onready var silv_button: Button = %SilvButton
 @onready var none_button: Button = %NoneButton
@@ -56,19 +55,20 @@ func _on_gold_pressed() -> void:
 		card.card_data.current_modiffier = 1
 		card.refresh_layout()
 	balatro_hand.clear_selected()
-	
+
+
 func _on_silv_pressed() -> void:
 	for card: Card in balatro_hand.selected:
 		card.card_data.current_modiffier = 2
 		card.refresh_layout()
 	balatro_hand.clear_selected()
-	
+
+
 func _on_none_pressed() -> void:
 	for card: Card in balatro_hand.selected:
 		card.card_data.current_modiffier = 0
 		card.refresh_layout()
 	balatro_hand.clear_selected()
-
 
 
 func _on_discard_pressed() -> void:
@@ -90,7 +90,6 @@ func _on_play_button() -> void:
 	played_hand.add_cards(balatro_hand.selected)
 	balatro_hand.clear_selected()
 	
-	
 	await get_tree().create_timer(2).timeout ##Replace with VFX/Logic
 	
 	for card in played_hand.cards:
@@ -98,7 +97,7 @@ func _on_play_button() -> void:
 
 	played_hand.clear_hand()
 	deal()
-	
+
 
 func deal():
 	var to_deal: int = min(hand_size, balatro_hand.get_remaining_space())
@@ -121,15 +120,17 @@ func deal():
 	
 	if sort_by_suit: balatro_hand.sort_by_suit()
 	else: balatro_hand.sort_by_value()
-	
-	
+
+
 func _on_sort_suit_pressed() -> void:
 	sort_by_suit = true
 	balatro_hand.sort_by_suit()
 
+
 func _on_sort_value_pressed() -> void:
 	sort_by_suit = false
 	balatro_hand.sort_by_value()
+
 
 func _on_preview_discard_pressed():
 	preview_visible = !preview_visible
@@ -139,13 +140,16 @@ func _on_preview_discard_pressed():
 		complete_sort(preview_hand)
 	else:
 		card_deck_manager.hide_pile_preview_hand()
-	
+
+
 func _on_preview_draw_pressed():
 	preview_visible = !preview_visible
 	
 	if preview_visible:
 		card_deck_manager.show_pile_preview_hand(preview_hand, false)
 		complete_sort(preview_hand)
+		for card in preview_hand._cards:
+			card.undraggable = true
 	else:
 		card_deck_manager.hide_pile_preview_hand()
 

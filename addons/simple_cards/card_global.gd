@@ -40,6 +40,9 @@ var current_held_item: Card = null:
 func get_cursor_position() -> Vector2:
 	return get_global_mouse_position()
  
+func get_local_cursor_position(node: Node) -> Vector2:
+	return node.get_local_mouse_position()
+
 
 func _ready() -> void: 
 	_discover_layouts()

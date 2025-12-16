@@ -1,10 +1,28 @@
-[gd_scene load_steps=6 format=3 uid="uid://brvun6l03k0hu"]
+[gd_scene load_steps=11 format=3 uid="uid://brvun6l03k0hu"]
 
 [ext_resource type="Script" uid="uid://bmc1k8rf2430l" path="res://examples/balatro_style/balatro_example.gd" id="1_ieake"]
 [ext_resource type="Script" uid="uid://f3ybsxom5cmo" path="res://examples/balatro_style/balatro_card_hand.gd" id="2_grswf"]
 [ext_resource type="Script" uid="uid://bisyk4bowdvsf" path="res://addons/simple_cards/deck/manager/card_deck_manager.gd" id="3_hg8is"]
 [ext_resource type="Resource" uid="uid://u1x8i453q018" path="res://examples/balatro_style/cards/balatro_deck.tres" id="4_2a7na"]
+[ext_resource type="Script" uid="uid://b1s6x4iyt2pps" path="res://addons/simple_cards/hand/shape/premade shapes/line_shape.gd" id="5_frvav"]
 [ext_resource type="Script" uid="uid://bbi8i6vef3f6y" path="res://addons/simple_cards/hand/card_hand.gd" id="5_gjekf"]
+[ext_resource type="Script" uid="uid://cgtxv1fnflwfu" path="res://addons/simple_cards/hand/shape/premade shapes/arc_shape.gd" id="7_m6hid"]
+
+[sub_resource type="Resource" id="Resource_frvav"]
+script = ExtResource("7_m6hid")
+card_spacing = 70.0
+metadata/_custom_type_script = "uid://cgtxv1fnflwfu"
+
+[sub_resource type="Resource" id="Resource_m6hid"]
+script = ExtResource("5_frvav")
+card_spacing = 90.0
+metadata/_custom_type_script = "uid://b1s6x4iyt2pps"
+
+[sub_resource type="Resource" id="Resource_qxomd"]
+script = ExtResource("7_m6hid")
+arc_angle = 130.0
+card_spacing = 70.0
+metadata/_custom_type_script = "uid://cgtxv1fnflwfu"
 
 [node name="BalatroExample" type="CanvasLayer"]
 script = ExtResource("1_ieake")
@@ -16,6 +34,7 @@ show_cards = true
 starting_deck = ExtResource("4_2a7na")
 draw_pile = NodePath("Draw")
 discard_pile = NodePath("Discard")
+front_face_in_draw = false
 metadata/_custom_type_script = "uid://bisyk4bowdvsf"
 
 [node name="Draw" type="Control" parent="CardDeckManager"]
@@ -39,18 +58,17 @@ grow_horizontal = 0
 
 [node name="BalatroHand" type="Control" parent="."]
 layout_mode = 3
-anchors_preset = 7
 anchor_left = 0.5
-anchor_top = 1.0
+anchor_top = 1.319
 anchor_right = 0.5
-anchor_bottom = 1.0
-offset_top = 230.0
-offset_bottom = 230.0
+anchor_bottom = 1.319
+offset_top = 0.32000732
+offset_bottom = 0.32000732
 grow_horizontal = 2
 grow_vertical = 0
 script = ExtResource("2_grswf")
 max_selected = 5
-card_spacing = 70.0
+shape = SubResource("Resource_frvav")
 max_hand_size = 7
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
@@ -64,8 +82,25 @@ anchor_bottom = 0.5
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("5_gjekf")
-shape = 0
-card_spacing = 90.0
+shape = SubResource("Resource_m6hid")
+enable_reordering = false
+metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
+
+[node name="PreviewHand" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchor_left = 0.49800003
+anchor_top = 1.046
+anchor_right = 0.49800003
+anchor_bottom = 1.046
+offset_left = -0.44006348
+offset_top = -0.11999512
+offset_right = -0.44006348
+offset_bottom = -0.11999512
+size_flags_horizontal = 6
+size_flags_vertical = 10
+script = ExtResource("5_gjekf")
+shape = SubResource("Resource_qxomd")
 enable_reordering = false
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
@@ -157,23 +192,3 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 text = "Sort by Value"
-
-[node name="PreviewHand" type="Control" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_top = 437.0
-offset_bottom = 437.0
-grow_horizontal = 2
-grow_vertical = 2
-size_flags_horizontal = 4
-size_flags_vertical = 4
-script = ExtResource("5_gjekf")
-card_spacing = 90.0
-enable_reordering = false
-arc_angle = 134.0
-metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
