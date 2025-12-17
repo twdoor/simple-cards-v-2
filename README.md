@@ -18,7 +18,9 @@ Management provided by **deck**, **hand** and **slot** containers.
 
 ### !! Update 2.1 Out !!
  !!NEW!! - Card slots: simple container class that hold one card.
+ 
  !!NEW!! - CardHandShape: Moved the handshape logic in custom resources to make it easier to customize the handshape.
+ 
  !!NEW!! - Reworked the layout discovery logic using metadata to allow better usability and flexibility.
 
 
