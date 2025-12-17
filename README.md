@@ -23,6 +23,8 @@ Management provided by **deck**, **hand** and **slot** containers.
  
  !!NEW!! - Reworked the layout discovery logic using metadata to allow better usability and flexibility.
 
+ !!NEW!! - New fuction for the deck manager for adding cards to a specific place and to preview the piles using a card hand.
+
 
 ### Installation
 
