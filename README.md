@@ -66,7 +66,9 @@ Go to "Project/Tools/Create a new card layout". This will create the default tem
 ![Photo of layout creation window](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_layout_part2.png)
 
 Give it an id (ex. test_layout). **This name will be used as a unique key in the scripts. keep it simple and/or memorable.**
+
 Tags are optional but useful if you need to make a lot of different layouts.
+
 Lastly, save and open your new layout.
 
 ![Photo of default layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/default_layout.png)
