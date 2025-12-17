@@ -1,5 +1,5 @@
 # Simple Cards V2
-This project is a complete rewrite of the SimpleCards plugin I made a while back. Due to my lack of knowledge and experience, the first version lacked the quality I wanted to deliver. 
+This project is a complete rewrite of the SimpleCards plugin I made a while back. Due to my lack of knowledge and experience, the first version lacked the quality I wanted to deliver.
 
 You can still check the first version [here](https://github.com/twdoor/simplecards)
 
@@ -12,9 +12,15 @@ This is a card system plugin, made in Godot 4.5 only using UI elements (Control 
 
 **Cards** with implemented press and drag & drop functionality.
 
-Customizable and expendable functionality and visuals provided by **layouts** and **resources**. 
+Customizable and expendable functionality and visuals provided by **layouts** and **resources**.
 
-Management provided by **deck** and **hand** containers. 
+Management provided by **deck**, **hand** and **slot** containers.
+
+### !! Update 2.1 Out !!
+ !!NEW!! - Card slots: simple container class that hold one card.
+ !!NEW!! - CardHandShape: Moved the handshape logic in custom resources to make it easier to customize the handshape.
+ !!NEW!! - Reworked the layout discovery logic using metadata to allow better usability and flexibility.
+
 
 ### Installation
 
@@ -28,37 +34,38 @@ Management provided by **deck** and **hand** containers.
 3. Go to Project/Project Settings/Plugins and enable SimpleCards plugin
 4. **RELOAD THE PROJECT**
 
-## Usage and features. 
+## Usage and features.
 **All custom classes added are documented in the editor.**
 If curios you can always check the scripts as well.
 
-### Making your first card. 
+### Making your first card.
 
-#### 1. Making the resource. 
+#### 1. Making the resource.
 **Card Resource** is the way to store the data you want your card to have.
 
-In the file manger create a script that extends CardResource. 
+In the file manger create a script that extends CardResource.
 
 ![Photo of creating a resource](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_resource.png)
 
 Give it a fancy name and class_name.
 
-Now add everything your card needs. 
+Now add everything your card needs.
 
 ![Photo of setting a resource](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/set_resource.png)
 
 And you're done!
 
 #### 2. Making a layout.
-**Card layout** is the base of the visuals. 
+**Card layout** is the base of the visuals.
 
 Go to "Project/Tools/Create a new card layout". This will create the default template scene of a layout.
 
 ![Photo of creating a layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_layout.png)
+![Photo of layout creation window](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_layout_part2.png)
 
-Give it a name (ex. test_layout.tscn). **This name will be used as a key in the scripts. keep it simple and/or memorable.**
-
-**The scene will be placed in the "card_layouts" folder that will be automatically created. Any layout outside this folder will NOT be read. To change the folder go to the card_globals.gd and change the LAYOUT_FOLDER path to the you want.**
+Give it an id (ex. test_layout). **This name will be used as a unique key in the scripts. keep it simple and/or memorable.**
+Tags are optional but useful if you need to make a lot of different layouts.
+Lastly, save and open your new layout.
 
 ![Photo of default layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/default_layout.png)
 
@@ -66,7 +73,7 @@ Now you can create your perfect card. **The Subview's size will determine the si
 
 ![Photo of custom layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/customized_layout.png)
 
-To update the visuals, extend the card layer (the root) script. Here overwrite the: 
+To update the visuals, extend the card layer (the root) script. Here overwrite the:
 ```
 _update_display()
 ```
@@ -95,9 +102,9 @@ The cards also have a back_layout implemented, simmilar you can use this methods
 2.  set def_back_layout value from the card globals to the value you need.
 3.  (not recommended) replace DEFAULT_BACK_LAYOUT constant path in the global script
 
-#### 3. Spawning the card. 
-To spawn a specific card, initialize it by passing a card_resource in the Card.new() function. 
-You can also you the "Add child node" button in the editor to add a new card and manually set its resource within the editor. 
+#### 3. Spawning the card.
+To spawn a specific card, initialize it by passing a card_resource in the Card.new() function.
+You can also you the "Add child node" button in the editor to add a new card and manually set its resource within the editor.
 
 And you're done. Enjoy your card :)
 
@@ -127,19 +134,23 @@ Resource class to used to store premade arrays of card_resources.
 You can give it a name.
 
 #### CardDeckManager
-Takes a card deck and converts the resources into card instances. It is split in to nodes: 
-draw pile and discard pile. Has basic functions like draw, discard, and shuffle. 
+Takes a card deck and converts the resources into card instances. It is split in to nodes:
+draw pile and discard pile. Has basic functions like draw, discard, and shuffle.
 
 #### CardHand
-Container node used to arrange cards in a specific shape. 
-The shapes implemented for now are: 
+Container node used to arrange cards in a specific shape.
+The shapes implemented with the use of the CardHandShape resource. You can use the provided shapes or create your own.
+The provided shapes are:
 - Arc
 - Line
 
-
-Use the add and remove card functions to manage the cards in the hand. 
+Use the add and remove card functions to manage the cards in the hand.
 
 The handle_clicked_card function also connects to the card_clicked signals of all the cards in the hand. Overwrite it to implement your own functionality.
+
+### CardSlot
+Control node used to store one card. You can add cards to the slot, swap cards between two slots and create custom actions simmilar to the card hand.
+Moving card from hand to slot is possible but the inverse is not implemented yet.
 
 
 ### Example
@@ -151,5 +162,5 @@ In the example folder there is a simple stripped down implementation of the game
 
 
 
-## Have fun 
+## Have fun
 For any feedback, suggestions or complains, feel free to dm me at @twdoortoo on Twitter (formerly known as X)

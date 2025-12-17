@@ -1,8 +1,7 @@
 ##This will represent the visual basis for a card face.
 ##
 ##[color=green]Use the "Project>Tools>Create new card layout" for a quick setup![/color][br]
-##[color=red]The global_script only searches for layouts in the [member CardGlobal._available_layouts] folder![/color][br]
-##Alone is preaty much useless. Use other nodes to build your best layout for the cards that need to be made.[br]
+##Alone is pretty much useless. Use other nodes to build your best layout for the cards that need to be made.[br]
 ##The Subviewport required by this node will also give the card size. (Subviewport.size = card.size)
 @icon("uid://dfeet1bp3au3l")
 class_name CardLayout extends SubViewportContainer

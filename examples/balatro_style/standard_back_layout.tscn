@@ -1,0 +1,39 @@
+[gd_scene load_steps=3 format=3 uid="uid://bog1ttsv5cyjo"]
+
+[ext_resource type="Script" uid="uid://dm115oleoggyt" path="res://addons/simple_cards/card/card_layout/card_layout.gd" id="1_0a68r"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0dbed"]
+bg_color = Color(0.4, 0, 0, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.14044741, 0.14044747, 0.14044735, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+corner_detail = 16
+
+[node name="CardLayout" type="SubViewportContainer"]
+offset_right = 80.0
+offset_bottom = 112.0
+script = ExtResource("1_0a68r")
+metadata/is_layout = true
+metadata/layout_id = "standard_back_layout"
+metadata/tags = ["back"]
+metadata/_custom_type_script = "uid://dm115oleoggyt"
+
+[node name="SubViewport" type="SubViewport" parent="."]
+handle_input_locally = false
+size = Vector2i(80, 112)
+render_target_update_mode = 4
+
+[node name="CardColor" type="PanelContainer" parent="SubViewport"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_0dbed")

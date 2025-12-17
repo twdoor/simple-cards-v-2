@@ -25,8 +25,6 @@ var preview_visible: bool = false
 var sort_by_suit: bool = false
 var hand_size: int
 
-func _init() -> void:
-	CG.def_front_layout = "balatro_style"
 
 func _ready() -> void:
 	gold_button.pressed.connect(_on_gold_pressed)
@@ -39,7 +37,8 @@ func _ready() -> void:
 	preview_discard_button.pressed.connect(_on_preview_discard_pressed)
 	preview_draw_button.pressed.connect(_on_preview_draw_pressed)
 	
-	CG.def_front_layout = "balatro_style"
+	CG.def_front_layout = "standard_layout"
+	CG.def_back_layout = "standard_back_layout"
 
 	hand_size = balatro_hand.max_hand_size
 	
