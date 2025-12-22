@@ -18,8 +18,12 @@ Management provided by **deck**, **hand** and **slot** containers.
 
 ### !! Update 2.1 Out !!
  !!NEW!! - Card slots: simple container class that hold one card.
+ 
  !!NEW!! - CardHandShape: Moved the handshape logic in custom resources to make it easier to customize the handshape.
+ 
  !!NEW!! - Reworked the layout discovery logic using metadata to allow better usability and flexibility.
+
+ !!NEW!! - New fuction for the deck manager for adding cards to a specific place and to preview the piles using a card hand.
 
 
 ### Installation
@@ -64,7 +68,9 @@ Go to "Project/Tools/Create a new card layout". This will create the default tem
 ![Photo of layout creation window](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_layout_part2.png)
 
 Give it an id (ex. test_layout). **This name will be used as a unique key in the scripts. keep it simple and/or memorable.**
+
 Tags are optional but useful if you need to make a lot of different layouts.
+
 Lastly, save and open your new layout.
 
 ![Photo of default layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/default_layout.png)
