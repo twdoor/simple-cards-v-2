@@ -1,172 +1,629 @@
-# Simple Cards V2
-This project is a complete rewrite of the SimpleCards plugin I made a while back. Due to my lack of knowledge and experience, the first version lacked the quality I wanted to deliver.
-
-You can still check the first version [here](https://github.com/twdoor/simplecards)
-
-## What is SimpleCards?
-This is a card system plugin, made in Godot 4.5 only using UI elements (Control nodes). Because of that, the cards can be used in both 2d and 3d projects.
-
-![Gif of example](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/example.gif)
-
-### Main features
-
-**Cards** with implemented press and drag & drop functionality.
-
-Customizable and expendable functionality and visuals provided by **layouts** and **resources**.
-
-Management provided by **deck**, **hand** and **slot** containers.
-
-### !! Update 2.1 Out !!
- !!NEW!! - Card slots: simple container class that hold one card.
- 
- !!NEW!! - CardHandShape: Moved the handshape logic in custom resources to make it easier to customize the handshape.
- 
- !!NEW!! - Reworked the layout discovery logic using metadata to allow better usability and flexibility.
-
- !!NEW!! - New fuction for the deck manager for adding cards to a specific place and to preview the piles using a card hand.
+# <img src="https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/simple_card_v2.png" width="8%"> Simple Cards
 
 
-### Installation
 
-#### Addon
-1. Install the addon from the Godot asset library
-2. Go to Project/Project Settings/Plugins and enable SimpleCards plugin
-3. **RELOAD THE PROJECT**
-#### Manual
-1. Download or clone the repo.
-2. Open it as a godot project or copy the addons/simple_cards folder into the project you want to use.
-3. Go to Project/Project Settings/Plugins and enable SimpleCards plugin
-4. **RELOAD THE PROJECT**
+A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, deck builders, or any card-based interface using Control nodes that work seamlessly in both 2D and 3D projects.
 
-## Usage and features.
-**All custom classes added are documented in the editor.**
-If curios you can always check the scripts as well.
+![Example Animation](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/example.gif)
 
-### Making your first card.
+---
 
-#### 1. Making the resource.
-**Card Resource** is the way to store the data you want your card to have.
+## Table of Contents
 
-In the file manger create a script that extends CardResource.
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+    - [Card](#card)
+    - [CardResource](#cardresource)
+    - [CardLayout](#cardlayout)
+    - [CardHand](#cardhand)
+    - [CardHandShape](#cardhandshape)
+    - [CardSlot](#cardslot)
+    - [CardDeck](#carddeck)
+    - [CardDeckManager](#carddeckmanager)
+    - [CardGlobal (CG)](#cardglobal-cg)
+- [Examples](#examples)
+- [Changelog](#changelog)
+- [Support](#support)
 
-![Photo of creating a resource](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_resource.png)
+---
 
-Give it a fancy name and class_name.
+## Features
 
-Now add everything your card needs.
+- **Drag & Drop Cards** - Built-in press and drag functionality with smooth animations
+- **Customizable Visuals** - Create unique card faces using the layout system
+- **Data-Driven Design** - Separate card data (resources) from visuals (layouts)
+- **Hand Management** - Arrange cards in lines, arcs, or custom shapes
+- **Deck System** - Draw pile, discard pile, shuffling, and card management
+- **Card Slots** - Drop zones for placing individual cards
+- **Flip Animations** - Front/back card faces with transition support
+- **Fully Documented** - In-editor documentation for all classes
 
-![Photo of setting a resource](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/set_resource.png)
+---
 
-And you're done!
+## Installation
 
-#### 2. Making a layout.
-**Card layout** is the base of the visuals.
+### From Asset Library
 
-Go to "Project/Tools/Create a new card layout". This will create the default template scene of a layout.
+1. Search for "SimpleCards" in the Godot Asset Library
+2. Install the addon
+3. Go to **Project → Project Settings → Plugins** and enable **SimpleCards**
+4. **Reload the project** (important!)
 
-![Photo of creating a layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_layout.png)
+### Manual Installation
+
+1. Download or clone this repository
+2. Copy the `addons/simple_cards` folder into your project's `addons` directory
+3. Go to **Project → Project Settings → Plugins** and enable **SimpleCards**
+4. **Reload the project** (important!)
+
+---
+
+## Quick Start
+
+### 1. Create a Card Resource
+
+Card resources store your card data. Create a new script that extends `CardResource`:
+
+```gdscript
+# my_card_resource.gd
+class_name MyCardResource extends CardResource
+
+@export var card_name: String = ""
+@export var attack: int = 0
+@export var defense: int = 0
+@export var card_image: Texture2D
+```
+
+Then create `.tres` files using your new resource type to define individual cards.
+
+### 2. Create a Card Layout
+
+Layouts define how cards look. Use **Project → Tools → Create a new card layout** for quick setup.
+
 ![Photo of layout creation window](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_layout_part2.png)
-
-Give it an id (ex. test_layout). **This name will be used as a unique key in the scripts. keep it simple and/or memorable.**
-
-Tags are optional but useful if you need to make a lot of different layouts.
-
-Lastly, save and open your new layout.
 
 ![Photo of default layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/default_layout.png)
 
-Now you can create your perfect card. **The Subview's size will determine the size of the card.**
+Extend the layout script to update visuals:
 
-![Photo of custom layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/customized_layout.png)
+```gdscript
+# my_layout.gd
+extends CardLayout
 
-To update the visuals, extend the card layer (the root) script. Here overwrite the:
+@onready var name_label: Label = %NameLabel
+@onready var image: TextureRect = %CardImage
+
+func _update_display() -> void:
+    var data = card_resource as MyCardResource
+    if data:
+        name_label.text = data.card_name
+        image.texture = data.card_image
 ```
-_update_display()
+
+### 3. Spawn Cards
+
+```gdscript
+# In your game scene
+func _ready():
+    var card_data = preload("res://cards/my_card.tres")
+    var card = Card.new(card_data)
+    add_child(card)
 ```
-to set you changes.  You can also overwrite:
+
+---
+## API Reference
+
+### Card
+
+A draggable button that represents a single card.
+
+#### Properties
+
+|Property|Type|Description|
+|---|---|---|
+|`card_data`|`CardResource`|The resource containing card data|
+|`undraggable`|`bool`|If `true`, disables dragging (click still works)|
+|`holding`|`bool`|`true` when card is being dragged|
+|`focused`|`bool`|`true` when card has focus|
+|`is_front_face`|`bool`|`true` shows front layout, `false` shows back|
+|`front_layout_name`|`StringName`|ID of the front layout|
+|`back_layout_name`|`StringName`|ID of the back layout|
+|`position_offset`|`Vector2`|Custom offset used by CardHand|
+|`rotation_offset`|`float`|Custom rotation offset used by CardHand|
+
+#### Signals
+
+|Signal|Parameters|Description|
+|---|---|---|
+|`card_clicked`|`card: Card`|Emitted when card is clicked (not dragged)|
+
+#### Methods
+
+```gdscript
+# Flip the card between front and back
+func flip() -> void
+
+# Change layouts
+func set_layout(new_layout_name: String, is_front: bool = true) -> void
+
+# Refresh the current layout display
+func refresh_layout() -> void
+
+# Animated transforms
+func tween_scale(desired_scale: Vector2 = Vector2.ONE, duration: float = 0.2) -> void
+func tween_rotation(desired_rotation: float = 0, duration: float = 0.2) -> void
+func tween_position(desired_position: Vector2, duration: float = 0.2, global: bool = false) -> void
+
+# Stop all animations
+func kill_all_tweens() -> void
 ```
-_flip_in()
- or
-_flip_out()
+
+#### Example
+
+```gdscript
+var card = Card.new(my_resource)
+add_child(card)
+
+# Listen for clicks
+card.card_clicked.connect(func(c): print("Clicked: ", c.card_data))
+
+# Flip the card
+card.flip()
+
+# Disable dragging but allow clicking
+card.undraggable = true
+
+# To disable clicking just use the buttons disable feature
+card.disabled = true
 ```
-to create transition effects for layouts.
 
-You also have access to the **Card** and its **Resource** as card_instance and card_resource respectively. **This are set after the ready function, if trying to access in ready they will return null or might just crash :)**
+---
 
-![Photo of custom layout code](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/custom_layout_code.png)
+### CardResource
 
+Abstract base class for storing card data. **Extend this class** to add your own properties.
 
-After you are done you just need to set the layout to the cards:
-1. use the set_layout("name", true) function in the card.
-2.  set def_front_layout value from the card globals to the value you need.
-3. (not recommended) replace DEFAULT_LAYOUT constant path in the global script
-4.  use the custom_layout export on the resource to have per resource layout.
+#### Properties
 
+|Property|Type|Description|
+|---|---|---|
+|`custom_layout_name`|`StringName`|Override the default front layout for this card|
 
-The cards also have a back_layout implemented, simmilar you can use this methods to set it:
-1. use the set_layout("back_name", false) function in the card.
-2.  set def_back_layout value from the card globals to the value you need.
-3.  (not recommended) replace DEFAULT_BACK_LAYOUT constant path in the global script
+#### Example
 
-#### 3. Spawning the card.
-To spawn a specific card, initialize it by passing a card_resource in the Card.new() function.
-You can also you the "Add child node" button in the editor to add a new card and manually set its resource within the editor.
+```gdscript
+class_name PlayingCardResource extends CardResource
 
-And you're done. Enjoy your card :)
+enum Suit { HEARTS, DIAMONDS, CLUBS, SPADES }
 
-### Classes
+@export var suit: Suit
+@export var value: int  # 1-13
+@export var face_image: Texture2D
+```
 
-**Check the editor documentation for full details for each class and function**
+---
 
-#### Card
-The Card is  a modified button.
-On button_down the card will wait for 2 possibilities:
-- If button_up is called (button released) than the click action happens. card_clicked is emited.
-- If the cursor is moved pass the threshold card enters in holding state. holding = true and will follow cursor until button_up is called.
-Disabling the button will stop both of this to stop working.
-Setting undraggable to true will disable the draging function but not the click
+### CardLayout
 
-#### CardResource
-Abstract class used to store data. Does nothing unless extended.
+Base class for card visuals. A `SubViewportContainer` that renders the card face.
 
-The custom_layout_name export will set the front layout to the value if valid.
+#### Properties
 
+|Property|Type|Description|
+|---|---|---|
+|`card_resource`|`CardResource`|Reference to the card's data|
+|`card_instance`|`Card`|Reference to the parent Card node|
 
-#### CardLayout
-Node used to create visuals for the cards. Check [[#Making your first card.]] for details.
+#### Signals
 
-#### CardDeck
-Resource class to used to store premade arrays of card_resources.
-You can give it a name.
+|Signal|Description|
+|---|---|
+|`layout_ready`|Emitted when setup is complete|
 
-#### CardDeckManager
-Takes a card deck and converts the resources into card instances. It is split in to nodes:
-draw pile and discard pile. Has basic functions like draw, discard, and shuffle.
+#### Virtual Methods (Override These)
 
-#### CardHand
-Container node used to arrange cards in a specific shape.
-The shapes implemented with the use of the CardHandShape resource. You can use the provided shapes or create your own.
-The provided shapes are:
-- Arc
-- Line
+```gdscript
+# Called when resource changes - update your visuals here
+func _update_display() -> void:
+    pass
 
-Use the add and remove card functions to manage the cards in the hand.
+# Called when layout is added to card - add enter animations
+func _flip_in() -> void:
+    pass
 
-The handle_clicked_card function also connects to the card_clicked signals of all the cards in the hand. Overwrite it to implement your own functionality.
+# Called when layout is removed - add exit animations  
+func _flip_out() -> void:
+    pass
+
+# Called when card gains focus
+func _focus_in() -> void:
+    card_instance.tween_scale(Vector2.ONE * 1.2)
+
+# Called when card loses focus
+func _focus_out() -> void:
+    card_instance.tween_scale()
+```
+
+#### Creating a Layout
+
+1. Go to **Project → Tools → Create a new card layout**
+2. Enter a unique **Layout ID** (e.g., `my_card_front`)
+3. Optionally add tags for organization
+4. Save the scene and customize the visuals
+
+The layout scene must have these metadata values (set automatically by the tool):
+
+- `metadata/is_layout = true`
+- `metadata/layout_id = "your_id"`
+- `metadata/tags = ["optional", "tags"]`
+
+#### Example Layout Script
+
+```gdscript
+extends CardLayout
+
+@onready var title: Label = %TitleLabel
+@onready var image: TextureRect = %CardImage
+@onready var stats: Label = %StatsLabel
+
+func _update_display() -> void:
+    var data = card_resource as MyCardResource
+    if not data:
+        return
+    
+    title.text = data.card_name
+    image.texture = data.card_image
+    stats.text = "ATK: %d  DEF: %d" % [data.attack, data.defense]
+
+func _flip_in() -> void:
+    # Fade in animation
+    modulate.a = 0
+    var tween = create_tween()
+    tween.tween_property(self, "modulate:a", 1.0, 0.2)
+
+func _focus_in() -> void:
+    # Custom hover effect
+    card_instance.tween_scale(Vector2(1.1, 1.1))
+    card_instance.z_index = 100
+```
+
+---
+
+### CardHand
+
+A container that arranges multiple cards in a configurable shape.
+
+#### Properties
+
+|Property|Type|Description|
+|---|---|---|
+|`shape`|`CardHandShape`|Defines the arrangement (line, arc, custom)|
+|`enable_reordering`|`bool`|Allow drag-reordering within the hand|
+|`max_hand_size`|`int`|Maximum cards allowed (-1 for unlimited)|
+|`cards`|`Array[Card]`|Read-only copy of cards in hand|
+
+#### Methods
+
+```gdscript
+# Add a single card (returns true if successful)
+func add_card(card: Card) -> bool
+
+# Add multiple cards (returns number successfully added)
+func add_cards(card_array: Array[Card]) -> int
+
+# Remove a card (does NOT free it)
+func remove_card(card: Card, new_parent: Node = null) -> void
+
+# Remove all cards (does NOT free them)
+func clear_hand() -> void
+
+# Get card by index
+func get_card(index: int) -> Card
+
+# Get card count
+func get_card_count() -> int
+
+# Get index of a card
+func get_card_index(card: Card) -> int
+
+# Check if hand is full
+func is_hand_full() -> bool
+
+# Get remaining space
+func get_remaining_space() -> int
+```
+
+#### Virtual Methods
+
+```gdscript
+# Override to handle card clicks
+func _handle_clicked_card(card: Card) -> void:
+    print("Card clicked: ", card.name)
+```
+
+#### Example
+
+```gdscript
+@onready var hand: CardHand = $CardHand
+
+func _ready():
+    # Configure the hand
+    hand.shape = ArcHandShape.new(500, 45, 270, 60)
+    hand.max_hand_size = 7
+    
+    # Add cards
+    for i in 5:
+        var card = Card.new(card_resources[i])
+        hand.add_card(card)
+
+# Custom click handling
+class_name MyHand extends CardHand
+
+func _handle_clicked_card(card: Card) -> void:
+    # Play the card
+    remove_card(card)
+    $PlayArea.add_child(card)
+```
+
+---
+
+### CardHandShape
+
+Abstract resource class that defines how cards are arranged in a hand.
+
+#### Built-in Shapes
+
+**LineHandShape**
+
+```gdscript
+var line = LineHandShape.new()
+line.line_rotation = 0.0      # Rotation in degrees
+line.max_width = 600.0        # Maximum spread width
+line.card_spacing = 50.0      # Space between cards
+```
+
+**ArcHandShape**
+
+```gdscript
+var arc = ArcHandShape.new()
+arc.arc_radius = 400.0        # Circle radius
+arc.arc_angle = 60.0          # Total arc angle (degrees)
+arc.arc_orientation = 270.0   # Where the arc points (270 = up)
+arc.card_spacing = 50.0       # Space between cards
+```
+
+---
 
 ### CardSlot
-Control node used to store one card. You can add cards to the slot, swap cards between two slots and create custom actions simmilar to the card hand.
-Moving card from hand to slot is possible but the inverse is not implemented yet.
 
+A panel that accepts a single dropped card.
 
-### Example
+#### Signals
 
-#### Balatro Style
-In the example folder there is a simple stripped down implementation of the game balatro. Use it as a refrence for what could be done :)
+|Signal|Parameters|Description|
+|---|---|---|
+|`card_entered`|`card: Card`|Card started hovering over slot|
+|`card_exited`|`card: Card`|Card stopped hovering|
+|`card_dropped`|`card: Card`|Card was dropped on slot|
 
-#### More soon™
+#### Properties
 
+|Property|Type|Description|
+|---|---|---|
+|`held_card`|`Card`|The card currently in this slot|
 
+#### Virtual Methods
 
-## Have fun
-For any feedback, suggestions or complains, feel free to dm me at @twdoortoo on Twitter (formerly known as X)
+```gdscript
+# Override to handle clicks on the slotted card
+func _on_card_clicked(card: Card) -> void:
+    print("Slotted card clicked: ", card.name)
+```
+
+**Swapping Cards Between Slots:** When dropping a card on an occupied slot, the cards automatically swap positions.
+
+---
+
+### CardDeck
+
+A resource that stores an array of CardResource objects.
+
+#### Properties
+
+|Property|Type|Description|
+|---|---|---|
+|`cards`|`Array[CardResource]`|The cards in this deck|
+|`deck_name`|`String`|Optional name for the deck|
+
+---
+
+### CardDeckManager
+
+Manages a deck with draw pile, discard pile, and card lifecycle.
+
+#### Properties
+
+|Property|Type|Description|
+|---|---|---|
+|`starting_deck`|`CardDeck`|Deck to initialize from|
+|`shuffle_on_ready`|`bool`|Shuffle on setup|
+|`show_cards`|`bool`|Show cards in piles|
+|`draw_pile`|`Node`|Container for draw pile|
+|`discard_pile`|`Node`|Container for discard pile|
+|`front_face_in_draw`|`bool`|Cards face-up in draw pile|
+|`front_face_in_discard`|`bool`|Cards face-up in discard pile|
+
+#### Methods
+
+```gdscript
+# Initialize the deck
+func setup(deck: CardDeck = starting_deck) -> void
+
+# Drawing cards
+func draw_card(is_discard: bool = false) -> Card
+func draw_cards(count: int, is_discard: bool = false) -> Array[Card]
+
+# Adding cards to piles
+func add_card_to_pile(card: Card, is_discard: bool = false) -> void
+func add_card_to_pile_at(card: Card, index: int, from_discard: bool = false) -> void
+func add_card_to_pile_from_top_at(card: Card, position: int, from_discard: bool = false) -> void
+
+# Shuffling
+func shuffle(is_discard: bool = false) -> void
+func reshuffle_discard_into_draw() -> void
+func reshuffle_discard_and_shuffle() -> void
+
+# Peeking
+func peek_top_card() -> Card
+func peek_top_cards(count: int) -> Array[Card]
+
+# Pile info
+func get_pile_size(is_discard: bool = false) -> int
+func get_total_card_count() -> int
+func is_pile_empty(is_discard: bool = false) -> bool
+
+# Pile preview (shows cards in a CardHand)
+func show_pile_preview_hand(preview_hand: CardHand, preview_discard: bool = false) -> void
+func hide_pile_preview_hand() -> void
+
+# Cleanup
+func clear_deck() -> void
+func remove_card_from_pile(card: Card, is_discard: bool = false) -> bool
+```
+
+#### Example
+
+```gdscript
+@onready var deck_manager: CardDeckManager = $CardDeckManager
+@onready var hand: CardHand = $Hand
+
+func _ready():
+    deck_manager.setup()
+    draw_starting_hand()
+
+func draw_starting_hand():
+    var cards = deck_manager.draw_cards(5)
+    hand.add_cards(cards)
+
+func discard_card(card: Card):
+    hand.remove_card(card)
+    deck_manager.add_card_to_pile(card, true)  # Add to discard
+
+func reshuffle():
+    deck_manager.reshuffle_discard_and_shuffle()
+```
+
+---
+
+### CardGlobal (CG)
+
+The global singleton providing shared state and utilities. Access via `CG`.
+
+#### Properties
+
+|Property|Type|Description|
+|---|---|---|
+|`def_front_layout`|`StringName`|Default front layout ID|
+|`def_back_layout`|`StringName`|Default back layout ID|
+|`current_held_item`|`Card`|Currently dragged card|
+|`card_index`|`int`|Auto-incrementing card counter|
+
+#### Signals
+
+|Signal|Parameters|Description|
+|---|---|---|
+|`holding_card`|`card: Card`|Card started being dragged|
+|`dropped_card`|-|Card was released|
+|`layout_discovered`|`layout_id, tags`|New layout found|
+|`layouts_refreshed`|-|Layout scan completed|
+
+#### Methods
+
+```gdscript
+# Get cursor position
+func get_cursor_position() -> Vector2
+func get_local_cursor_position(node: Node) -> Vector2
+
+# Layout management
+func get_available_layouts() -> Array[StringName]
+func get_layouts_by_tag(tag: String) -> Array[StringName]
+func get_all_layout_tags() -> Array[String]
+func get_layout_tags(layout_id: StringName) -> Array
+func create_layout(layout_id: StringName = &"") -> CardLayout
+func refresh_layouts() -> void
+```
+
+#### Example
+
+```gdscript
+func _ready():
+    # Set default layouts
+    CG.def_front_layout = "my_card_front"
+    CG.def_back_layout = "card_back"
+    
+    # Listen for drag events
+    CG.holding_card.connect(_on_card_pickup)
+    CG.dropped_card.connect(_on_card_drop)
+
+func _on_card_pickup(card: Card):
+    # Highlight valid drop zones
+    for slot in get_tree().get_nodes_in_group("drop_zones"):
+        slot.highlight()
+
+func _on_card_drop():
+    # Remove highlights
+    for slot in get_tree().get_nodes_in_group("drop_zones"):
+        slot.unhighlight()
+```
+
+---
+
+## Examples
+
+### Balatro Style
+
+Located in `examples/balatro_style/`, this demonstrates:
+
+- Custom card resource with suits, values, and modifiers
+- Hand selection and sorting
+- Deck management with draw/discard
+- Pile preview functionality
+
+Run the scene to see a Balatro-inspired card game interface.
+
+---
+
+## Changelog
+
+### Version 2.1.5
+- Refactored the deck functions to be compatible with both draw and discard piles
+- Added documentation 
+### Version 2.1
+
+-  `CardSlot` - Container for single cards with swap functionality
+-  `CardHandShape` - Moved shape logic to resources for easier customization
+-  Reworked layout discovery using metadata for better flexibility
+-  Deck manager functions for inserting cards at specific positions
+-  Pile preview using CardHand
+
+### Version 2.0
+
+- Complete rewrite with improved architecture
+- Separated data (resources) from visuals (layouts)
+- Improved drag and drop system
+- Added CardHand and CardDeckManager
+
+---
+
+## Support
+
+For feedback, suggestions, or issues:
+
+- **Twitter/X:** [@twdoortoo](https://twitter.com/twdoortoo)
+- **GitHub Issues:** [Create an issue](https://github.com/twdoor/simple-cards-v-2/issues)
+
+---
+
+**Good luck! -Tw**
