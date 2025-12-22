@@ -50,42 +50,29 @@ func initialize_from_deck(deck: CardDeck) -> void:
 	
 	for card_resource in deck.cards:
 		var card = Card.new(card_resource)
-		add_card_to_draw_pile(card)
+		add_card_to_pile(card)
 	
 	_update_card_visibility()
 
 
 ##Adds a card to the draw pile. [br]If the card is already a child [CardHand] the [member CardHand.remove_card] is used to reparent the card.
-func add_card_to_draw_pile(card: Card) -> void:
+##If is_discard true uses discard pile instead.
+func add_card_to_pile(card: Card, is_discard: bool = false) -> void:
 	# Kill all tweens before reparenting
 	card.kill_all_tweens()
-	card.is_front_face = front_face_in_draw
+	card.is_front_face = front_face_in_discrd if is_discard else front_face_in_draw
+	
+	var pile = discard_pile if is_discard else draw_pile
 	
 	if card.get_parent():
 		if card.get_parent() is CardHand:
-			card.get_parent().remove_card(card, draw_pile)
+			card.get_parent().remove_card(card, pile)
 		else:
-			card.reparent(draw_pile)
+			card.reparent(pile)
 	else:
-		draw_pile.add_child(card)
+		pile.add_child(card)
 
-	_handle_card_reparanting(card, draw_pile.global_position if draw_pile is Control else Vector2.ZERO)
-
-##Adds a card to the discard pile. [br]If the card is already a child [CardHand] the [member CardHand.remove_card] is used to reparent the card.
-func add_card_to_discard_pile(card: Card) -> void:
-	# Kill all tweens before reparenting
-	card.kill_all_tweens()
-	card.is_front_face = front_face_in_discrd
-	
-	if card.get_parent():
-		if card.get_parent() is CardHand:
-			card.get_parent().remove_card(card, discard_pile)
-		else:
-			card.reparent(discard_pile)
-	else:
-		discard_pile.add_child(card)
-	
-	_handle_card_reparanting(card, discard_pile.global_position if discard_pile is Control else Vector2.ZERO)
+	_handle_card_reparanting(card, pile.global_position if pile is Control else Vector2.ZERO)
 
 
 func _handle_card_reparanting(card: Card, des_position: Vector2 = Vector2.ZERO):
@@ -96,15 +83,17 @@ func _handle_card_reparanting(card: Card, des_position: Vector2 = Vector2.ZERO):
 
 
 ##Draws a card from the top of the draw pile. Returns null if draw pile is empty.
-func draw_card() -> Card:
-	if draw_pile.get_child_count() == 0:
+##If is_discard true uses discard pile instead.
+func draw_card(is_discard: bool = false) -> Card:
+	var pile = discard_pile if is_discard else draw_pile
+	if pile.get_child_count() == 0:
 		return null
 	
-	var card = draw_pile.get_child(draw_pile.get_child_count() - 1)
+	var card = pile.get_child(pile.get_child_count() - 1)
 	# Store global position before removing
 	var stored_global_pos = card.global_position if card is Control else Vector2.ZERO
 	
-	draw_pile.remove_child(card)
+	pile.remove_child(card)
 	
 	# Restore global position after removing
 	if card is Control:
@@ -116,11 +105,12 @@ func draw_card() -> Card:
 
 
 ##Draws multiple cards from the draw pile. Returns an array of cards.
-func draw_cards(count: int) -> Array[Card]:
+##If is_discard true uses discard pile instead.
+func draw_cards(count: int, is_discard: bool = false) -> Array[Card]:
 	var drawn_cards: Array[Card] = []
 	
 	for i in count:
-		var card = draw_card()
+		var card = draw_card(is_discard)
 		if card:
 			drawn_cards.append(card)
 		else:
@@ -130,22 +120,24 @@ func draw_cards(count: int) -> Array[Card]:
 
 
 ##Shuffles the draw pile randomly.
-func shuffle() -> void:
+##If is_discard true uses discard pile instead.
+func shuffle(is_discard: bool = false) -> void:
+	var pile = discard_pile if is_discard else draw_pile
 	var cards_array: Array[Card] = []
 	
-	for child in draw_pile.get_children():
+	for child in pile.get_children():
 		if child is Card:
 			cards_array.append(child)
 	
 	# Remove all cards first
 	for card in cards_array:
-		draw_pile.remove_child(card)
+		pile.remove_child(card)
 	
 	cards_array.shuffle()
 	
 	# Re-add in shuffled order
 	for card in cards_array:
-		draw_pile.add_child(card)
+		pile.add_child(card)
 		card.position = Vector2.ZERO
 
 
@@ -158,7 +150,7 @@ func reshuffle_discard_into_draw() -> void:
 			cards_to_move.append(child)
 	
 	for card in cards_to_move:
-		add_card_to_draw_pile(card)
+		add_card_to_pile(card)
 
 
 ##Moves all cards from discard pile to draw pile and shuffles.
@@ -189,41 +181,33 @@ func peek_top_cards(count: int) -> Array[Card]:
 	return peeked_cards
 
 
-##Removes a specific card from the draw pile.
-func remove_card_from_draw_pile(card: Card) -> bool:
-	if card.get_parent() == draw_pile:
+##Removes the first specific card from the draw pile.
+##If is_discard true uses discard pile instead.
+func remove_card_from_pile(card: Card, is_discard: bool = false) -> bool:
+	var pile = discard_pile if is_discard else draw_pile
+	
+	if card.get_parent() == pile:
 		var stored_global_pos = card.global_position if card is Control else Vector2.ZERO
-		draw_pile.remove_child(card)
+		pile.remove_child(card)
 		if card is Control:
 			card.global_position = stored_global_pos
 		return true
 	return false
 
-
-##Removes a specific card from the discard pile.
-func remove_card_from_discard_pile(card: Card) -> bool:
-	if card.get_parent() == discard_pile:
-		var stored_global_pos = card.global_position if card is Control else Vector2.ZERO
-		discard_pile.remove_child(card)
-		if card is Control:
-			card.global_position = stored_global_pos
-		return true
-	return false
 
 
 ##Returns the number of cards in the draw pile.
-func get_draw_pile_size() -> int:
-	return draw_pile.get_child_count()
-
-
-##Returns the number of cards in the discard pile.
-func get_discard_pile_size() -> int:
-	return discard_pile.get_child_count()
+##If is_discard true returns discard pile instead.
+func get_pile_size(is_discard: bool = false) -> int:
+	if is_discard:
+		return discard_pile.get_child_count()
+	else:
+		return draw_pile.get_child_count()
 
 
 ##Returns the total number of cards in both piles.
 func get_total_card_count() -> int:
-	return get_draw_pile_size() + get_discard_pile_size()
+	return get_pile_size() + get_pile_size(true)
 
 
 ##Clears both draw and discard piles, freeing all cards.
@@ -235,14 +219,13 @@ func clear_deck() -> void:
 		child.queue_free()
 
 
-##Returns true if the draw pile is empty.
-func is_draw_pile_empty() -> bool:
-	return draw_pile.get_child_count() == 0
-
-
-##Returns true if the discard pile is empty.
-func is_discard_pile_empty() -> bool:
-	return discard_pile.get_child_count() == 0
+##Returns true if the draw pile is empty. 
+##If is_discard true checks discard pile instead.
+func is_pile_empty(is_discard: bool = false) -> bool:
+	if is_discard:
+		return discard_pile.get_child_count() == 0
+	else:
+		return draw_pile.get_child_count() == 0
 
 
 func _update_card_visibility() -> void:
@@ -260,7 +243,7 @@ func _update_card_visibility() -> void:
 
 ##Inserts a card at a specific position in the draw pile (0 = bottom, -1 = top).
 ##If from_discard if true it will insert it the discard pile instead.
-func add_card_to_pile_at_index(card: Card, index: int, from_discard: bool = false) -> void:
+func add_card_to_pile_at(card: Card, index: int, from_discard: bool = false) -> void:
 	card.kill_all_tweens()
 	
 	var pile = discard_pile if from_discard else draw_pile
@@ -281,11 +264,11 @@ func add_card_to_pile_at_index(card: Card, index: int, from_discard: bool = fals
 
 ##Inserts a card at a specific position counting from top of the draw pile.
 ##If from_discard if true it will insert it the discard pile instead.
-func add_card_to_pile_at_position_from_top(card: Card, position: int, from_discard: bool = false) -> void:
+func add_card_to_pile_from_top_at(card: Card, position: int, from_discard: bool = false) -> void:
 	var pile = discard_pile if from_discard else draw_pile
 	var total_cards = pile.get_child_count()
 	var index = max(0, total_cards - position)
-	add_card_to_pile_at_index(card, index, from_discard)
+	add_card_to_pile_at(card, index, from_discard)
 
 
 ##Shows a fanned preview of the draw pile using the provided CardHand.

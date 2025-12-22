@@ -72,7 +72,7 @@ func _on_none_pressed() -> void:
 
 func _on_discard_pressed() -> void:
 	for card in balatro_hand.selected:
-		card_deck_manager.add_card_to_discard_pile(card)
+		card_deck_manager.add_card_to_pile(card, true)
 	balatro_hand.clear_selected()
 	
 	card_deck_manager.hide_pile_preview_hand()
@@ -92,7 +92,7 @@ func _on_play_button() -> void:
 	await get_tree().create_timer(2).timeout ##Replace with VFX/Logic
 	
 	for card in played_hand.cards:
-		card_deck_manager.add_card_to_discard_pile(card)
+		card_deck_manager.add_card_to_pile(card, true)
 
 	played_hand.clear_hand()
 	deal()
@@ -103,14 +103,14 @@ func deal():
 	if to_deal < 0:
 		to_deal = 7
 	
-	if card_deck_manager.get_draw_pile_size() >= to_deal:
+	if card_deck_manager.get_pile_size() >= to_deal:
 		balatro_hand.add_cards(card_deck_manager.draw_cards(to_deal))
 		
-	elif card_deck_manager.get_draw_pile_size() < to_deal:
-		var overflow := to_deal - card_deck_manager.get_draw_pile_size()
-		balatro_hand.add_cards(card_deck_manager.draw_cards(card_deck_manager.get_draw_pile_size()))
+	elif card_deck_manager.get_pile_size() < to_deal:
+		var overflow := to_deal - card_deck_manager.get_pile_size()
+		balatro_hand.add_cards(card_deck_manager.draw_cards(card_deck_manager.get_pile_size()))
 		card_deck_manager.reshuffle_discard_and_shuffle()
-		if card_deck_manager.get_draw_pile_size() >= overflow:
+		if card_deck_manager.get_pile_size() >= overflow:
 			balatro_hand.add_cards(card_deck_manager.draw_cards(overflow))
 	
 	for card in balatro_hand.cards:
@@ -137,6 +137,8 @@ func _on_preview_discard_pressed():
 	if preview_visible:
 		card_deck_manager.show_pile_preview_hand(preview_hand, true)
 		complete_sort(preview_hand)
+		for card in preview_hand._cards:
+			card.disabled = true
 	else:
 		card_deck_manager.hide_pile_preview_hand()
 
@@ -148,7 +150,7 @@ func _on_preview_draw_pressed():
 		card_deck_manager.show_pile_preview_hand(preview_hand, false)
 		complete_sort(preview_hand)
 		for card in preview_hand._cards:
-			card.undraggable = true
+			card.disabled = true
 	else:
 		card_deck_manager.hide_pile_preview_hand()
 
