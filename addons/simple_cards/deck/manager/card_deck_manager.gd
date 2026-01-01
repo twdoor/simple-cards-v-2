@@ -10,6 +10,7 @@ class_name CardDeckManager extends Node
 
 ##The deck resource to initialize cards from on ready.
 @export var starting_deck: CardDeck
+@export var auto_setup: bool = false
 
 ##If [code]true[/code], the deck will be shuffled on ready.
 @export var shuffle_on_ready: bool = true
@@ -18,9 +19,15 @@ class_name CardDeckManager extends Node
 @export var discard_pile: Node
 
 @export var front_face_in_draw: bool = true
-@export var front_face_in_discrd: bool = true
+@export var front_face_in_discard: bool = true
 
 var pile_preview_hand: CardHand
+
+
+func _ready() -> void:
+	if auto_setup:
+		setup()
+
 
 ##Sets necessary 
 func setup(deck: CardDeck = starting_deck):
@@ -60,7 +67,7 @@ func initialize_from_deck(deck: CardDeck) -> void:
 func add_card_to_pile(card: Card, is_discard: bool = false) -> void:
 	# Kill all tweens before reparenting
 	card.kill_all_tweens()
-	card.is_front_face = front_face_in_discrd if is_discard else front_face_in_draw
+	card.is_front_face = front_face_in_discard if is_discard else front_face_in_draw
 	
 	var pile = discard_pile if is_discard else draw_pile
 	
@@ -75,9 +82,9 @@ func add_card_to_pile(card: Card, is_discard: bool = false) -> void:
 	_handle_card_reparanting(card, pile.global_position if pile is Control else Vector2.ZERO)
 
 
-func _handle_card_reparanting(card: Card, des_position: Vector2 = Vector2.ZERO):
+func _handle_card_reparanting(card: Card, desired_position: Vector2 = Vector2.ZERO):
 	card.rotation = 0
-	card.tween_position(des_position, .2, true)
+	card.tween_position(desired_position, .2, true)
 	card.visible = show_cards
 	card.disabled = true
 

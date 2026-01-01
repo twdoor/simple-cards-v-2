@@ -2,17 +2,17 @@ class_name BalatroStyleResource extends CardResource
 
 @export var name: String
 @export var top_texture: Texture2D
-@export var current_modiffier: modiffier = modiffier.NONE
-@export var card_suit: suit = suit.ALL
+@export var current_modifier: Modifier = Modifier.NONE
+@export var card_suit: Suit = Suit.ALL
 @export var value: int = 1
 
-enum modiffier {
+enum Modifier {
 	NONE,
 	GOLD,
 	STEEL,
 }
 
-enum suit{
+enum Suit{
 	CLUBS,
 	DIAMOND,
 	HEART,

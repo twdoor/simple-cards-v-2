@@ -121,7 +121,7 @@ func _return_card_to_parent(card: Card) -> void:
 	
 	if parent is CardHand:
 		_disconnect_card_signals(card)
-		parent._arrange_cards()
+		parent.refresh_arrangement()
 	elif parent is CardSlot:
 		parent._position_card_in_center(card)
 

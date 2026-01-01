@@ -1,0 +1,30 @@
+{
+	"res://addons/simple_cards/card/card_layout/default_card_back_layout.tscn": {
+		"enabled": true,
+		"last_modified": 0.0,
+		"layout_id": "default_back",
+		"tags": []
+	},
+	"res://addons/simple_cards/card/card_layout/default_card_layout.tscn": {
+		"enabled": true,
+		"last_modified": 0.0,
+		"layout_id": "default",
+		"tags": []
+	},
+	"res://examples/balatro_style/standard_back_layout.tscn": {
+		"enabled": true,
+		"last_modified": 1767273736,
+		"layout_id": "standard_back_layout",
+		"tags": [
+			"back"
+		]
+	},
+	"res://examples/balatro_style/standard_layout.tscn": {
+		"enabled": true,
+		"last_modified": 1766489345,
+		"layout_id": "standard_layout",
+		"tags": [
+			"front"
+		]
+	}
+}

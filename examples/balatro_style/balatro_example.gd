@@ -37,8 +37,8 @@ func _ready() -> void:
 	preview_discard_button.pressed.connect(_on_preview_discard_pressed)
 	preview_draw_button.pressed.connect(_on_preview_draw_pressed)
 	
-	CG.def_front_layout = "standard_layout"
-	CG.def_back_layout = "standard_back_layout"
+	CG.def_front_layout = LayoutID.STANDARD_LAYOUT
+	CG.def_back_layout = LayoutID.STANDARD_BACK_LAYOUT
 
 	hand_size = balatro_hand.max_hand_size
 	
@@ -138,7 +138,7 @@ func _on_preview_discard_pressed():
 		card_deck_manager.show_pile_preview_hand(preview_hand, true)
 		complete_sort(preview_hand)
 		for card in preview_hand._cards:
-			card.disabled = true
+			card.disabled = false
 	else:
 		card_deck_manager.hide_pile_preview_hand()
 
@@ -150,7 +150,7 @@ func _on_preview_draw_pressed():
 		card_deck_manager.show_pile_preview_hand(preview_hand, false)
 		complete_sort(preview_hand)
 		for card in preview_hand._cards:
-			card.disabled = true
+			card.disabled = false
 	else:
 		card_deck_manager.hide_pile_preview_hand()
 

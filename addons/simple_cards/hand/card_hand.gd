@@ -19,13 +19,14 @@ var cards: Array[Card]:
 var _card_positions: Array[Vector2] = []
 var _dragged_card: Card = null
 var _drag_start_index: int = -1
+var _last_reorder_index: int = -1
 
 func _ready() -> void:
 	if Engine.is_editor_hint(): return
 	
 	if !shape:
 		shape = LineHandShape.new()
-		push_warning("No shape seleted, using default")
+		push_warning("No shape selected, using default")
 	
 	var children = get_children()
 	for child in children:
@@ -115,22 +116,33 @@ func _disconnect_card_signals(card: Card) -> void:
 
 
 func _on_card_focused(card: Card) -> void:
-	var focus_z = 900
-	card.z_index = focus_z
+	if _dragged_card != null:
+		return
+	card.z_index = 900
 	
 
 func _on_card_unfocused(card: Card) -> void:
+	if _dragged_card != null:
+		return
 	_update_z_indices()
 
 
 func _on_card_dropped() -> void:
 	_arrange_cards()
 	_dragged_card = null
+	_drag_start_index = -1
+	_last_reorder_index = -1
 
 
 func _on_holding_card(card: Card) -> void:
-	_dragged_card = card
-	_drag_start_index = get_card_index(card)
+	if _cards.has(card):
+		_dragged_card = card
+		_drag_start_index = get_card_index(card)
+		_last_reorder_index = _drag_start_index
+	else:
+		_dragged_card = null
+		_drag_start_index = -1
+		_last_reorder_index = -1
 
 
 ##Used when a card from hand is clicked. [color=red]Overwrite[/color] to implement card action.
@@ -140,6 +152,8 @@ func _handle_clicked_card(card: Card) -> void:
 #endregion
 
 
+#region Reordering
+
 func _update_card_reordering() -> void:
 	if not _dragged_card or _drag_start_index == -1:
 		return
@@ -147,31 +161,58 @@ func _update_card_reordering() -> void:
 	if not _dragged_card.holding:
 		return
 	
-	var cursor_pos = CG.get_local_cursor_position(self)
-	var closest_index = _find_closest_card_position(cursor_pos)
+	var cursor_pos = CG.get_cursor_position()
+	var new_index = _find_insertion_index(cursor_pos)
 	
-	if closest_index != -1 and closest_index != _drag_start_index:
+	if new_index != -1 and new_index != _drag_start_index:
 		_cards.remove_at(_drag_start_index)
-		_cards.insert(closest_index, _dragged_card)
-		_drag_start_index = closest_index
+		_cards.insert(new_index, _dragged_card)
+		_drag_start_index = new_index
+		_last_reorder_index = new_index
 		
 		_arrange_cards_except_dragged()
 
 
-func _find_closest_card_position(cursor_pos: Vector2) -> int:
-	if _card_positions.is_empty():
-		return -1
+func _find_insertion_index(cursor_pos: Vector2) -> int:
+	##Determine insertion index based on cursor passing card centers.
+	if _cards.size() <= 1:
+		return 0
 	
-	var closest_index = 0
-	var closest_distance = cursor_pos.distance_to(_card_positions[0])
+	var other_cards: Array[Dictionary] = []
+	for i in range(_cards.size()):
+		var card = _cards[i]
+		if card != _dragged_card:
+			other_cards.append({
+				"card": card,
+				"index": i
+			})
 	
-	for i in range(1, _card_positions.size()):
-		var distance = cursor_pos.distance_to(_card_positions[i])
-		if distance < closest_distance:
-			closest_distance = distance
-			closest_index = i
+	if other_cards.is_empty():
+		return 0
 	
-	return closest_index
+	var current_slot := 0
+	for i in range(other_cards.size()):
+		if other_cards[i].index > _drag_start_index:
+			break
+		current_slot = i + 1
+	
+	if current_slot > 0:
+		var left_card: Card = other_cards[current_slot - 1].card
+		var left_center_x = left_card.global_position.x + left_card.center_pos.x
+		
+		if cursor_pos.x < left_center_x:
+			return other_cards[current_slot - 1].index
+	
+	if current_slot < other_cards.size():
+		var right_card: Card = other_cards[current_slot].card
+		var right_center_x = right_card.global_position.x + right_card.center_pos.x
+		
+		if cursor_pos.x > right_center_x:
+			return other_cards[current_slot].index
+	
+	return _drag_start_index
+
+#endregion
 
 
 #region Arrangement Management
@@ -232,7 +273,6 @@ func _update_focus_chain() -> void:
 func add_cards(card_array: Array[Card]) -> int:
 	var added_count = 0
 	for card in card_array:
-		# Check if hand is full
 		if max_hand_size >= 0 and _cards.size() >= max_hand_size:
 			break
 		
@@ -282,3 +322,7 @@ func get_remaining_space() -> int:
 	if max_hand_size < 0:
 		return -1
 	return max(0, max_hand_size - _cards.size())
+
+
+func refresh_arrangement() -> void:
+	_arrange_cards()

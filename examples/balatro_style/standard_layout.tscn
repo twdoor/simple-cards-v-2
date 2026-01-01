@@ -26,6 +26,7 @@ metadata/tags = ["front"]
 metadata/_custom_type_script = "uid://dm115oleoggyt"
 
 [node name="SubViewport" type="SubViewport" parent="."]
+transparent_bg = true
 handle_input_locally = false
 size = Vector2i(80, 112)
 render_target_update_mode = 4

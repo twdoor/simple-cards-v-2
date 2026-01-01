@@ -17,11 +17,11 @@ func _init(radius: float = 400, angle: float = 60, orientation: float = 270, spa
 	card_spacing = spacing
 
 
-func arrange_cards(cards: Array[Card], hand: CardHand, skipped_cards: Array[Card] = []):
+func arrange_cards(cards: Array[Card], hand: CardHand, skipped_cards: Array[Card] = []) -> Array[Vector2]:
 	var card_count = cards.size()
 	var card_positions: Array[Vector2]
 	if card_count == 0:
-		return
+		return []
 	
 	var angle_between = 0.0
 	if card_count > 1:

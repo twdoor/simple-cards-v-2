@@ -13,12 +13,12 @@ func _update_display() -> void:
 	set_value()
 
 func set_color():
-	match res.current_modiffier:
-		res.modiffier.NONE:
+	match res.current_modifier:
+		res.Modifier.NONE:
 			card_color.self_modulate = Color.BISQUE
-		res.modiffier.GOLD:
+		res.Modifier.GOLD:
 			card_color.self_modulate = Color.GOLD
-		res.modiffier.STEEL:
+		res.Modifier.STEEL:
 			card_color.self_modulate = Color.LIGHT_STEEL_BLUE
 
 func set_value():

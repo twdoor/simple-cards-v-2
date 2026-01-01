@@ -13,11 +13,11 @@ func _init(rot: float = 0, width = 600, spacing: float = 50) -> void:
 	max_width = width
 	card_spacing = spacing
 
-func arrange_cards(cards: Array[Card], hand: CardHand, skipped_cards: Array[Card] = []):
+func arrange_cards(cards: Array[Card], hand: CardHand, skipped_cards: Array[Card] = []) -> Array[Vector2]:
 	var card_count = cards.size()
 	var card_positions: Array[Vector2]
 	if card_count == 0:
-		return
+		return []
 	
 	var card_size = cards[0].size
 	var total_width = (card_count - 1) * card_spacing + card_size.x

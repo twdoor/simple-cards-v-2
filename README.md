@@ -1,7 +1,5 @@
 # <img src="https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/simple_card_v2.png" width="8%"> Simple Cards
 
-
-
 A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, deck builders, or any card-based interface using Control nodes that work seamlessly in both 2D and 3D projects.
 
 ![Example Animation](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/example.gif)
@@ -13,6 +11,7 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
 - [Features](#features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Card Layouts Panel](#card-layouts-panel)
 - [API Reference](#api-reference)
     - [Card](#card)
     - [CardResource](#cardresource)
@@ -23,6 +22,7 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
     - [CardDeck](#carddeck)
     - [CardDeckManager](#carddeckmanager)
     - [CardGlobal (CG)](#cardglobal-cg)
+    - [LayoutID](#layoutid)
 - [Examples](#examples)
 - [Changelog](#changelog)
 - [Support](#support)
@@ -38,6 +38,7 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
 - **Deck System** - Draw pile, discard pile, shuffling, and card management
 - **Card Slots** - Drop zones for placing individual cards
 - **Flip Animations** - Front/back card faces with transition support
+- **Layout Management Panel** - Editor panel to view, create, and manage all card layouts
 - **Fully Documented** - In-editor documentation for all classes
 
 ---
@@ -80,7 +81,7 @@ Then create `.tres` files using your new resource type to define individual card
 
 ### 2. Create a Card Layout
 
-Layouts define how cards look. Use **Project → Tools → Create a new card layout** for quick setup.
+Layouts define how cards look. Open the **Card Layouts** panel at the bottom of the editor (next to Output, Debugger, etc.) and click **New**.
 
 ![Photo of layout creation window](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_layout_part2.png)
 
@@ -113,6 +114,38 @@ func _ready():
 ```
 
 ---
+
+## Card Layouts Panel
+
+The **Card Layouts** panel provides a centralized place to manage all your card layouts.
+
+### Features
+
+- **View All Layouts** - See every layout in your project at a glance
+- **Search & Filter** - Find layouts by name or filter by tags
+- **Create New Layouts** - Click **+ New Layout** to create a layout with a unique ID and optional tags
+- **Edit Layout Properties** - Select a layout to edit its ID and tags in the details panel
+- **Enable/Disable Layouts** - Toggle the checkbox to control which layouts are loaded at runtime
+- **Delete Layouts** - Remove layouts you no longer need (deletes the scene file)
+- **Open Scene** - Click the open icon to jump directly to the layout scene
+
+### How It Works
+
+The panel scans your project for scenes with layout metadata and caches the results. This is much faster than the old system which had to instantiate each scene to check for layouts.
+
+Layouts are identified by metadata on the root node:
+
+- `metadata/is_layout = true`
+- `metadata/layout_id = "your_unique_id"`
+- `metadata/tags = ["optional", "tags"]`
+
+When you create or modify layouts through the panel, it automatically:
+
+1. Updates the scene file metadata
+2. Regenerates the `LayoutID` constants file for autocomplete
+
+---
+
 ## API Reference
 
 ### Card
@@ -248,16 +281,12 @@ func _focus_out() -> void:
 
 #### Creating a Layout
 
-1. Go to **Project → Tools → Create a new card layout**
-2. Enter a unique **Layout ID** (e.g., `my_card_front`)
-3. Optionally add tags for organization
-4. Save the scene and customize the visuals
-
-The layout scene must have these metadata values (set automatically by the tool):
-
-- `metadata/is_layout = true`
-- `metadata/layout_id = "your_id"`
-- `metadata/tags = ["optional", "tags"]`
+1. Open the **Card Layouts** panel at the bottom of the editor
+2. Click **New**
+3. Enter a unique **Layout ID** (e.g., `my_card_front`)
+4. Optionally add tags for organization
+5. Choose a save location and click **Create**
+6. Customize the visuals in the opened scene
 
 #### Example Layout Script
 
@@ -333,6 +362,9 @@ func is_hand_full() -> bool
 
 # Get remaining space
 func get_remaining_space() -> int
+
+# Force rearrangement of cards
+func refresh_arrangement() -> void
 ```
 
 #### Virtual Methods
@@ -536,8 +568,7 @@ The global singleton providing shared state and utilities. Access via `CG`.
 |---|---|---|
 |`holding_card`|`card: Card`|Card started being dragged|
 |`dropped_card`|-|Card was released|
-|`layout_discovered`|`layout_id, tags`|New layout found|
-|`layouts_refreshed`|-|Layout scan completed|
+|`layouts_loaded`|-|Layouts have been loaded from cache|
 
 #### Methods
 
@@ -545,6 +576,7 @@ The global singleton providing shared state and utilities. Access via `CG`.
 # Get cursor position
 func get_cursor_position() -> Vector2
 func get_local_cursor_position(node: Node) -> Vector2
+# Return mouse global/local position. TOBE used on controller support
 
 # Layout management
 func get_available_layouts() -> Array[StringName]
@@ -559,9 +591,9 @@ func refresh_layouts() -> void
 
 ```gdscript
 func _ready():
-    # Set default layouts
-    CG.def_front_layout = "my_card_front"
-    CG.def_back_layout = "card_back"
+    # Set default layouts using LayoutID constants
+    CG.def_front_layout = LayoutID.MY_CARD_FRONT
+    CG.def_back_layout = LayoutID.CARD_BACK
     
     # Listen for drag events
     CG.holding_card.connect(_on_card_pickup)
@@ -577,6 +609,39 @@ func _on_card_drop():
     for slot in get_tree().get_nodes_in_group("drop_zones"):
         slot.unhighlight()
 ```
+
+---
+
+### LayoutID
+
+Auto-generated class containing constants for all enabled layout IDs. This file is regenerated whenever you modify layouts in the Card Layouts panel.
+
+#### Usage
+
+```gdscript
+# Instead of error-prone strings:
+card.front_layout_name = "my_card_front"  # Could have typos!
+
+# Use type-safe constants with autocomplete:
+card.front_layout_name = LayoutID.MY_CARD_FRONT  # Autocomplete and compile-time checking!
+
+# Set default layouts
+CG.def_front_layout = LayoutID.STANDARD_LAYOUT
+CG.def_back_layout = LayoutID.STANDARD_BACK_LAYOUT
+
+# Check if a layout exists
+if LayoutID.is_valid(some_layout_id):
+    card.set_layout(some_layout_id)
+
+# Get all available layouts
+var all_layouts = LayoutID.get_all()
+```
+
+#### Generated File Location
+
+`res://addons/simple_cards/layout_ids.gd`
+
+**Note:** This file is auto-generated. Do not edit it manually as your changes will be overwritten when layouts are modified.
 
 ---
 
@@ -597,16 +662,25 @@ Run the scene to see a Balatro-inspired card game interface.
 
 ## Changelog
 
+### Version 2.2.0
+
+- **Card Layouts Panel** - New editor panel to view, create, edit, and delete layouts
+- **LayoutID Constants** - Auto-generated constants for type-safe layout references with autocomplete
+- **Improved Layout Discovery** - Layouts are now parsed from scene files without instantiation (faster startup)
+- **Layout Enable/Disable** - Control which layouts are loaded at runtime via the panel
+
 ### Version 2.1.5
+
 - Refactored the deck functions to be compatible with both draw and discard piles
-- Added documentation 
+- Added documentation
+
 ### Version 2.1
 
--  `CardSlot` - Container for single cards with swap functionality
--  `CardHandShape` - Moved shape logic to resources for easier customization
--  Reworked layout discovery using metadata for better flexibility
--  Deck manager functions for inserting cards at specific positions
--  Pile preview using CardHand
+- `CardSlot` - Container for single cards with swap functionality
+- `CardHandShape` - Moved shape logic to resources for easier customization
+- Reworked layout discovery using metadata for better flexibility
+- Deck manager functions for inserting cards at specific positions
+- Pile preview using CardHand
 
 ### Version 2.0
 

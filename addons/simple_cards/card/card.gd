@@ -19,7 +19,7 @@ var holding: bool = false
 ##True when card is focused
 var focused: bool = false
 
-var _cursol_down_pos: Vector2
+var _cursor_down_pos: Vector2
 var _last_pos: Vector2
 var _dragging_offset: Vector2 = Vector2.ZERO
 var _released: bool = true
@@ -112,7 +112,7 @@ func _drag(delta: float) -> void:
 
 func _on_button_down() -> void:
 	_released = false
-	_cursol_down_pos = CG.get_cursor_position()
+	_cursor_down_pos = CG.get_cursor_position()
 
 func _on_button_up() -> void:
 	_released = true
@@ -125,7 +125,7 @@ func _on_button_up() -> void:
 func _check_for_hold() -> bool:
 	if !_released and !holding:
 		var current_cursor_pos = CG.get_cursor_position()
-		var drag_distance = _cursol_down_pos.distance_to(current_cursor_pos)
+		var drag_distance = _cursor_down_pos.distance_to(current_cursor_pos)
 		
 		if drag_distance > drag_threshold and !undraggable:
 			rotation = 0
