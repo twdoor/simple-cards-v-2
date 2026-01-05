@@ -35,10 +35,12 @@ func _flip_out():
 
 ##Triggered on a [Card] entering focus.(Scale card by default) [color=red]Overwrite[/color] it to implement custom behaviour.
 func _focus_in():
+	card_instance.z_index = 1000
 	card_instance.tween_scale(Vector2.ONE * 1.2)
 
 ##Triggered on a [Card] leaving focus.(Scale card by default) [color=red]Overwrite[/color] it to implement custom behaviour.
 func _focus_out():
+	card_instance.z_index = 0
 	card_instance.tween_scale()
 	
 

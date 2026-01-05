@@ -128,6 +128,15 @@ func _on_card_unfocused(card: Card) -> void:
 
 
 func _on_card_dropped() -> void:
+	_finish_card_drop.call_deferred()
+
+
+func _finish_card_drop() -> void:
+	if _dragged_card and _dragged_card.get_parent() != self:
+		if _cards.has(_dragged_card):
+			_disconnect_card_signals(_dragged_card)
+			_cards.erase(_dragged_card)
+	
 	_arrange_cards()
 	_dragged_card = null
 	_drag_start_index = -1
@@ -246,9 +255,7 @@ func _arrange_cards_except_dragged() -> void:
 
 func _update_z_indices() -> void:
 	for i in _cards.size():
-		if _cards[i] == _dragged_card:
-			_cards[i].z_index = 1000
-		else:
+		if _cards[i] != _dragged_card:
 			_cards[i].z_index = i
 
 

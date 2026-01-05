@@ -48,13 +48,15 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
+	custom_minimum_size = Vector2(500, 200)
+	
 	var hsplit = HSplitContainer.new()
 	hsplit.anchor_right = 1.0
 	hsplit.anchor_bottom = 1.0
 	add_child(hsplit)
 	
 	var left_panel = VBoxContainer.new()
-	left_panel.custom_minimum_size.x = 350
+	left_panel.custom_minimum_size = Vector2(350, 150)
 	hsplit.add_child(left_panel)
 	
 	var toolbar = HBoxContainer.new()
@@ -67,7 +69,7 @@ func _build_ui() -> void:
 	toolbar.add_child(search_box)
 	
 	tag_filter = OptionButton.new()
-	tag_filter.custom_minimum_size.x = 100
+	tag_filter.custom_minimum_size.x = 50
 	tag_filter.item_selected.connect(_on_tag_filter_changed)
 	toolbar.add_child(tag_filter)
 	

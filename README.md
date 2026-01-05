@@ -439,12 +439,48 @@ A panel that accepts a single dropped card.
 |`card_entered`|`card: Card`|Card started hovering over slot|
 |`card_exited`|`card: Card`|Card stopped hovering|
 |`card_dropped`|`card: Card`|Card was dropped on slot|
+|`card_abandoned`|`card: Card`|Card was removed via abandon (dropped on empty space)|
+|`slot_lock_changed`|`is_locked: bool`|Slot lock state changed|
 
 #### Properties
 
-|Property|Type|Description|
-|---|---|---|
-|`held_card`|`Card`|The card currently in this slot|
+|Property|Type|Default|Description|
+|---|---|---|---|
+|`held_card`|`Card`|`null`|The card currently in this slot|
+|`slot_locked`|`bool`|`false`|Prevents cards from being dragged out or swapped in|
+|`allow_swap`|`bool`|`true`|When `false`, occupied slots reject incoming cards|
+|`abandon_on_empty_space`|`bool`|`false`|Cards dropped on empty space are removed from slot|
+|`abandon_reparent_target`|`Node`|`null`|Where abandoned cards go (defaults to slot's parent)|
+
+#### Methods
+
+```gdscript
+# Add a card to the slot (returns true if successful)
+func add_card(card: Card) -> bool
+
+# Remove the card from the slot
+func remove_card(new_parent: Node = null) -> Card
+
+# Clear the slot (force=true ignores lock)
+func clear_slot(force: bool = false) -> Card
+
+# Check if slot is empty
+func is_empty() -> bool
+
+# Get the held card without removing it
+func get_card() -> Card
+
+# Swap cards with another slot
+func swap_with(other_slot: CardSlot) -> bool
+
+# Transfer card to a hand
+func transfer_to_hand(hand: CardHand) -> bool
+
+# Lock/unlock helpers
+func lock() -> void
+func unlock() -> void
+func is_locked() -> bool
+```
 
 #### Virtual Methods
 
@@ -454,7 +490,7 @@ func _on_card_clicked(card: Card) -> void:
     print("Slotted card clicked: ", card.name)
 ```
 
-**Swapping Cards Between Slots:** When dropping a card on an occupied slot, the cards automatically swap positions.
+**Swapping Cards Between Slots:** When dropping a card on an occupied slot, the cards automatically swap positions (unless `allow_swap` is `false`).
 
 ---
 
@@ -662,7 +698,15 @@ Run the scene to see a Balatro-inspired card game interface.
 
 ## Changelog
 
-### Version 2.2.0
+### Version 2.3
+
+- **CardSlot Improved** - expended the slot to fit in better with the other containers
+- Fixed card always snapping back to slot when dragged out
+- Fixed error when dropping a card on its own slot while hovering
+- Fixed signal connection leak in CardSlot
+- Fixed Card Layouts panel being too small on first open
+
+### Version 2.2
 
 - **Card Layouts Panel** - New editor panel to view, create, edit, and delete layouts
 - **LayoutID Constants** - Auto-generated constants for type-safe layout references with autocomplete
@@ -676,8 +720,8 @@ Run the scene to see a Balatro-inspired card game interface.
 
 ### Version 2.1
 
-- `CardSlot` - Container for single cards with swap functionality
-- `CardHandShape` - Moved shape logic to resources for easier customization
+- **CardSlot** - Container for single cards with swap functionality
+- **CardHandShape** - Moved shape logic to resources for easier customization
 - Reworked layout discovery using metadata for better flexibility
 - Deck manager functions for inserting cards at specific positions
 - Pile preview using CardHand

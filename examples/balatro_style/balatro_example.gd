@@ -51,21 +51,21 @@ func _ready() -> void:
 
 func _on_gold_pressed() -> void:
 	for card: Card in balatro_hand.selected:
-		card.card_data.current_modiffier = 1
+		card.card_data.current_modifier = 1
 		card.refresh_layout()
 	balatro_hand.clear_selected()
 
 
 func _on_silv_pressed() -> void:
 	for card: Card in balatro_hand.selected:
-		card.card_data.current_modiffier = 2
+		card.card_data.current_modifier = 2
 		card.refresh_layout()
 	balatro_hand.clear_selected()
 
 
 func _on_none_pressed() -> void:
 	for card: Card in balatro_hand.selected:
-		card.card_data.current_modiffier = 0
+		card.card_data.current_modifier = 0
 		card.refresh_layout()
 	balatro_hand.clear_selected()
 
