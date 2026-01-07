@@ -1,5 +1,5 @@
 ##A card container used to dynamicaly store cards.
-@tool @icon("uid://1g0jb8x0i516")
+@icon("uid://1g0jb8x0i516")
 class_name CardHand extends Control
 
 
@@ -22,8 +22,6 @@ var _drag_start_index: int = -1
 var _last_reorder_index: int = -1
 
 func _ready() -> void:
-	if Engine.is_editor_hint(): return
-	
 	if !shape:
 		shape = LineHandShape.new()
 		push_warning("No shape selected, using default")
@@ -36,10 +34,13 @@ func _ready() -> void:
 	CG.holding_card.connect(_on_holding_card)
 
 func _process(_delta: float) -> void:
-	if Engine.is_editor_hint(): return
-	
 	if enable_reordering and _dragged_card:
 		_update_card_reordering()
+
+
+func _exit_tree() -> void:
+	CG.dropped_card.disconnect(_on_card_dropped)
+	CG.holding_card.disconnect(_on_holding_card)
 
 
 ##Adds a card to the hand. The card get reparented as a child of the hand. Returns [code]true[/code] if successful. [br]If the card is already a child of the hand the [member CardHand.remove_card] is used to reparent the card.

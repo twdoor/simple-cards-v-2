@@ -10,7 +10,7 @@ class_name ArcHandShape extends CardHandShape
 ##The maximum distance between the cards
 @export var card_spacing: float = 50
 
-func _init(radius: float = 400, angle: float = 60, orientation: float = 270, spacing: float = 50) -> void:
+func _init(radius: float = arc_radius, angle: float = arc_angle, orientation: float = arc_orientation, spacing: float = card_spacing) -> void:
 	arc_radius = radius
 	arc_angle = angle
 	arc_orientation = orientation

@@ -8,7 +8,7 @@ class_name LineHandShape extends CardHandShape
 ##The maximum distance between the cards
 @export var card_spacing: float = 50
 
-func _init(rot: float = 0, width = 600, spacing: float = 50) -> void:
+func _init(rot: float = line_rotation, width = max_width, spacing: float = card_spacing) -> void:
 	line_rotation = rot
 	max_width = width
 	card_spacing = spacing

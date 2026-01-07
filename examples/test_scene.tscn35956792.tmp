@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://b6m5nhppbry3y"]
-
-[ext_resource type="Script" uid="uid://7s1esje21dap" path="res://test/test_scene.gd" id="1_m5cd5"]
-
-[node name="TestScene" type="CanvasLayer"]
-script = ExtResource("1_m5cd5")

@@ -3,9 +3,9 @@
 ##The global singleton calls used by the SimpleCards plugin. [color=red]Do not instantiate[/color]
 class_name CardGlobal extends Control
 
-##Emited when a card starts being held/dragged
+##Emitted when a card starts being held/dragged
 signal holding_card(card: Card)
-##Emited when a card stops being held/dragged
+##Emitted when a card stops being held/dragged
 signal dropped_card
 ##Emitted when layouts have been loaded
 signal layouts_loaded

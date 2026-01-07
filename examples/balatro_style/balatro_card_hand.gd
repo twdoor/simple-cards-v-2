@@ -1,4 +1,3 @@
-@tool
 class_name BalatroHand extends CardHand
 
 @export var max_selected: int

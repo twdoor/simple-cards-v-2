@@ -249,11 +249,11 @@ func _update_card_visibility() -> void:
 
 
 ##Inserts a card at a specific position in the draw pile (0 = bottom, -1 = top).
-##If from_discard if true it will insert it the discard pile instead.
-func add_card_to_pile_at(card: Card, index: int, from_discard: bool = false) -> void:
+##If is_discard if true it will insert it the discard pile instead.
+func add_card_to_pile_at(card: Card, index: int, is_discard: bool = false) -> void:
 	card.kill_all_tweens()
 	
-	var pile = discard_pile if from_discard else draw_pile
+	var pile = discard_pile if is_discard else draw_pile
 	
 	if card.get_parent():
 		if card.get_parent() is CardHand:
@@ -270,12 +270,12 @@ func add_card_to_pile_at(card: Card, index: int, from_discard: bool = false) -> 
 
 
 ##Inserts a card at a specific position counting from top of the draw pile.
-##If from_discard if true it will insert it the discard pile instead.
-func add_card_to_pile_from_top_at(card: Card, position: int, from_discard: bool = false) -> void:
-	var pile = discard_pile if from_discard else draw_pile
+##If is_discard if true it will insert it the discard pile instead.
+func add_card_to_pile_from_top_at(card: Card, position: int, is_discard: bool = false) -> void:
+	var pile = discard_pile if is_discard else draw_pile
 	var total_cards = pile.get_child_count()
 	var index = max(0, total_cards - position)
-	add_card_to_pile_at(card, index, from_discard)
+	add_card_to_pile_at(card, index, is_discard)
 
 
 ##Shows a fanned preview of the draw pile using the provided CardHand.

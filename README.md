@@ -165,6 +165,9 @@ A draggable button that represents a single card.
 |`back_layout_name`|`StringName`|ID of the back layout|
 |`position_offset`|`Vector2`|Custom offset used by CardHand|
 |`rotation_offset`|`float`|Custom rotation offset used by CardHand|
+|`drag_coef`|`float`|Coefficient used for the drag function|
+|`max_card_rotation_deg`|`float`|Max angle the card will rotate while being dragged|
+|`drag_threshold`|`float`|Custom distance in px for the drag action to trigger|
 
 #### Signals
 
@@ -561,8 +564,8 @@ func draw_cards(count: int, is_discard: bool = false) -> Array[Card]
 
 # Adding cards to piles
 func add_card_to_pile(card: Card, is_discard: bool = false) -> void
-func add_card_to_pile_at(card: Card, index: int, from_discard: bool = false) -> void
-func add_card_to_pile_from_top_at(card: Card, position: int, from_discard: bool = false) -> void
+func add_card_to_pile_at(card: Card, index: int, is_discard: bool = false) -> void
+func add_card_to_pile_from_top_at(card: Card, position: int, is_discard: bool = false) -> void
 
 # Shuffling
 func shuffle(is_discard: bool = false) -> void
@@ -724,10 +727,14 @@ Run the scene to see a Balatro-inspired card game interface.
 
 ## Changelog
 
+### Version 2.3.2
+
+- Fixed buggs and typos
+
 ### Version 2.3.1
 
 - **CardMat** - New simple panel that checks for cards dropped inside of the area
-- Added custimizable condion fuction for card slots for better functionality
+- Added customizable condion fuction for card slots for better functionality
 
 ### Version 2.3
 

@@ -2,15 +2,15 @@
 @icon("res://addons/simple_cards/card/icon_card.png")
 class_name Card extends Button
 
-##Emited when cards is pressed but not dragged
+##Emitted when cards is pressed but not dragged
 signal card_clicked(card: Card)
 
-##Coeficient used in lerp movenment functions
-const drag_coef: float = -30
+##Coefficient used in lerp movenment functions
+@export var drag_coef: float = -30
 ##Max angle the card will swing when moving
-const max_card_rotation_deg: float = 25
+@export var max_card_rotation_deg: float = 25
 ##Distance in px the cursor has to move when card is pressed to trigger dragging
-const drag_threshold: float = 10
+@export var drag_threshold: float = 10
 
 ##Center position of the card
 var center_pos: Vector2
@@ -84,9 +84,11 @@ func _ready() -> void:
 	
 	_setup_layout()
 	set_card_size()
+	set_process(false)
 
 
 func set_card_size():
+	if !_layout: return
 	if size != _layout.size:
 		size = _layout.size
 	self_modulate.a = 0
@@ -118,6 +120,7 @@ func _on_button_up() -> void:
 	_released = true
 	if holding:
 		holding = false 
+		set_process(false)
 		CG.current_held_item = null
 	else:
 		card_clicked.emit(self)
@@ -139,20 +142,22 @@ func _on_focus_entered() -> void:
 	if _layout:
 		_layout._focus_in()
 	focused = true
+	set_process(true)
 
 func _on_focus_exited() -> void:
 	if _layout:
 		_layout._focus_out()
 	focused = false
+	if !holding: set_process(false)
 
 
 func _on_mouse_entered() -> void:
 	if !CG.current_held_item:
 		grab_focus()
 
-func _on_mouse_exited() -> void: 
-	if !holding and !CG.current_held_item:
-		get_viewport().gui_release_focus()
+func _on_mouse_exited() -> void:
+	if !holding and !CG.current_held_item and has_focus():
+		release_focus()
 
 #endregion
 
