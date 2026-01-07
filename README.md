@@ -488,9 +488,35 @@ func is_locked() -> bool
 # Override to handle clicks on the slotted card
 func _on_card_clicked(card: Card) -> void:
     print("Slotted card clicked: ", card.name)
+    
+# Override to implement specific conditions on addig a card. (conditions are checked after slot lock)
+func check_conditions(card: Card) -> bool:
+	return true
 ```
 
 **Swapping Cards Between Slots:** When dropping a card on an occupied slot, the cards automatically swap positions (unless `allow_swap` is `false`).
+
+---
+
+### CardMat
+A panel that detects dropped card.
+
+#### Signals
+
+|Signal|Parameters|Description|
+|---|---|---|
+|`card_entered`|`card: Card`|Card started hovering over mat|
+|`card_exited`|`card: Card`|Card stopped hovering|
+|`card_dropped`|`card: Card`|Card was dropped on mat|
+
+
+#### Virtual Methods
+
+```gdscript
+# Override to handle action when card is dropped
+func handle_dropped_card(card: Card) -> void:
+    pass
+```
 
 ---
 
@@ -697,6 +723,11 @@ Run the scene to see a Balatro-inspired card game interface.
 ---
 
 ## Changelog
+
+### Version 2.3.1
+
+- **CardMat** - New simple panel that checks for cards dropped inside of the area
+- Added custimizable condion fuction for card slots for better functionality
 
 ### Version 2.3
 
