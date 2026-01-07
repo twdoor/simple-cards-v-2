@@ -283,6 +283,10 @@ func _handle_card_drop(incoming_card: Card) -> void:
 		_return_card_to_parent(incoming_card)
 		return
 	
+	if !check_conditions(incoming_card):
+		_return_card_to_parent(incoming_card)
+		return
+	
 	var incoming_card_parent = incoming_card.get_parent()
 	if incoming_card_parent == self and held_card == incoming_card:
 		_position_card_in_center(incoming_card)
@@ -396,3 +400,7 @@ func _place_card(card: Card) -> void:
 	_connect_card_signals(card)
 	_position_card_in_center(card)
 	card_dropped.emit(card)
+
+##Triggered when a card tried to be placed in the slot. [color=red]Overwrite[/color] to implement custom rules.
+func check_conditions(card: Card) -> bool:
+	return true
