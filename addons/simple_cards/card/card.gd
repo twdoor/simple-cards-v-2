@@ -122,6 +122,15 @@ func _on_button_up() -> void:
 		holding = false 
 		set_process(false)
 		CG.current_held_item = null
+
+		var placement_duration = 0.15
+		self.tween_rotation(0, placement_duration)
+		self.tween_scale(Vector2.ONE, placement_duration)
+
+		_on_mouse_exited()
+		_on_focus_exited()
+		if self.is_hovered():
+			_on_focus_entered()
 	else:
 		card_clicked.emit(self)
 
