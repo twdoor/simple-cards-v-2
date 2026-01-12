@@ -130,6 +130,8 @@ func _on_button_up() -> void:
 		_on_mouse_exited()
 		_on_focus_exited()
 		if self.is_hovered():
+			_on_mouse_entered()
+		if self.has_focus():
 			_on_focus_entered()
 	else:
 		card_clicked.emit(self)
