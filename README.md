@@ -19,6 +19,7 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
     - [CardHand](#cardhand)
     - [CardHandShape](#cardhandshape)
     - [CardSlot](#cardslot)
+    - [CardMat](#cardmat)
     - [CardDeck](#carddeck)
     - [CardDeckManager](#carddeckmanager)
     - [CardGlobal (CG)](#cardglobal-cg)
