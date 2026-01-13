@@ -26,11 +26,5 @@
 		"tags": [
 			"front"
 		]
-	},
-	"res://examples/warframe_mods_style/warframe_mod.tscn": {
-		"enabled": true,
-		"last_modified": 1767708037,
-		"layout_id": "warframe_mod",
-		"tags": []
 	}
 }

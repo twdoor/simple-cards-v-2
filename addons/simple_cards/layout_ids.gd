@@ -7,7 +7,6 @@ const DEFAULT: StringName = &"default"
 const DEFAULT_BACK: StringName = &"default_back"
 const STANDARD_BACK_LAYOUT: StringName = &"standard_back_layout"
 const STANDARD_LAYOUT: StringName = &"standard_layout"
-const WARFRAME_MOD: StringName = &"warframe_mod"
 
 
 ## Returns all available layout IDs
@@ -16,8 +15,7 @@ static func get_all() -> Array[StringName]:
 		DEFAULT,
 		DEFAULT_BACK,
 		STANDARD_BACK_LAYOUT,
-		STANDARD_LAYOUT,
-		WARFRAME_MOD
+		STANDARD_LAYOUT
 	]
 
 

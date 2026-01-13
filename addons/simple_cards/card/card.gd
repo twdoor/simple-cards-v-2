@@ -122,6 +122,18 @@ func _on_button_up() -> void:
 		holding = false 
 		set_process(false)
 		CG.current_held_item = null
+		
+		if !_is_owened():
+			tween_rotation()
+			tween_scale()
+		
+		_on_mouse_exited()
+		_on_focus_exited()
+		if is_hovered():
+			_on_mouse_entered()
+		if has_focus():
+			_on_focus_entered()
+		
 	else:
 		card_clicked.emit(self)
 
@@ -259,3 +271,7 @@ func refresh_layout() -> void:
 func flip() -> void:
 	is_front_face = !is_front_face
 #endregion
+
+func _is_owened() -> bool:
+	var parent = get_parent()
+	return parent is CardHand or parent is CardSlot
