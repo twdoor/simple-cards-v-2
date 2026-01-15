@@ -252,6 +252,7 @@ func _update_card_visibility() -> void:
 ##If is_discard if true it will insert it the discard pile instead.
 func add_card_to_pile_at(card: Card, index: int, is_discard: bool = false) -> void:
 	card.kill_all_tweens()
+	card.is_front_face = front_face_in_discard if is_discard else front_face_in_draw
 	
 	var pile = discard_pile if is_discard else draw_pile
 	
