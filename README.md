@@ -4,7 +4,7 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
 
 ![Example Animation](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/example.gif)
 
----
+------
 
 ## Table of Contents
 
@@ -13,26 +13,29 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
 - [Quick Start](#quick-start)
 - [Card Layouts Panel](#card-layouts-panel)
 - [API Reference](#api-reference)
-    - [Card](#card)
-    - [CardResource](#cardresource)
-    - [CardLayout](#cardlayout)
-    - [CardHand](#cardhand)
-    - [CardHandShape](#cardhandshape)
-    - [CardSlot](#cardslot)
-    - [CardDeck](#carddeck)
-    - [CardDeckManager](#carddeckmanager)
-    - [CardGlobal (CG)](#cardglobal-cg)
-    - [LayoutID](#layoutid)
+  - [Card](#card)
+  - [CardResource](#cardresource)
+  - [CardLayout](#cardlayout)
+  - [CardAnimationResource](#cardanimationresource)
+  - [CardHand](#cardhand)
+  - [CardHandShape](#cardhandshape)
+  - [CardSlot](#cardslot)
+  - [CardMat](#cardmat)
+  - [CardDeck](#carddeck)
+  - [CardDeckManager](#carddeckmanager)
+  - [CardGlobal (CG)](#cardglobal-cg)
+  - [LayoutID](#layoutid)
 - [Examples](#examples)
 - [Changelog](#changelog)
 - [Support](#support)
 
----
+------
 
 ## Features
 
 - **Drag & Drop Cards** - Built-in press and drag functionality with smooth animations
 - **Customizable Visuals** - Create unique card faces using the layout system
+- **Reusable Animations** - Plug-and-play animation resources for common card behaviors
 - **Data-Driven Design** - Separate card data (resources) from visuals (layouts)
 - **Hand Management** - Arrange cards in lines, arcs, or custom shapes
 - **Deck System** - Draw pile, discard pile, shuffling, and card management
@@ -41,7 +44,7 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
 - **Layout Management Panel** - Editor panel to view, create, and manage all card layouts
 - **Fully Documented** - In-editor documentation for all classes
 
----
+------
 
 ## Installation
 
@@ -59,7 +62,7 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
 3. Go to **Project → Project Settings → Plugins** and enable **SimpleCards**
 4. **Reload the project** (important!)
 
----
+------
 
 ## Quick Start
 
@@ -113,7 +116,7 @@ func _ready():
     add_child(card)
 ```
 
----
+------
 
 ## Card Layouts Panel
 
@@ -144,7 +147,7 @@ When you create or modify layouts through the panel, it automatically:
 1. Updates the scene file metadata
 2. Regenerates the `LayoutID` constants file for autocomplete
 
----
+------
 
 ## API Reference
 
@@ -154,26 +157,26 @@ A draggable button that represents a single card.
 
 #### Properties
 
-|Property|Type|Description|
-|---|---|---|
-|`card_data`|`CardResource`|The resource containing card data|
-|`undraggable`|`bool`|If `true`, disables dragging (click still works)|
-|`holding`|`bool`|`true` when card is being dragged|
-|`focused`|`bool`|`true` when card has focus|
-|`is_front_face`|`bool`|`true` shows front layout, `false` shows back|
-|`front_layout_name`|`StringName`|ID of the front layout|
-|`back_layout_name`|`StringName`|ID of the back layout|
-|`position_offset`|`Vector2`|Custom offset used by CardHand|
-|`rotation_offset`|`float`|Custom rotation offset used by CardHand|
-|`drag_coef`|`float`|Coefficient used for the drag function|
-|`max_card_rotation_deg`|`float`|Max angle the card will rotate while being dragged|
-|`drag_threshold`|`float`|Custom distance in px for the drag action to trigger|
+| Property                | Type           | Description                                          |
+| ----------------------- | -------------- | ---------------------------------------------------- |
+| `card_data`             | `CardResource` | The resource containing card data                    |
+| `undraggable`           | `bool`         | If `true`, disables dragging (click still works)     |
+| `holding`               | `bool`         | `true` when card is being dragged                    |
+| `focused`               | `bool`         | `true` when card has focus                           |
+| `is_front_face`         | `bool`         | `true` shows front layout, `false` shows back        |
+| `front_layout_name`     | `StringName`   | ID of the front layout                               |
+| `back_layout_name`      | `StringName`   | ID of the back layout                                |
+| `position_offset`       | `Vector2`      | Custom offset used by CardHand                       |
+| `rotation_offset`       | `float`        | Custom rotation offset used by CardHand              |
+| `drag_coef`             | `float`        | Coefficient used for the drag function               |
+| `max_card_rotation_deg` | `float`        | Max angle the card will rotate while being dragged   |
+| `drag_threshold`        | `float`        | Custom distance in px for the drag action to trigger |
 
 #### Signals
 
-|Signal|Parameters|Description|
-|---|---|---|
-|`card_clicked`|`card: Card`|Emitted when card is clicked (not dragged)|
+| Signal         | Parameters   | Description                                |
+| -------------- | ------------ | ------------------------------------------ |
+| `card_clicked` | `card: Card` | Emitted when card is clicked (not dragged) |
 
 #### Methods
 
@@ -215,7 +218,7 @@ card.undraggable = true
 card.disabled = true
 ```
 
----
+------
 
 ### CardResource
 
@@ -223,9 +226,9 @@ Abstract base class for storing card data. **Extend this class** to add your own
 
 #### Properties
 
-|Property|Type|Description|
-|---|---|---|
-|`custom_layout_name`|`StringName`|Override the default front layout for this card|
+| Property             | Type         | Description                                     |
+| -------------------- | ------------ | ----------------------------------------------- |
+| `custom_layout_name` | `StringName` | Override the default front layout for this card |
 
 #### Example
 
@@ -239,7 +242,7 @@ enum Suit { HEARTS, DIAMONDS, CLUBS, SPADES }
 @export var face_image: Texture2D
 ```
 
----
+------
 
 ### CardLayout
 
@@ -247,16 +250,20 @@ Base class for card visuals. A `SubViewportContainer` that renders the card face
 
 #### Properties
 
-|Property|Type|Description|
-|---|---|---|
-|`card_resource`|`CardResource`|Reference to the card's data|
-|`card_instance`|`Card`|Reference to the parent Card node|
+| Property              | Type                    | Description                              |
+| --------------------- | ----------------------- | ---------------------------------------- |
+| `card_resource`       | `CardResource`          | Reference to the card's data             |
+| `card_instance`       | `Card`                  | Reference to the parent Card node        |
+| `focus_in_animation`  | `CardAnimationResource` | Animation to play when card gains focus  |
+| `focus_out_animation` | `CardAnimationResource` | Animation to play when card loses focus  |
+| `flip_in_animation`   | `CardAnimationResource` | Animation to play when layout is added   |
+| `flip_out_animation`  | `CardAnimationResource` | Animation to play when layout is removed |
 
 #### Signals
 
-|Signal|Description|
-|---|---|
-|`layout_ready`|Emitted when setup is complete|
+| Signal         | Description                    |
+| -------------- | ------------------------------ |
+| `layout_ready` | Emitted when setup is complete |
 
 #### Virtual Methods (Override These)
 
@@ -265,21 +272,25 @@ Base class for card visuals. A `SubViewportContainer` that renders the card face
 func _update_display() -> void:
     pass
 
-# Called when layout is added to card - add enter animations
+# Called when layout is added to card
+# Uses flip_in_animation if set, otherwise override for custom behavior
 func _flip_in() -> void:
-    pass
+    if flip_in_animation: flip_in_animation.play_animation(self)
 
-# Called when layout is removed - add exit animations  
+# Called when layout is removed
+# Uses flip_out_animation if set, otherwise override for custom behavior
 func _flip_out() -> void:
-    pass
+    if flip_out_animation: flip_out_animation.play_animation(self)
 
 # Called when card gains focus
+# Uses focus_in_animation if set, otherwise override for custom behavior
 func _focus_in() -> void:
-    card_instance.tween_scale(Vector2.ONE * 1.2)
+    if focus_in_animation: focus_in_animation.play_animation(self)
 
 # Called when card loses focus
+# Uses focus_out_animation if set, otherwise override for custom behavior
 func _focus_out() -> void:
-    card_instance.tween_scale()
+    if focus_out_animation: focus_out_animation.play_animation(self)
 ```
 
 #### Creating a Layout
@@ -309,17 +320,52 @@ func _update_display() -> void:
     image.texture = data.card_image
     stats.text = "ATK: %d  DEF: %d" % [data.attack, data.defense]
 
+# Option 1: Use CardAnimationResource (set in inspector)
+# Just assign a ScaleCardAnimation or FadeCardAnimation resource to
+# focus_in_animation, focus_out_animation, etc. in the inspector
+
+# Option 2: Override methods for custom animations
 func _flip_in() -> void:
-    # Fade in animation
+    # Custom fade in animation
     modulate.a = 0
     var tween = create_tween()
     tween.tween_property(self, "modulate:a", 1.0, 0.2)
 
 func _focus_in() -> void:
-    # Custom hover effect
-    card_instance.tween_scale(Vector2(1.1, 1.1))
-    card_instance.z_index = 100
+    # Custom hover effect (only if focus_in_animation is not set)
+    if not focus_in_animation:
+        card_instance.tween_scale(Vector2(1.1, 1.1))
+    else:
+        # Call the animation resource
+        super._focus_in()
 ```
+
+------
+
+### CardAnimationResource
+
+Abstract base class for creating reusable card animations. Assign these to CardLayout properties for plug-and-play animations.
+
+#### Methods
+
+```gdscript
+# Override this method to define animation behavior
+func play_animation(layout: CardLayout) -> void:
+    pass
+```
+
+#### Built-In Animations
+
+##### ScaleCardAnimation
+
+- `scale_value: Vector2` - Target scale (default: Vector2.ONE)
+- `custom_z_index: int` - Z-index to set during animation (default: 0)
+- `duration: float` - Animation duration in seconds (default: 0.2)
+
+##### FadeCardAnimation
+
+- `fade_type: Fade` - Either `Fade.IN` or `Fade.OUT`
+- `fade_duration: float` - Animation duration in seconds (default: 0.5)
 
 ---
 
@@ -368,7 +414,7 @@ func get_remaining_space() -> int
 
 # Force rearrangement of cards
 func refresh_arrangement() -> void
-```
+~~~
 
 #### Virtual Methods
 
@@ -402,7 +448,7 @@ func _handle_clicked_card(card: Card) -> void:
     $PlayArea.add_child(card)
 ```
 
----
+------
 
 ### CardHandShape
 
@@ -429,7 +475,7 @@ arc.arc_orientation = 270.0   # Where the arc points (270 = up)
 arc.card_spacing = 50.0       # Space between cards
 ```
 
----
+------
 
 ### CardSlot
 
@@ -437,23 +483,23 @@ A panel that accepts a single dropped card.
 
 #### Signals
 
-|Signal|Parameters|Description|
-|---|---|---|
-|`card_entered`|`card: Card`|Card started hovering over slot|
-|`card_exited`|`card: Card`|Card stopped hovering|
-|`card_dropped`|`card: Card`|Card was dropped on slot|
-|`card_abandoned`|`card: Card`|Card was removed via abandon (dropped on empty space)|
-|`slot_lock_changed`|`is_locked: bool`|Slot lock state changed|
+| Signal              | Parameters        | Description                                           |
+| ------------------- | ----------------- | ----------------------------------------------------- |
+| `card_entered`      | `card: Card`      | Card started hovering over slot                       |
+| `card_exited`       | `card: Card`      | Card stopped hovering                                 |
+| `card_dropped`      | `card: Card`      | Card was dropped on slot                              |
+| `card_abandoned`    | `card: Card`      | Card was removed via abandon (dropped on empty space) |
+| `slot_lock_changed` | `is_locked: bool` | Slot lock state changed                               |
 
 #### Properties
 
-|Property|Type|Default|Description|
-|---|---|---|---|
-|`held_card`|`Card`|`null`|The card currently in this slot|
-|`slot_locked`|`bool`|`false`|Prevents cards from being dragged out or swapped in|
-|`allow_swap`|`bool`|`true`|When `false`, occupied slots reject incoming cards|
-|`abandon_on_empty_space`|`bool`|`false`|Cards dropped on empty space are removed from slot|
-|`abandon_reparent_target`|`Node`|`null`|Where abandoned cards go (defaults to slot's parent)|
+| Property                  | Type   | Default | Description                                          |
+| ------------------------- | ------ | ------- | ---------------------------------------------------- |
+| `held_card`               | `Card` | `null`  | The card currently in this slot                      |
+| `slot_locked`             | `bool` | `false` | Prevents cards from being dragged out or swapped in  |
+| `allow_swap`              | `bool` | `true`  | When `false`, occupied slots reject incoming cards   |
+| `abandon_on_empty_space`  | `bool` | `false` | Cards dropped on empty space are removed from slot   |
+| `abandon_reparent_target` | `Node` | `null`  | Where abandoned cards go (defaults to slot's parent) |
 
 #### Methods
 
@@ -499,19 +545,19 @@ func check_conditions(card: Card) -> bool:
 
 **Swapping Cards Between Slots:** When dropping a card on an occupied slot, the cards automatically swap positions (unless `allow_swap` is `false`).
 
----
+------
 
 ### CardMat
+
 A panel that detects dropped card.
 
 #### Signals
 
-|Signal|Parameters|Description|
-|---|---|---|
-|`card_entered`|`card: Card`|Card started hovering over mat|
-|`card_exited`|`card: Card`|Card stopped hovering|
-|`card_dropped`|`card: Card`|Card was dropped on mat|
-
+| Signal         | Parameters   | Description                    |
+| -------------- | ------------ | ------------------------------ |
+| `card_entered` | `card: Card` | Card started hovering over mat |
+| `card_exited`  | `card: Card` | Card stopped hovering          |
+| `card_dropped` | `card: Card` | Card was dropped on mat        |
 
 #### Virtual Methods
 
@@ -521,7 +567,7 @@ func handle_dropped_card(card: Card) -> void:
     pass
 ```
 
----
+------
 
 ### CardDeck
 
@@ -529,12 +575,12 @@ A resource that stores an array of CardResource objects.
 
 #### Properties
 
-|Property|Type|Description|
-|---|---|---|
-|`cards`|`Array[CardResource]`|The cards in this deck|
-|`deck_name`|`String`|Optional name for the deck|
+| Property    | Type                  | Description                |
+| ----------- | --------------------- | -------------------------- |
+| `cards`     | `Array[CardResource]` | The cards in this deck     |
+| `deck_name` | `String`              | Optional name for the deck |
 
----
+------
 
 ### CardDeckManager
 
@@ -542,15 +588,15 @@ Manages a deck with draw pile, discard pile, and card lifecycle.
 
 #### Properties
 
-|Property|Type|Description|
-|---|---|---|
-|`starting_deck`|`CardDeck`|Deck to initialize from|
-|`shuffle_on_ready`|`bool`|Shuffle on setup|
-|`show_cards`|`bool`|Show cards in piles|
-|`draw_pile`|`Node`|Container for draw pile|
-|`discard_pile`|`Node`|Container for discard pile|
-|`front_face_in_draw`|`bool`|Cards face-up in draw pile|
-|`front_face_in_discard`|`bool`|Cards face-up in discard pile|
+| Property                | Type       | Description                   |
+| ----------------------- | ---------- | ----------------------------- |
+| `starting_deck`         | `CardDeck` | Deck to initialize from       |
+| `shuffle_on_ready`      | `bool`     | Shuffle on setup              |
+| `show_cards`            | `bool`     | Show cards in piles           |
+| `draw_pile`             | `Node`     | Container for draw pile       |
+| `discard_pile`          | `Node`     | Container for discard pile    |
+| `front_face_in_draw`    | `bool`     | Cards face-up in draw pile    |
+| `front_face_in_discard` | `bool`     | Cards face-up in discard pile |
 
 #### Methods
 
@@ -612,7 +658,7 @@ func reshuffle():
     deck_manager.reshuffle_discard_and_shuffle()
 ```
 
----
+------
 
 ### CardGlobal (CG)
 
@@ -620,20 +666,20 @@ The global singleton providing shared state and utilities. Access via `CG`.
 
 #### Properties
 
-|Property|Type|Description|
-|---|---|---|
-|`def_front_layout`|`StringName`|Default front layout ID|
-|`def_back_layout`|`StringName`|Default back layout ID|
-|`current_held_item`|`Card`|Currently dragged card|
-|`card_index`|`int`|Auto-incrementing card counter|
+| Property            | Type         | Description                    |
+| ------------------- | ------------ | ------------------------------ |
+| `def_front_layout`  | `StringName` | Default front layout ID        |
+| `def_back_layout`   | `StringName` | Default back layout ID         |
+| `current_held_item` | `Card`       | Currently dragged card         |
+| `card_index`        | `int`        | Auto-incrementing card counter |
 
 #### Signals
 
-|Signal|Parameters|Description|
-|---|---|---|
-|`holding_card`|`card: Card`|Card started being dragged|
-|`dropped_card`|-|Card was released|
-|`layouts_loaded`|-|Layouts have been loaded from cache|
+| Signal           | Parameters   | Description                         |
+| ---------------- | ------------ | ----------------------------------- |
+| `holding_card`   | `card: Card` | Card started being dragged          |
+| `dropped_card`   | -            | Card was released                   |
+| `layouts_loaded` | -            | Layouts have been loaded from cache |
 
 #### Methods
 
@@ -675,7 +721,7 @@ func _on_card_drop():
         slot.unhighlight()
 ```
 
----
+------
 
 ### LayoutID
 
@@ -704,11 +750,13 @@ var all_layouts = LayoutID.get_all()
 
 #### Generated File Location
 
-`res://addons/simple_cards/layout_ids.gd`
+```
+res://addons/simple_cards/layout_ids.gd
+```
 
 **Note:** This file is auto-generated. Do not edit it manually as your changes will be overwritten when layouts are modified.
 
----
+------
 
 ## Examples
 
@@ -723,13 +771,20 @@ Located in `examples/balatro_style/`, this demonstrates:
 
 Run the scene to see a Balatro-inspired card game interface.
 
----
+------
 
 ## Changelog
 
+### Version 2.3.3
+
+- **CardAnimationResource System** - New reusable animation system for card layouts
+- Fixed cards not changing face when added to deck pile (Thanks to Davidy22)
+- Fixed cards drag bug when trying to move already dropped card (Thanks to iant72)
+- Optimized cards and hands processes to be disabled when not used.
+
 ### Version 2.3.2
 
-- Fixed buggs and typos
+- Fixed bugs and typos
 
 ### Version 2.3.1
 
@@ -771,7 +826,7 @@ Run the scene to see a Balatro-inspired card game interface.
 - Improved drag and drop system
 - Added CardHand and CardDeckManager
 
----
+------
 
 ## Support
 
@@ -780,6 +835,6 @@ For feedback, suggestions, or issues:
 - **Twitter/X:** [@twdoortoo](https://twitter.com/twdoortoo)
 - **GitHub Issues:** [Create an issue](https://github.com/twdoor/simple-cards-v-2/issues)
 
----
+------
 
 **Good luck! -Tw**

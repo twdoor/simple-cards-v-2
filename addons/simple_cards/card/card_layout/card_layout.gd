@@ -1,6 +1,6 @@
 ##This will represent the visual basis for a card face.
 ##
-##[color=green]Use the "Project>Tools>Create new card layout" for a quick setup![/color][br]
+##[color=green]Use the "Card Layouts" tab at the bottom for a quick setup![/color][br]
 ##Alone is pretty much useless. Use other nodes to build your best layout for the cards that need to be made.[br]
 ##The Subviewport required by this node will also give the card size. (Subviewport.size = card.size)
 @icon("uid://dfeet1bp3au3l")
@@ -17,6 +17,14 @@ signal layout_ready ##Emited at the end of the setup function.
 		if is_node_ready():
 			_update_display()
 
+@export_group("Animation Resources")
+@export_custom(PROPERTY_HINT_GROUP_ENABLE, "Animation Resources") var anim_group_checked:= false
+@export var focus_in_animation: CardAnimationResource
+@export var focus_out_animation: CardAnimationResource
+@export var flip_in_animation: CardAnimationResource
+@export var flip_out_animation: CardAnimationResource
+
+
 ##Refrence to the [Card] used to initialize the layout.
 var card_instance: Card
 
@@ -25,23 +33,21 @@ func _update_display() -> void:
 	pass
 
 
-##Triggered on adding the layout to a [Card]. [color=red]Overwrite[/color] it to implement transition animations.
+##Triggered on adding the layout to a [Card]. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement transition animations.
 func _flip_in():
-	pass
+	if flip_in_animation: flip_in_animation.play_animation(self)
 
-##Triggered on removing the layout from a [Card]. [color=red]Overwrite[/color] it to implement transition animations.
+##Triggered on removing the layout from a [Card]. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement transition animations.
 func _flip_out():
-	pass
+	if flip_out_animation: flip_out_animation.play_animation(self)
 
-##Triggered on a [Card] entering focus.(Scale card by default) [color=red]Overwrite[/color] it to implement custom behaviour.
+##Triggered on a [Card] entering focus. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement custom behaviour.
 func _focus_in():
-	card_instance.z_index = 1000
-	card_instance.tween_scale(Vector2.ONE * 1.2)
+	if focus_in_animation: focus_in_animation.play_animation(self)
 
-##Triggered on a [Card] leaving focus.(Scale card by default) [color=red]Overwrite[/color] it to implement custom behaviour.
+##Triggered on a [Card] leaving focus. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement custom behaviour.
 func _focus_out():
-	card_instance.z_index = 0
-	card_instance.tween_scale()
+	if focus_out_animation: focus_out_animation.play_animation(self)
 	
 
 ##Used when a [Card] initializes a layout, set the refrence of the card its resource and emits [member CardLayout.layout_ready] at the end.

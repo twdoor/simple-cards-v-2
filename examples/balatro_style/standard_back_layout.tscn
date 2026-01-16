@@ -1,6 +1,19 @@
-[gd_scene load_steps=3 format=3 uid="uid://bog1ttsv5cyjo"]
+[gd_scene load_steps=6 format=3 uid="uid://bog1ttsv5cyjo"]
 
 [ext_resource type="Script" uid="uid://dm115oleoggyt" path="res://addons/simple_cards/card/card_layout/card_layout.gd" id="1_0a68r"]
+[ext_resource type="Script" uid="uid://c535lguvmfhkb" path="res://addons/simple_cards/card/card_layout/card_animation_resource/prebuild_animations/scale_animation.gd" id="2_hvxl3"]
+
+[sub_resource type="Resource" id="Resource_pahr0"]
+resource_local_to_scene = true
+script = ExtResource("2_hvxl3")
+scale_value = Vector2(1.2, 1.2)
+custom_z_index = 100
+metadata/_custom_type_script = "uid://c535lguvmfhkb"
+
+[sub_resource type="Resource" id="Resource_1tvmt"]
+resource_local_to_scene = true
+script = ExtResource("2_hvxl3")
+metadata/_custom_type_script = "uid://c535lguvmfhkb"
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0dbed"]
 bg_color = Color(0.4, 0, 0, 1)
@@ -19,6 +32,9 @@ corner_detail = 16
 offset_right = 80.0
 offset_bottom = 112.0
 script = ExtResource("1_0a68r")
+anim_group_checked = true
+focus_in_animation = SubResource("Resource_pahr0")
+focus_out_animation = SubResource("Resource_1tvmt")
 metadata/is_layout = true
 metadata/layout_id = "standard_back_layout"
 metadata/tags = ["back"]

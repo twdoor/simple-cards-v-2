@@ -4,9 +4,9 @@
 [ext_resource type="Script" uid="uid://f3ybsxom5cmo" path="res://examples/balatro_style/balatro_card_hand.gd" id="2_grswf"]
 [ext_resource type="Script" uid="uid://bisyk4bowdvsf" path="res://addons/simple_cards/deck/manager/card_deck_manager.gd" id="3_hg8is"]
 [ext_resource type="Resource" uid="uid://u1x8i453q018" path="res://examples/balatro_style/cards/balatro_deck.tres" id="4_2a7na"]
-[ext_resource type="Script" uid="uid://b1s6x4iyt2pps" path="res://addons/simple_cards/hand/shape/premade shapes/line_shape.gd" id="5_frvav"]
+[ext_resource type="Script" uid="uid://b1s6x4iyt2pps" path="res://addons/simple_cards/hand/shape/premade_shapes/line_shape.gd" id="5_frvav"]
 [ext_resource type="Script" uid="uid://bbi8i6vef3f6y" path="res://addons/simple_cards/hand/card_hand.gd" id="5_gjekf"]
-[ext_resource type="Script" uid="uid://cgtxv1fnflwfu" path="res://addons/simple_cards/hand/shape/premade shapes/arc_shape.gd" id="7_m6hid"]
+[ext_resource type="Script" uid="uid://cgtxv1fnflwfu" path="res://addons/simple_cards/hand/shape/premade_shapes/arc_shape.gd" id="7_m6hid"]
 
 [sub_resource type="Resource" id="Resource_frvav"]
 script = ExtResource("7_m6hid")

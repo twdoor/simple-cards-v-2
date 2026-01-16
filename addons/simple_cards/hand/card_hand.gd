@@ -32,10 +32,11 @@ func _ready() -> void:
 			add_card(child)
 	CG.dropped_card.connect(_on_card_dropped)
 	CG.holding_card.connect(_on_holding_card)
+	
+	set_process(false)
 
 func _process(_delta: float) -> void:
-	if enable_reordering and _dragged_card:
-		_update_card_reordering()
+	_update_card_reordering()
 
 
 func _exit_tree() -> void:
@@ -142,6 +143,8 @@ func _finish_card_drop() -> void:
 	_dragged_card = null
 	_drag_start_index = -1
 	_last_reorder_index = -1
+	
+	set_process(false)
 
 
 func _on_holding_card(card: Card) -> void:
@@ -149,10 +152,15 @@ func _on_holding_card(card: Card) -> void:
 		_dragged_card = card
 		_drag_start_index = get_card_index(card)
 		_last_reorder_index = _drag_start_index
+		
+		if enable_reordering:
+			set_process(true)
 	else:
 		_dragged_card = null
 		_drag_start_index = -1
 		_last_reorder_index = -1
+		
+		set_process(false)
 
 
 ##Used when a card from hand is clicked. [color=red]Overwrite[/color] to implement card action.

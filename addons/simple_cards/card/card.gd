@@ -67,9 +67,8 @@ func _init(card_resource: CardResource = null) -> void:
 	CG.card_index += 1
 	if card_resource:
 		card_data = card_resource
-		if CG.get_available_layouts().has(card_data.custom_layout_name):
-			front_layout_name = card_data.custom_layout_name
-		
+
+
 func _ready() -> void:
 	button_down.connect(_on_button_down)
 	button_up.connect(_on_button_up)

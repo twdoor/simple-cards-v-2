@@ -13,7 +13,7 @@
 	},
 	"res://examples/balatro_style/standard_back_layout.tscn": {
 		"enabled": true,
-		"last_modified": 1767601397,
+		"last_modified": 1768501019,
 		"layout_id": "standard_back_layout",
 		"tags": [
 			"back"
@@ -21,7 +21,7 @@
 	},
 	"res://examples/balatro_style/standard_layout.tscn": {
 		"enabled": true,
-		"last_modified": 1767601397,
+		"last_modified": 1768555405,
 		"layout_id": "standard_layout",
 		"tags": [
 			"front"
