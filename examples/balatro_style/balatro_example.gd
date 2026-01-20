@@ -42,8 +42,8 @@ func _ready() -> void:
 
 	hand_size = balatro_hand.max_hand_size
 	
-	card_deck_manager.setup()
-	deal()
+	#card_deck_manager.setup()
+	deal.call_deferred()
 	
 	card_deck_manager.hide_pile_preview_hand()
 	preview_visible = false

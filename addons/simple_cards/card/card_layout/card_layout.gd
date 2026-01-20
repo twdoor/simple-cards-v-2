@@ -35,19 +35,19 @@ func _update_display() -> void:
 
 ##Triggered on adding the layout to a [Card]. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement transition animations.
 func _flip_in():
-	if flip_in_animation: flip_in_animation.play_animation(self)
+	if flip_in_animation: await flip_in_animation.play_animation(self)
 
 ##Triggered on removing the layout from a [Card]. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement transition animations.
 func _flip_out():
-	if flip_out_animation: flip_out_animation.play_animation(self)
+	if flip_out_animation: await flip_out_animation.play_animation(self)
 
 ##Triggered on a [Card] entering focus. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement custom behaviour.
 func _focus_in():
-	if focus_in_animation: focus_in_animation.play_animation(self)
+	if focus_in_animation: await focus_in_animation.play_animation(self)
 
 ##Triggered on a [Card] leaving focus. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement custom behaviour.
 func _focus_out():
-	if focus_out_animation: focus_out_animation.play_animation(self)
+	if focus_out_animation: await focus_out_animation.play_animation(self)
 	
 
 ##Used when a [Card] initializes a layout, set the refrence of the card its resource and emits [member CardLayout.layout_ready] at the end.

@@ -32,6 +32,7 @@ physics_interpolation_mode = 2
 script = ExtResource("3_hg8is")
 show_cards = true
 starting_deck = ExtResource("4_2a7na")
+auto_setup = true
 draw_pile = NodePath("Draw")
 discard_pile = NodePath("Discard")
 front_face_in_draw = false

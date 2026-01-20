@@ -26,12 +26,13 @@ var pile_preview_hand: CardHand
 
 func _ready() -> void:
 	if auto_setup:
-		setup()
+		setup.call_deferred()
 
 
 ##Sets necessary 
 func setup(deck: CardDeck = starting_deck):
 	_setup_piles()
+	clear_deck()
 	
 	if starting_deck:
 		initialize_from_deck(deck)

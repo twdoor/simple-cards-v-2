@@ -77,11 +77,11 @@ func _ready() -> void:
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 	
-	if CG.get_available_layouts().has(card_data.custom_layout_name):
+	if card_data and CG.get_available_layouts().has(card_data.custom_layout_name):
 			front_layout_name = card_data.custom_layout_name
 	
 	
-	_setup_layout()
+	_setup_layout(true)
 	set_card_size()
 	set_process(false)
 
@@ -151,13 +151,13 @@ func _check_for_hold() -> bool:
 			
 func _on_focus_entered() -> void:
 	if _layout:
-		_layout._focus_in()
+		await _layout._focus_in()
 	focused = true
 	set_process(true)
 
 func _on_focus_exited() -> void:
 	if _layout:
-		_layout._focus_out()
+		await _layout._focus_out()
 	focused = false
 	if !holding: set_process(false)
 
@@ -227,9 +227,10 @@ func kill_all_tweens() -> void:
 
 #region layout funcs
 
-func _setup_layout() -> void:
+func _setup_layout(no_animations: bool = false) -> void:
 	if _layout:
-		_layout._flip_out()
+		if !no_animations:
+			await _layout._flip_out()
 		_layout.queue_free()
 		_layout = null
 
@@ -245,7 +246,8 @@ func _setup_layout() -> void:
 	
 	add_child(_layout)
 	_layout.setup(self, card_data)
-	_layout._flip_in()
+	if !no_animations:
+		await _layout._flip_in()
 	
 	_layout.anchors_preset = Control.PRESET_FULL_RECT
 	_layout.mouse_filter = Control.MOUSE_FILTER_IGNORE 
@@ -274,3 +276,6 @@ func flip() -> void:
 func _is_owened() -> bool:
 	var parent = get_parent()
 	return parent is CardHand or parent is CardSlot
+
+func _exit_tree() -> void:
+	kill_all_tweens()
