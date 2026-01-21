@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://brvun6l03k0hu"]
+[gd_scene load_steps=12 format=3 uid="uid://brvun6l03k0hu"]
 
 [ext_resource type="Script" uid="uid://bmc1k8rf2430l" path="res://examples/balatro_style/balatro_example.gd" id="1_ieake"]
 [ext_resource type="Script" uid="uid://f3ybsxom5cmo" path="res://examples/balatro_style/balatro_card_hand.gd" id="2_grswf"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://b1s6x4iyt2pps" path="res://addons/simple_cards/hand/shape/premade_shapes/line_shape.gd" id="5_frvav"]
 [ext_resource type="Script" uid="uid://bbi8i6vef3f6y" path="res://addons/simple_cards/hand/card_hand.gd" id="5_gjekf"]
 [ext_resource type="Script" uid="uid://cgtxv1fnflwfu" path="res://addons/simple_cards/hand/shape/premade_shapes/arc_shape.gd" id="7_m6hid"]
+[ext_resource type="Script" uid="uid://qd3kangeiqg" path="res://addons/simple_cards/hand/shape/premade_shapes/grid_shape.gd" id="8_m6hid"]
 
 [sub_resource type="Resource" id="Resource_frvav"]
 script = ExtResource("7_m6hid")
@@ -18,24 +19,31 @@ script = ExtResource("5_frvav")
 card_spacing = 90.0
 metadata/_custom_type_script = "uid://b1s6x4iyt2pps"
 
-[sub_resource type="Resource" id="Resource_qxomd"]
-script = ExtResource("7_m6hid")
-arc_angle = 130.0
-card_spacing = 70.0
-metadata/_custom_type_script = "uid://cgtxv1fnflwfu"
+[sub_resource type="Resource" id="Resource_xp7b1"]
+resource_local_to_scene = true
+script = ExtResource("8_m6hid")
+num_of_cols = 13
+num_of_rows = 4
+col_offset = 80.0
+row_offset = 112.0
+metadata/_custom_type_script = "uid://qd3kangeiqg"
 
 [node name="BalatroExample" type="CanvasLayer"]
 script = ExtResource("1_ieake")
 
-[node name="CardDeckManager" type="Node" parent="." node_paths=PackedStringArray("draw_pile", "discard_pile")]
+[node name="CardDeckManager" type="Node" parent="." node_paths=PackedStringArray("pile_nodes")]
 physics_interpolation_mode = 2
 script = ExtResource("3_hg8is")
+deck = ExtResource("4_2a7na")
+pile_nodes = {
+0: NodePath("Draw"),
+1: NodePath("Discard")
+}
+front_face_in_pile = Dictionary[int, bool]({
+0: false,
+1: true
+})
 show_cards = true
-starting_deck = ExtResource("4_2a7na")
-auto_setup = true
-draw_pile = NodePath("Draw")
-discard_pile = NodePath("Discard")
-front_face_in_draw = false
 metadata/_custom_type_script = "uid://bisyk4bowdvsf"
 
 [node name="Draw" type="Control" parent="CardDeckManager"]
@@ -95,13 +103,13 @@ anchor_top = 1.046
 anchor_right = 0.49800003
 anchor_bottom = 1.046
 offset_left = -0.44006348
-offset_top = -0.11999512
+offset_top = -361.12
 offset_right = -0.44006348
-offset_bottom = -0.11999512
+offset_bottom = -361.12
 size_flags_horizontal = 6
 size_flags_vertical = 10
 script = ExtResource("5_gjekf")
-shape = SubResource("Resource_qxomd")
+shape = SubResource("Resource_xp7b1")
 enable_reordering = false
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 

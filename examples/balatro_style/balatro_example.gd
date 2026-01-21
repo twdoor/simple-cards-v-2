@@ -1,12 +1,12 @@
 extends CanvasLayer
 
-
 @onready var card_deck_manager: CardDeckManager = $CardDeckManager
 @onready var balatro_hand: BalatroHand = $BalatroHand
 @onready var played_hand: CardHand = $PlayedHand
 @onready var preview_hand: CardHand = %PreviewHand
 
 var preview_visible: bool = false
+var current_preview_pile: bool = false 
 
 @onready var gold_button: Button = %GoldButton
 @onready var silv_button: Button = %SilvButton
@@ -26,6 +26,21 @@ var sort_by_suit: bool = false
 var hand_size: int
 
 
+func _set_ui_enabled(enabled: bool) -> void:
+
+	discard_button.disabled = !enabled
+	play_button.disabled = !enabled
+	sort_suit_button.disabled = !enabled
+	sort_value_button.disabled = !enabled
+	gold_button.disabled = !enabled
+	silv_button.disabled = !enabled
+	none_button.disabled = !enabled
+	
+	for pile in card_deck_manager.pile_nodes.values():
+		pile.visible = enabled
+	balatro_hand.visible = enabled
+
+
 func _ready() -> void:
 	gold_button.pressed.connect(_on_gold_pressed)
 	silv_button.pressed.connect(_on_silv_pressed)
@@ -42,8 +57,8 @@ func _ready() -> void:
 
 	hand_size = balatro_hand.max_hand_size
 	
-	#card_deck_manager.setup()
-	deal.call_deferred()
+	card_deck_manager.setup()
+	deal()
 	
 	card_deck_manager.hide_pile_preview_hand()
 	preview_visible = false
@@ -71,15 +86,15 @@ func _on_none_pressed() -> void:
 
 
 func _on_discard_pressed() -> void:
-	for card in balatro_hand.selected:
-		card_deck_manager.add_card_to_pile(card, true)
+	##When moving between containers, duplicate the cards array so it doesnt break in the loop
+	for card in balatro_hand.selected.duplicate():
+		card_deck_manager.add_card_to_pile(card, CardDeck.Pile.DISCARD)
 	balatro_hand.clear_selected()
 	
 	card_deck_manager.hide_pile_preview_hand()
 	preview_visible = false
 	
 	deal()
-
 
 func _on_play_button() -> void:
 	card_deck_manager.hide_pile_preview_hand()
@@ -91,8 +106,9 @@ func _on_play_button() -> void:
 	
 	await get_tree().create_timer(2).timeout ##Replace with VFX/Logic
 	
-	for card in played_hand.cards:
-		card_deck_manager.add_card_to_pile(card, true)
+	##When moving between containers, duplicate the cards array so it doesnt break in the loop
+	for card in played_hand.cards.duplicate(): 
+		card_deck_manager.add_card_to_pile(card, CardDeck.Pile.DISCARD)
 
 	played_hand.clear_hand()
 	deal()
@@ -103,14 +119,16 @@ func deal():
 	if to_deal < 0:
 		to_deal = 7
 	
-	if card_deck_manager.get_pile_size() >= to_deal:
-		balatro_hand.add_cards(card_deck_manager.draw_cards(to_deal))
+	var pile_size: int = card_deck_manager.get_pile_size(CardDeck.Pile.DRAW)
+	
+	if pile_size >= to_deal:
+		balatro_hand.add_cards(card_deck_manager.draw_cards(to_deal, CardDeck.Pile.DRAW))
 		
-	elif card_deck_manager.get_pile_size() < to_deal:
-		var overflow := to_deal - card_deck_manager.get_pile_size()
-		balatro_hand.add_cards(card_deck_manager.draw_cards(card_deck_manager.get_pile_size()))
+	elif pile_size < to_deal:
+		var overflow := to_deal - pile_size
+		balatro_hand.add_cards(card_deck_manager.draw_cards(pile_size))
 		card_deck_manager.reshuffle_discard_and_shuffle()
-		if card_deck_manager.get_pile_size() >= overflow:
+		if pile_size >= overflow:
 			balatro_hand.add_cards(card_deck_manager.draw_cards(overflow))
 	
 	for card in balatro_hand.cards:
@@ -132,34 +150,39 @@ func _on_sort_value_pressed() -> void:
 
 
 func _on_preview_discard_pressed():
-	preview_visible = !preview_visible
-	
-	if preview_visible:
-		card_deck_manager.show_pile_preview_hand(preview_hand, true)
-		complete_sort(preview_hand)
-		for card in preview_hand._cards:
-			card.disabled = false
-	else:
+	if preview_visible and (current_preview_pile == true or card_deck_manager.is_pile_empty(CardDeck.Pile.DISCARD)):
+		preview_visible = false
 		card_deck_manager.hide_pile_preview_hand()
+		_set_ui_enabled(true)
+	elif !card_deck_manager.is_pile_empty(CardDeck.Pile.DISCARD):
+		preview_visible = true
+		current_preview_pile = true
+		_set_ui_enabled(false)
+		card_deck_manager.show_pile_preview_hand(preview_hand, CardDeck.Pile.DISCARD)
+		complete_sort(preview_hand)
+		for card in preview_hand.cards:
+			card.disabled = true
 
 
 func _on_preview_draw_pressed():
-	preview_visible = !preview_visible
-	
-	if preview_visible:
-		card_deck_manager.show_pile_preview_hand(preview_hand, false)
-		complete_sort(preview_hand)
-		for card in preview_hand._cards:
-			card.disabled = false
-	else:
+	if preview_visible and current_preview_pile == false:
+		preview_visible = false
 		card_deck_manager.hide_pile_preview_hand()
+		_set_ui_enabled(true) 
+	else:
+		preview_visible = true
+		current_preview_pile = false
+		_set_ui_enabled(false) 
+		card_deck_manager.show_pile_preview_hand(preview_hand, CardDeck.Pile.DRAW)
+		complete_sort(preview_hand)
+		for card in preview_hand.cards:
+			card.disabled = true
 
 
 func complete_sort(hand: CardHand) -> void:
-	hand._cards.sort_custom(func(a: Card, b: Card) -> bool:
+	hand.sort_cards(func(a: Card, b: Card) -> bool:
 		if a.card_data.card_suit != b.card_data.card_suit:
 			return a.card_data.card_suit < b.card_data.card_suit
 		else:
 			return a.card_data.value < b.card_data.value
 	)
-	hand._arrange_cards()

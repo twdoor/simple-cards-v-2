@@ -263,6 +263,9 @@ func set_layout(new_layout_name: String, is_front: bool = true) -> void:
 		back_layout_name = new_layout_name
 	_setup_layout()
 
+func get_layout() -> CardLayout:
+	return _layout
+	
 ##Refreshes layout
 func refresh_layout() -> void:
 	if _layout:
