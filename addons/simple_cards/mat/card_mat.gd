@@ -8,18 +8,25 @@ signal card_entered(card: Card)
 signal card_exited(card: Card)
 ##Emitted when a card is dropped on this mat
 signal card_dropped(card: Card)
+##Emitted when mouse enters mat area
+signal mat_hovered()
+##Emitted when mouse exits mat area
+signal mat_unhovered()
 
 var _card_over: bool = false
 var _card_currently_over: Card = null
 
 func _ready() -> void:
+	CG.holding_card.connect(_on_holding_card)
 	CG.dropped_card.connect(_on_card_dropped)
+	
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+	
+	set_process(false)
 
 
 func _process(_delta: float) -> void:
-	if CG.current_held_item == null:
-		return
-	
 	var cursor_pos = CG.get_cursor_position()
 	var is_over = get_global_rect().has_point(cursor_pos)
 	
@@ -35,6 +42,10 @@ func _process(_delta: float) -> void:
 		_card_currently_over = null
 
 
+func _on_holding_card(card: Card) -> void:
+	set_process(true)
+
+
 func _on_card_dropped() -> void:
 	if _card_over and _card_currently_over:
 		card_dropped.emit(_card_currently_over)
@@ -42,6 +53,13 @@ func _on_card_dropped() -> void:
 	
 	_card_over = false
 	_card_currently_over = null
+	set_process(false)
+
+func _on_mouse_entered() -> void:
+	mat_hovered.emit()
+
+func _on_mouse_exited() -> void:
+	mat_unhovered.emit()
 
 ##Triggered when a card is dropped on the mat. [color=red]Overwrite[/color] to implement custom action.
 func handle_dropped_card(card: Card) -> void:

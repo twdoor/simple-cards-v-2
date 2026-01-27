@@ -12,6 +12,18 @@ signal card_dropped(card: Card)
 signal card_abandoned(card: Card)
 ##Emitted when the slot's locked state changes
 signal slot_lock_changed(is_locked: bool)
+##Emitted when mouse enters slot area
+signal slot_hovered()
+##Emitted when mouse exits slot area
+signal slot_unhovered()
+##Emitted when a card is successfully placed in the slot
+signal slot_filled(card: Card)
+##Emitted when a card is removed from the slot
+signal slot_emptied()
+##Emitted when cards are swapped
+signal slot_swapped(old_card: Card, new_card: Card)
+##Emitted when a card is rejected
+signal card_rejected(card: Card, reason: String)
 
 
 ##When true, prevents cards from being dragged out of or swapped into this slot
@@ -42,12 +54,14 @@ var _card_originated_from_this_slot: bool = false
 func _ready() -> void:
 	CG.holding_card.connect(_on_card_held)
 	CG.dropped_card.connect(_on_card_dropped)
+	
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+	
+	set_process(false)
 
 
 func _process(_delta: float) -> void:
-	if CG.current_held_item == null:
-		return
-	
 	var cursor_pos = CG.get_cursor_position()
 	var is_over = get_global_rect().has_point(cursor_pos)
 	
@@ -81,18 +95,22 @@ func is_locked() -> bool:
 ##Adds a card to this slot via code. Returns [code]true[/code] if successful. [br]Fails if slot is occupied or locked. Handles reparenting from CardHand or other CardSlot.
 func add_card(card: Card) -> bool:
 	if slot_locked:
+		card_rejected.emit(card, "slot_locked")
 		return false
 	if held_card != null:
+		card_rejected.emit(card, "slot_occupied")
 		return false
 	
 	var current_parent = card.get_parent()
 	
 	if current_parent is CardSlot and current_parent.slot_locked:
+		card_rejected.emit(card, "source_locked")
 		return false
 	
 	if current_parent is CardSlot:
 		current_parent._disconnect_card_signals(card)
 		current_parent.held_card = null
+		current_parent.slot_emptied.emit()
 		card.reparent(self)
 	elif current_parent is CardHand:
 		current_parent.remove_card(card, self)
@@ -105,6 +123,7 @@ func add_card(card: Card) -> bool:
 	_connect_card_signals(card)
 	_position_card_in_center(card)
 	card_dropped.emit(card)
+	slot_filled.emit(card)
 	return true
 
 
@@ -127,6 +146,7 @@ func remove_card(new_parent: Node = null) -> Card:
 			remove_child(card)
 			card.global_position = stored_global_pos
 	
+	slot_emptied.emit()
 	return card
 
 
@@ -146,6 +166,7 @@ func clear_slot(force: bool = false) -> Card:
 		remove_child(card)
 		card.global_position = stored_global_pos
 	
+	slot_emptied.emit()
 	return card
 
 
@@ -178,9 +199,20 @@ func swap_with(other_slot: CardSlot) -> bool:
 	if held_card:
 		_connect_card_signals(held_card)
 		_position_card_in_center(held_card)
+		slot_filled.emit(held_card)
+		if this_card:
+			slot_swapped.emit(this_card, held_card)
+	else:
+		slot_emptied.emit()
+	
 	if other_slot.held_card:
 		other_slot._connect_card_signals(other_slot.held_card)
 		other_slot._position_card_in_center(other_slot.held_card)
+		other_slot.slot_filled.emit(other_slot.held_card)
+		if other_card:
+			other_slot.slot_swapped.emit(other_card, other_slot.held_card)
+	else:
+		other_slot.slot_emptied.emit()
 	
 	return true
 
@@ -196,7 +228,10 @@ func transfer_to_hand(hand: CardHand) -> bool:
 	_disconnect_card_signals(card)
 	held_card = null
 	
-	return hand.add_card(card)
+	var success = hand.add_card(card)
+	if success:
+		slot_emptied.emit()
+	return success
 
 
 ##Gets the card in this slot without removing it. Returns [code]null[/code] if empty.
@@ -217,6 +252,7 @@ func _on_card_held(card: Card) -> void:
 		_card_origin_parent = card.get_parent()
 	
 	_card_over = false
+	set_process(true)
 
 
 ##Forces a card back to this slot (used when trying to drag from a locked slot)
@@ -241,6 +277,7 @@ func _on_card_dropped() -> void:
 	_card_currently_over = null
 	_card_originated_from_this_slot = false
 	_card_origin_parent = null
+	set_process(false)
 
 
 ##Removes the card from the slot and reparents it to abandon_reparent_target (or slot's parent)
@@ -259,6 +296,7 @@ func _abandon_card(card: Card) -> void:
 	card.scale = Vector2.ONE
 	
 	card_abandoned.emit(card)
+	slot_emptied.emit()
 
 
 #region Signal Management
@@ -270,6 +308,12 @@ func _disconnect_card_signals(card: Card) -> void:
 	if card.card_clicked.is_connected(_on_card_clicked):
 		card.card_clicked.disconnect(_on_card_clicked)
 
+func _on_mouse_entered() -> void:
+	slot_hovered.emit()
+
+func _on_mouse_exited() -> void:
+	slot_unhovered.emit()
+
 ##Used when the card in the slot is clicked. [color=red]Overwrite[/color] to implement card action.
 func _on_card_clicked(card: Card) -> void:
 	print("Card clicked in slot: ", card.name)
@@ -280,10 +324,12 @@ func _on_card_clicked(card: Card) -> void:
 ##Handles placing a card in this slot. If slot is occupied, swaps with the occupant (if allow_swap is true).
 func _handle_card_drop(incoming_card: Card) -> void:
 	if slot_locked:
+		card_rejected.emit(incoming_card, "slot_locked")
 		_return_card_to_parent(incoming_card)
 		return
 	
 	if !check_conditions(incoming_card):
+		card_rejected.emit(incoming_card, "failed_condition_check")
 		_return_card_to_parent(incoming_card)
 		return
 	
@@ -295,6 +341,7 @@ func _handle_card_drop(incoming_card: Card) -> void:
 	var current_card = held_card
 	
 	if incoming_card_parent is CardSlot and incoming_card_parent.slot_locked:
+		card_rejected.emit(incoming_card, "source_locked")
 		_return_card_to_parent(incoming_card)
 		return
 	
@@ -303,6 +350,7 @@ func _handle_card_drop(incoming_card: Card) -> void:
 		return
 	
 	if not allow_swap:
+		card_rejected.emit(incoming_card, "swap_disabled")
 		_return_card_to_parent(incoming_card)
 		return
 	
@@ -317,6 +365,7 @@ func _handle_card_drop(incoming_card: Card) -> void:
 	elif incoming_was_in_slot:
 		original_parent._disconnect_card_signals(incoming_card)
 		original_parent.held_card = null
+		original_parent.slot_emptied.emit()
 		incoming_card.reparent(self)
 	else:
 		if incoming_card.get_parent():
@@ -335,8 +384,10 @@ func _handle_card_drop(incoming_card: Card) -> void:
 		original_slot.held_card = current_card
 		original_slot._connect_card_signals(current_card)
 		original_slot._position_card_in_center(current_card)
+		original_slot.slot_filled.emit(current_card)
 	
 	card_dropped.emit(incoming_card)
+	slot_swapped.emit(current_card, incoming_card)
 
 
 ##Returns a card to its original parent/location if dropped on invalid spot
@@ -347,7 +398,7 @@ func _return_card_to_parent(card: Card) -> void:
 	var parent = card.get_parent()
 	
 	if parent is CardHand:
-		parent.refresh_arrangement()
+		parent.arrange_cards()
 	elif parent is CardSlot:
 		parent._position_card_in_center(card)
 
@@ -371,6 +422,7 @@ func _position_card_in_center(card: Card) -> void:
 ##Places a card in an empty slot
 func _place_card(card: Card) -> void:
 	if slot_locked:
+		card_rejected.emit(card, "slot_locked")
 		_return_card_to_parent(card)
 		return
 	
@@ -381,12 +433,14 @@ func _place_card(card: Card) -> void:
 	var current_parent = card.get_parent()
 	
 	if current_parent is CardSlot and current_parent.slot_locked:
+		card_rejected.emit(card, "source_locked")
 		_return_card_to_parent(card)
 		return
 	
 	if current_parent is CardSlot:
 		current_parent._disconnect_card_signals(card)
 		current_parent.held_card = null
+		current_parent.slot_emptied.emit()
 		card.reparent(self)
 	elif current_parent is CardHand:
 		current_parent.remove_card(card, self)
@@ -400,6 +454,7 @@ func _place_card(card: Card) -> void:
 	_connect_card_signals(card)
 	_position_card_in_center(card)
 	card_dropped.emit(card)
+	slot_filled.emit(card)
 
 ##Triggered when a card tried to be placed in the slot. [color=red]Overwrite[/color] to implement custom rules.
 func check_conditions(card: Card) -> bool:

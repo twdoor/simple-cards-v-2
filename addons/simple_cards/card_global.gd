@@ -9,6 +9,12 @@ signal holding_card(card: Card)
 signal dropped_card
 ##Emitted when layouts have been loaded
 signal layouts_loaded
+##Emitted when a layout is registered
+signal layout_registered(layout_id: StringName)
+##Emitted when a layout is unregistered
+signal layout_unregistered(layout_id: StringName)
+##Emitted when layouts are refreshed
+signal layouts_refreshed()
 
 
 const DEFAULT_LAYOUT = "res://addons/simple_cards/card/card_layout/default_card_layout.tscn"
@@ -126,6 +132,7 @@ func _register_default_layouts() -> void:
 func _register_layout_entry(layout_id: String, path: String, tags: Array) -> void:
 	_layouts[layout_id] = path
 	_layouts_by_id[layout_id] = tags
+	layout_registered.emit(StringName(layout_id))
 	
 	for tag in tags:
 		if tag not in _layouts_by_tag:
@@ -194,3 +201,4 @@ func create_layout(layout_id: StringName = &"") -> CardLayout:
 ##Reload layouts from cache (useful if cache was updated externally)
 func refresh_layouts() -> void:
 	_load_layouts_from_cache()
+	layouts_refreshed.emit()

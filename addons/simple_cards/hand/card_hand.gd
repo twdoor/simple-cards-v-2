@@ -2,6 +2,24 @@
 @icon("uid://1g0jb8x0i516")
 class_name CardHand extends Control
 
+##Emitted when a card is added to the hand
+signal card_added(card: Card, index: int)
+##Emitted when a card is removed from the hand
+signal card_removed(card: Card, index: int)
+##Emitted when the last card is removed
+signal hand_empty()
+##Emitted when max_hand_size is reached
+signal hand_full()
+##Emitted when clear_hand() is called
+signal hand_cleared()
+##Emitted when cards are reordered
+signal cards_reordered(new_order: Array[Card])
+##Emitted when a specific card changes position in hand
+signal card_position_changed(card: Card, old_index: int, new_index: int)
+##Emitted before arrange_cards()
+signal arrangement_started()
+##Emitted after arrange_cards() completes
+signal arrangement_completed()
 
 ##Shape of card spread. 
 @export var shape: CardHandShape 
@@ -29,6 +47,7 @@ func _ready() -> void:
 			add_card(child)
 	CG.dropped_card.connect(_on_card_dropped)
 	CG.holding_card.connect(_on_holding_card)
+
 	
 	set_process(false)
 
@@ -44,6 +63,7 @@ func _exit_tree() -> void:
 ##Adds a card to the hand. The card get reparented as a child of the hand. Returns [code]true[/code] if successful. [br]If the card is already a child of the hand the [member CardHand.remove_card] is used to reparent the card.
 func add_card(card: Card) -> bool:
 	if max_hand_size >= 0 and cards.size() >= max_hand_size:
+		hand_full.emit()
 		return false
 	
 	if card.get_parent() != self:
@@ -58,6 +78,11 @@ func add_card(card: Card) -> bool:
 	if !cards.has(card):
 		cards.append(card)
 		_connect_card_signals(card)
+		var index = cards.size() - 1
+		card_added.emit(card, index)
+		
+		if max_hand_size >= 0 and cards.size() >= max_hand_size:
+			hand_full.emit()
 	
 	arrange_cards()
 	return true
@@ -66,6 +91,7 @@ func add_card(card: Card) -> bool:
 ##Removes specific card from hand. [color=red]DOES NOT FREE THE CARD[/color]
 func remove_card(card: Card, new_parent: Node = null) -> void:
 	if cards.has(card):
+		var index = cards.find(card)
 		_disconnect_card_signals(card)
 		cards.erase(card)
 		
@@ -76,6 +102,11 @@ func remove_card(card: Card, new_parent: Node = null) -> void:
 				var stored_global_pos = card.global_position
 				remove_child(card)
 				card.global_position = stored_global_pos
+		
+		card_removed.emit(card, index)
+		
+		if cards.is_empty():
+			hand_empty.emit()
 
 		arrange_cards()
 
@@ -92,6 +123,9 @@ func clear_hand() -> void:
 			var stored_global_pos = card.global_position
 			remove_child(card)
 			card.global_position = stored_global_pos
+	
+	hand_cleared.emit()
+	hand_empty.emit()
 
 
 #region Signal Management
@@ -160,6 +194,7 @@ func _on_holding_card(card: Card) -> void:
 		set_process(false)
 
 
+
 ##Used when a card from hand is clicked. [color=red]Overwrite[/color] to implement card action.
 func _handle_clicked_card(card: Card) -> void:
 	print("%s: %s was clicked" %[self.name, card.name])
@@ -182,6 +217,9 @@ func _update_card_reordering() -> void:
 	if new_index != -1 and new_index != _drag_start_index:
 		cards.remove_at(_drag_start_index)
 		cards.insert(new_index, _dragged_card)
+		
+		card_position_changed.emit(_dragged_card, _drag_start_index, new_index)
+		
 		_drag_start_index = new_index
 		_last_reorder_index = new_index
 		
@@ -237,17 +275,24 @@ func arrange_cards() -> void:
 	if cards.is_empty():
 		return
 	
+	arrangement_started.emit()
+	
 	_card_positions.clear()
 	
 	_card_positions = shape.arrange_cards(cards, self)
 	
 	_update_z_indices()
 	_update_focus_chain()
+	
+	cards_reordered.emit(cards)
+	arrangement_completed.emit()
 
 
 func _arrange_cards_except_dragged() -> void:
 	if cards.is_empty():
 		return
+	
+	arrangement_started.emit()
 	
 	_card_positions.clear()
 	
@@ -255,6 +300,8 @@ func _arrange_cards_except_dragged() -> void:
 
 	_update_z_indices()
 	_update_focus_chain()
+	
+	arrangement_completed.emit()
 
 #endregion
 
@@ -287,6 +334,7 @@ func add_cards(card_array: Array[Card]) -> int:
 	var added_count = 0
 	for card in card_array:
 		if max_hand_size >= 0 and cards.size() >= max_hand_size:
+			hand_full.emit()
 			break
 		
 		if card.get_parent() != self:

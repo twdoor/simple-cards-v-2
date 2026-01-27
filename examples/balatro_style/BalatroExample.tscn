@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://brvun6l03k0hu"]
+[gd_scene load_steps=13 format=3 uid="uid://brvun6l03k0hu"]
 
 [ext_resource type="Script" uid="uid://bmc1k8rf2430l" path="res://examples/balatro_style/balatro_example.gd" id="1_ieake"]
 [ext_resource type="Script" uid="uid://f3ybsxom5cmo" path="res://examples/balatro_style/balatro_card_hand.gd" id="2_grswf"]
@@ -8,6 +8,14 @@
 [ext_resource type="Script" uid="uid://bbi8i6vef3f6y" path="res://addons/simple_cards/hand/card_hand.gd" id="5_gjekf"]
 [ext_resource type="Script" uid="uid://cgtxv1fnflwfu" path="res://addons/simple_cards/hand/shape/premade_shapes/arc_shape.gd" id="7_m6hid"]
 [ext_resource type="Script" uid="uid://qd3kangeiqg" path="res://addons/simple_cards/hand/shape/premade_shapes/grid_shape.gd" id="8_m6hid"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_m6hid"]
+bg_color = Color(0.04044509, 0.27078483, 0.117696024, 1)
+border_width_left = 16
+border_width_top = 16
+border_width_right = 16
+border_width_bottom = 16
+border_color = Color(0.29236764, 0.1102001, 0.029655594, 1)
 
 [sub_resource type="Resource" id="Resource_frvav"]
 script = ExtResource("7_m6hid")
@@ -36,8 +44,8 @@ physics_interpolation_mode = 2
 script = ExtResource("3_hg8is")
 deck = ExtResource("4_2a7na")
 pile_nodes = {
-0: NodePath("Draw"),
-1: NodePath("Discard")
+0: NodePath("../MarginContainer/Draw"),
+1: NodePath("../MarginContainer/Discard")
 }
 front_face_in_pile = Dictionary[int, bool]({
 0: false,
@@ -46,24 +54,115 @@ front_face_in_pile = Dictionary[int, bool]({
 show_cards = true
 metadata/_custom_type_script = "uid://bisyk4bowdvsf"
 
-[node name="Draw" type="Control" parent="CardDeckManager"]
-layout_mode = 3
-anchors_preset = 0
-offset_left = 100.0
-offset_top = 70.0
-offset_right = 100.0
-offset_bottom = 70.0
-
-[node name="Discard" type="Control" parent="CardDeckManager"]
-layout_mode = 3
-anchors_preset = 1
-anchor_left = 1.0
+[node name="BGPanel" type="Panel" parent="."]
+anchors_preset = 15
 anchor_right = 1.0
-offset_left = -140.0
-offset_top = 70.0
-offset_right = -140.0
-offset_bottom = 70.0
-grow_horizontal = 0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_m6hid")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 4
+
+[node name="GoldButton" type="Button" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Gold"
+
+[node name="SilvButton" type="Button" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Silver"
+
+[node name="NoneButton" type="Button" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "None"
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+
+[node name="DiscardButton" type="Button" parent="MarginContainer/VBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Discard"
+
+[node name="PlayButton" type="Button" parent="MarginContainer/VBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Play"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+
+[node name="SortSuitButton" type="Button" parent="MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Sort by Suit"
+
+[node name="SortValueButton" type="Button" parent="MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+text = "Sort by Value"
+
+[node name="Draw" type="Control" parent="MarginContainer"]
+custom_minimum_size = Vector2(80, 112)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+
+[node name="Discard" type="Control" parent="MarginContainer"]
+custom_minimum_size = Vector2(80, 112)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+
+[node name="PreviewDrawButton" type="Button" parent="MarginContainer"]
+unique_name_in_owner = true
+z_index = 999
+custom_minimum_size = Vector2(80, 112)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+text = "Preview
+Draw
+Pile"
+
+[node name="PreviewDiscardButton" type="Button" parent="MarginContainer"]
+unique_name_in_owner = true
+z_index = 999
+custom_minimum_size = Vector2(80, 112)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+text = "Preview
+Discard
+Pile"
 
 [node name="BalatroHand" type="Control" parent="."]
 layout_mode = 3
@@ -71,8 +170,8 @@ anchor_left = 0.5
 anchor_top = 1.319
 anchor_right = 0.5
 anchor_bottom = 1.319
-offset_top = 0.32000732
-offset_bottom = 0.32000732
+offset_top = -49.679993
+offset_bottom = -49.679993
 grow_horizontal = 2
 grow_vertical = 0
 script = ExtResource("2_grswf")
@@ -88,6 +187,8 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
+offset_top = -10.0
+offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("5_gjekf")
@@ -103,101 +204,12 @@ anchor_top = 1.046
 anchor_right = 0.49800003
 anchor_bottom = 1.046
 offset_left = -0.44006348
-offset_top = -361.12
+offset_top = -403.12
 offset_right = -0.44006348
-offset_bottom = -361.12
+offset_bottom = -403.12
 size_flags_horizontal = 6
 size_flags_vertical = 10
 script = ExtResource("5_gjekf")
 shape = SubResource("Resource_xp7b1")
 enable_reordering = false
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
-
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = -91.0
-offset_top = -100.0
-offset_bottom = 100.0
-grow_horizontal = 0
-grow_vertical = 2
-
-[node name="GoldButton" type="Button" parent="VBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-text = "Turn Gold"
-
-[node name="SilvButton" type="Button" parent="VBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-text = "Turn Silver"
-
-[node name="NoneButton" type="Button" parent="VBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-text = "Turn None"
-
-[node name="VBoxContainer2" type="VBoxContainer" parent="."]
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_top = -66.0
-offset_right = 67.0
-offset_bottom = 66.0
-grow_vertical = 2
-
-[node name="DiscardButton" type="Button" parent="VBoxContainer2"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-text = "Discard"
-
-[node name="PlayButton" type="Button" parent="VBoxContainer2"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-text = "Play"
-
-[node name="PreviewDiscardButton" type="Button" parent="VBoxContainer2"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-text = "Prev
-Disc"
-
-[node name="PreviewDrawButton" type="Button" parent="VBoxContainer2"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-text = "Prev
-Draw"
-
-[node name="HBoxContainer" type="HBoxContainer" parent="."]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -105.5
-offset_top = -64.0
-offset_right = 105.5
-grow_horizontal = 2
-grow_vertical = 0
-
-[node name="SortSuitButton" type="Button" parent="HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-text = "Sort by Suit"
-
-[node name="SortValueButton" type="Button" parent="HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-text = "Sort by Value"

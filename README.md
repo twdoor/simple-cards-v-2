@@ -44,7 +44,7 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
 - **Layout Management Panel** - Editor panel to view, create, and manage all card layouts
 - **Fully Documented** - In-editor documentation for all classes
 
-------
+---
 
 ## Installation
 
@@ -177,6 +177,17 @@ A draggable button that represents a single card.
 | Signal | Parameters | Description |
 | --- | --- | --- |
 | `card_clicked` | `card: Card` | Emitted when card is clicked (not dragged) |
+| `card_hovered` | - | Emitted when mouse enters card area |
+| `card_unhovered` | - | Emitted when mouse exits card area |
+| `drag_started` | `card: Card` | Emitted when drag threshold exceeded |
+| `drag_ended` | `card: Card` | Emitted when drag completes |
+| `card_flipped` | `is_front_face: bool` | Emitted when flip() is called |
+| `card_focused` | - | Emitted when card gains focus |
+| `card_unfocused` | - | Emitted when card loses focus |
+| `layout_changed` | `layout_name: StringName` | Emitted when layout switches |
+| `tween_started` | `tween_type: String` | Emitted when a tween starts |
+| `tween_completed` | `tween_type: String` | Emitted when a tween completes |
+| `card_data_changed` | `new_data: CardResource` | Emitted when card_data is set |
 
 #### Methods
 
@@ -267,34 +278,51 @@ Base class for card visuals. A `SubViewportContainer` that renders the card face
 | Signal | Description |
 | --- | --- |
 | `layout_ready` | Emitted when setup is complete |
+| `layout_initialized` | Emitted when layout is initialized |
+| `display_updated` | Emitted after display is updated |
+| `flip_in_started` | Emitted when flip in animation starts |
+| `flip_in_completed` | Emitted when flip in animation completes |
+| `flip_out_started` | Emitted when flip out animation starts |
+| `flip_out_completed` | Emitted when flip out animation completes |
+| `focus_in_started` | Emitted when focus in animation starts |
+| `focus_in_completed` | Emitted when focus in animation completes |
+| `focus_out_started` | Emitted when focus out animation starts |
+| `focus_out_completed` | Emitted when focus out animation completes |
 
 #### Virtual Methods (Override These)
 
 ```gdscript
 # Called when resource changes - update your visuals here
-func _update_display() -> void:
-    pass
+func _update_display() -> void
 
 # Called when layout is added to card
 # Uses flip_in_animation if set, otherwise override for custom behavior
-func _flip_in() -> void:
-    if flip_in_animation: flip_in_animation.play_animation(self)
+func _flip_in() -> void
 
 # Called when layout is removed
 # Uses flip_out_animation if set, otherwise override for custom behavior
-func _flip_out() -> void:
-    if flip_out_animation: flip_out_animation.play_animation(self)
+func _flip_out() -> void
 
 # Called when card gains focus
 # Uses focus_in_animation if set, otherwise override for custom behavior
-func _focus_in() -> void:
-    if focus_in_animation: focus_in_animation.play_animation(self)
+func _focus_in() -> void
 
 # Called when card loses focus
 # Uses focus_out_animation if set, otherwise override for custom behavior
-func _focus_out() -> void:
-    if focus_out_animation: focus_out_animation.play_animation(self)
+func _focus_out() -> void
 ```
+
+**IMPORTANT!!** Overriding any of the flip/focus/update functions will also will override the signals emission.In this case you will need to implement the stared and completed signals yourself.
+
+```gdscript
+# Overrite example
+func _flip_in() -> void:
+	flip_in_started.emit()
+	# Add custom code here...
+	flip_in_completed.emit()
+	
+```
+
 
 #### Creating a Layout
 
@@ -343,6 +371,11 @@ func _focus_in() -> void:
         super._focus_in()
 ```
 
+**Notes**:
+
+- The card will use the size of the Subviewport as the final size. If the layout does not seem right reset the custom minumum size of the CardLayout (CardLayout -> Control -> Layout -> Custom Minimum Size or Transform)
+- For using shaders, apply the shader material to the CardLayout for it be applied on the whole card
+
 ---
 
 ### CardAnimationResource
@@ -384,6 +417,20 @@ A container that arranges multiple cards in a configurable shape.
 | `enable_reordering` | `bool` | Allow drag-reordering within the hand |
 | `max_hand_size` | `int` | Maximum cards allowed (-1 for unlimited) |
 | `cards` | `Array[Card]` | Read-only copy of cards in hand |
+
+#### Signals
+
+| Signal | Parameters | Description |
+| --- | --- | --- |
+| `card_added` | `card: Card, index: int` | Emitted when a card is added to the hand |
+| `card_removed` | `card: Card, index: int` | Emitted when a card is removed from the hand |
+| `hand_empty` | - | Emitted when the last card is removed |
+| `hand_full` | - | Emitted when max_hand_size is reached |
+| `hand_cleared` | - | Emitted when clear_hand() is called |
+| `cards_reordered` | `new_order: Array[Card]` | Emitted when cards are reordered |
+| `card_position_changed` | `card: Card, old_index: int, new_index: int` | Emitted when a specific card changes position in hand |
+| `arrangement_started` | - | Emitted before arrange_cards() |
+| `arrangement_completed` | - | Emitted after arrange_cards() completes |
 
 #### Methods
 
@@ -478,7 +525,7 @@ arc.arc_orientation = 270.0   # Where the arc points (270 = up)
 arc.card_spacing = 50.0       # Space between cards
 ```
 
-**GridHandShape** *(New in 2.4)*
+**GridHandShape**
 
 ```gdscript
 var grid = GridHandShape.new()
@@ -505,11 +552,17 @@ A panel that accepts a single dropped card.
 
 | Signal | Parameters | Description |
 | --- | --- | --- |
-| `card_entered` | `card: Card` | Card started hovering over slot 
-| `card_exited`  `card: Card`  Card stopped hovering |
+| `card_entered` | `card: Card` | Card started hovering over slot |
+| `card_exited` | `card: Card` | Card stopped hovering |
 | `card_dropped` | `card: Card` | Card was dropped on slot |
 | `card_abandoned` | `card: Card` | Card was removed via abandon (dropped on empty space) |
 | `slot_lock_changed` | `is_locked: bool` | Slot lock state changed |
+| `slot_hovered` | - | Emitted when mouse enters slot area |
+| `slot_unhovered` | - | Emitted when mouse exits slot area |
+| `slot_filled` | `card: Card` | Emitted when a card is successfully placed in the slot |
+| `slot_emptied` | - | Emitted when a card is removed from the slot |
+| `slot_swapped` | `old_card: Card, new_card: Card` | Emitted when cards are swapped |
+| `card_rejected` | `card: Card, reason: String` | Emitted when a card is rejected |
 
 #### Properties
 
@@ -578,6 +631,8 @@ A panel that detects dropped card.
 | `card_entered` | `card: Card` | Card started hovering over mat |
 | `card_exited` | `card: Card` | Card stopped hovering |
 | `card_dropped` | `card: Card` | Card was dropped on mat |
+| `mat_hovered` | - | Emitted when mouse enters mat area |
+| `mat_unhovered` | - | Emitted when mouse exits mat area |
 
 #### Virtual Methods
 
@@ -609,6 +664,19 @@ enum Pile {
 | `deck_name` | `StringName` | Optional name for the deck |
 | `card_list` | `Array[CardResource]` | Complete deck composition |
 | `piles` | `Dictionary[Pile, Array]` | Runtime pile state (automatically managed) |
+
+#### Signals
+
+| Signal | Parameters | Description |
+| --- | --- | --- |
+| `pile_shuffled` | `pile: Pile` | Emitted when a pile is shuffled |
+| `pile_emptied` | `pile: Pile` | Emitted when a pile becomes empty |
+| `pile_changed` | `pile: Pile, size: int` | Emitted when a pile's size changes |
+| `card_drawn` | `card_resource: CardResource, from_pile: Pile` | Emitted when a card is drawn from a pile |
+| `card_added_to_pile` | `card_resource: CardResource, pile: Pile, index: int` | Emitted when a card is added to a pile |
+| `card_removed_from_pile` | `card_resource: CardResource, pile: Pile` | Emitted when a card is removed from a pile |
+| `discard_reshuffled` | - | Emitted when discard is reshuffled into draw |
+| `deck_reset` | - | Emitted when reset_to_draw() is called |
 
 #### Methods
 
@@ -657,6 +725,21 @@ Manages visual Card nodes from a CardDeck resource. Uses dictionary-based pile s
 | `show_cards` | `bool` | Show cards in piles |
 | `pile_nodes` | `Dictionary[CardDeck.Pile, Node]` | Container nodes for each pile |
 | `front_face_in_pile` | `Dictionary[CardDeck.Pile, bool]` | Face-up state per pile |
+
+#### Signals
+
+| Signal | Parameters | Description |
+| --- | --- | --- |
+| `deck_initialized` | `deck: CardDeck` | Emitted when deck is initialized |
+| `piles_synchronized` | - | Emitted after piles are synchronized |
+| `card_instance_created` | `card: Card, resource: CardResource` | Emitted when a card instance is created |
+| `card_instance_destroyed` | `card: Card` | Emitted when a card instance is destroyed |
+| `cards_drawn` | `cards: Array[Card], count: int, from_pile: CardDeck.Pile` | Emitted when cards are drawn |
+| `draw_failed` | `pile: CardDeck.Pile` | Emitted when draw from empty pile is attempted |
+| `preview_shown` | `preview_hand: CardHand, pile: CardDeck.Pile` | Emitted when preview is shown |
+| `preview_hidden` | - | Emitted when preview is hidden |
+| `deck_state_saved` | `state: Dictionary` | Emitted when deck state is saved |
+| `deck_state_loaded` | `state: Dictionary` | Emitted when deck state is loaded |
 
 #### Methods
 
@@ -732,20 +815,23 @@ The global singleton providing shared state and utilities. Access via `CG`.
 
 #### Properties
 
-| Property            | Type         | Description                    |
-| ------------------- | ------------ | ------------------------------ |
-| `def_front_layout`  | `StringName` | Default front layout ID        |
-| `def_back_layout`   | `StringName` | Default back layout ID         |
-| `current_held_item` | `Card`       | Currently dragged card         |
-| `card_index`        | `int`        | Auto-incrementing card counter |
+| Property | Type | Description |
+| --- | --- | --- |
+| `def_front_layout` | `StringName` | Default front layout ID |
+| `def_back_layout` | `StringName` | Default back layout ID |
+| `current_held_item` | `Card` | Currently dragged card |
+| `card_index` | `int` | Auto-incrementing card counter |
 
 #### Signals
 
-| Signal           | Parameters   | Description                         |
-| ---------------- | ------------ | ----------------------------------- |
-| `holding_card`   | `card: Card` | Card started being dragged          |
-| `dropped_card`   | -            | Card was released                   |
-| `layouts_loaded` | -            | Layouts have been loaded from cache |
+| Signal | Parameters | Description |
+| --- | --- | --- |
+| `holding_card`   | `card: Card` | Card started being dragged |
+| `dropped_card`   | - | Card was released |
+| `layouts_loaded` | - | Layouts have been loaded from cache |
+| `layout_registered` | `layout_id: StringName` | Emitted when a layout is registered |
+| `layout_unregistered` | `layout_id: StringName` | Emitted when a layout is unregistered |
+| `layouts_refreshed` | - | Emitted when layouts are refreshed |
 
 #### Methods
 
@@ -841,6 +927,19 @@ Run the scene to see a Balatro-inspired card game interface.
 
 ## Changelog
 
+### Version 2.5
+
+- **Signal System Expansion** - Added comprehensive signals across all classes for better event-driven programming
+  - **Card**: Added 11 new signals including hover events, drag events, flip events, focus events, and tween events
+  - **CardLayout**: Added 10 new signals for animation lifecycle events (flip in/out, focus in/out)
+  - **CardGlobal**: Added 3 new signals for layout management events
+  - **CardDeck**: Added 8 new signals for pile management and card operations
+  - **CardDeckManager**: Added 10 new signals for deck operations and card instance lifecycle
+  - **CardHand**: Added 9 new signals for hand management and card positioning
+  - **CardMat**: Added 2 new signals for hover events
+  - **CardSlot**: Added 7 new signals for slot state changes and validation
+  - **CardSlot/CardMat**: process function is now disabled while not holding a card (for optimization purpuses)
+
 ### Version 2.4
 
 - **Deck Refactoring** - the CardDeck and CardDeckManager got a major changes; moved the main logic into the CardDeck, generalized the pile system for expandability and started on a save/load system.
@@ -908,7 +1007,7 @@ Run the scene to see a Balatro-inspired card game interface.
 - Improved drag and drop system
 - Added CardHand and CardDeckManager
 
-------
+---
 
 ## Support
 
@@ -917,6 +1016,6 @@ For feedback, suggestions, or issues:
 - **Twitter/X:** [@twdoortoo](https://twitter.com/twdoortoo)
 - **GitHub Issues:** [Create an issue](https://github.com/twdoor/simple-cards-v-2/issues)
 
-------
+---
 
 **Good luck! -Tw**

@@ -2,11 +2,29 @@
 @icon("uid://u56pws80lkxh")
 class_name CardDeck extends Resource
 
+##Emitted when a pile is shuffled
+signal pile_shuffled(pile: Pile)
+##Emitted when a pile becomes empty
+signal pile_emptied(pile: Pile)
+##Emitted when a pile's size changes
+signal pile_changed(pile: Pile, size: int)
+##Emitted when a card is drawn from a pile
+signal card_drawn(card_resource: CardResource, from_pile: Pile)
+##Emitted when a card is added to a pile
+signal card_added_to_pile(card_resource: CardResource, pile: Pile, index: int)
+##Emitted when a card is removed from a pile
+signal card_removed_from_pile(card_resource: CardResource, pile: Pile)
+##Emitted when discard is reshuffled into draw
+signal discard_reshuffled()
+##Emitted when reset_to_draw() is called
+signal deck_reset()
+
 enum Pile {
 	DRAW,
 	DISCARD,
 }
 
+@export var draw_pile_low_threshold: int = 5
 
 const KEY_DECK_NAME = "deck_name"
 const KEY_CARD_LIST = "card_list"
@@ -35,12 +53,14 @@ func reset_to_draw() -> void:
 		piles[pile].clear()
 	
 	piles[Pile.DRAW] = card_list.duplicate()
+	deck_reset.emit()
 
 
 ##Shuffles a pile
 func shuffle_pile(pile: Pile = Pile.DRAW) -> void:
 	if piles.has(pile):
 		piles[pile].shuffle()
+		pile_shuffled.emit(pile)
 
 
 #endregion
@@ -100,7 +120,10 @@ func get_pile_size(pile: Pile = Pile.DRAW) -> int:
 
 ##Returns true if a pile is empty
 func is_pile_empty(pile: Pile = Pile.DRAW) -> bool:
-	return get_pile(pile).is_empty()
+	var is_empty = get_pile(pile).is_empty()
+	if is_empty:
+		pile_emptied.emit(pile)
+	return is_empty
 
 
 ##Returns the total number of cards in all piles
@@ -118,13 +141,28 @@ func get_total_card_count() -> int:
 func draw_from_pile(pile: Pile = Pile.DRAW) -> CardResource:
 	var pile_array = get_pile(pile)
 	if pile_array.is_empty():
+		pile_emptied.emit(pile)
 		return null
-	return pile_array.pop_back()
+	
+	var card = pile_array.pop_back()
+	card_drawn.emit(card, pile)
+	
+	var new_size = pile_array.size()
+	pile_changed.emit(pile, new_size)
+	
+	if pile_array.is_empty():
+		pile_emptied.emit(pile)
+	
+	return card
 
 
 ##Adds a card to a pile
 func add_to_pile(card: CardResource, pile: Pile = Pile.DRAW) -> void:
-	get_pile(pile).append(card)
+	var pile_array = get_pile(pile)
+	pile_array.append(card)
+	var index = pile_array.size() - 1
+	card_added_to_pile.emit(card, pile, index)
+	pile_changed.emit(pile, pile_array.size())
 
 
 ##Moves a card from one pile to another. Returns true if successful.
@@ -138,6 +176,16 @@ func move_card(card: CardResource, from_pile: Pile, to_pile: Pile) -> bool:
 	
 	from_array.remove_at(index)
 	to_array.append(card)
+	
+	card_removed_from_pile.emit(card, from_pile)
+	card_added_to_pile.emit(card, to_pile, to_array.size() - 1)
+	
+	pile_changed.emit(from_pile, from_array.size())
+	pile_changed.emit(to_pile, to_array.size())
+	
+	if from_array.is_empty():
+		pile_emptied.emit(from_pile)
+	
 	return true
 
 
@@ -148,11 +196,16 @@ func move_pile_to_pile(from_pile: Pile, to_pile: Pile) -> void:
 	
 	to_array.append_array(from_array)
 	from_array.clear()
+	
+	pile_changed.emit(from_pile, 0)
+	pile_changed.emit(to_pile, to_array.size())
+	pile_emptied.emit(from_pile)
 
 
 ##Moves all cards from discard to draw pile (convenience method)
 func move_discard_to_draw() -> void:
 	move_pile_to_pile(Pile.DISCARD, Pile.DRAW)
+	discard_reshuffled.emit()
 
 #endregion
 

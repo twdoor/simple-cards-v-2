@@ -2,6 +2,27 @@
 @icon("uid://u56pws80lkxh")
 class_name CardDeckManager extends Node
 
+##Emitted when deck is initialized
+signal deck_initialized(deck: CardDeck)
+##Emitted after piles are synchronized
+signal piles_synchronized()
+##Emitted when a card instance is created
+signal card_instance_created(card: Card, resource: CardResource)
+##Emitted when a card instance is destroyed
+signal card_instance_destroyed(card: Card)
+##Emitted when cards are drawn
+signal cards_drawn(cards: Array[Card], count: int, from_pile: CardDeck.Pile)
+##Emitted when draw from empty pile is attempted
+signal draw_failed(pile: CardDeck.Pile)
+##Emitted when preview is shown
+signal preview_shown(preview_hand: CardHand, pile: CardDeck.Pile)
+##Emitted when preview is hidden
+signal preview_hidden()
+##Emitted when deck state is saved
+signal deck_state_saved(state: Dictionary)
+##Emitted when deck state is loaded
+signal deck_state_loaded(state: Dictionary)
+
 ##The deck resource being managed
 @export var deck: CardDeck
 
@@ -46,9 +67,11 @@ func setup(starting_deck: CardDeck = deck) -> void:
 			deck.reset_to_draw()
 		
 		if shuffle_on_ready:
-			deck.shuffle_pile()
+			for pile in deck.piles:
+				deck.shuffle_pile(pile)
 		
 		_sync_from_deck()
+		deck_initialized.emit(deck)
 
 
 func _setup_piles() -> void:
@@ -79,6 +102,9 @@ func _sync_from_deck() -> void:
 			card.visible = show_cards
 			card.disabled = true
 			pile_nodes[pile].add_child(card)
+			card_instance_created.emit(card, card_resource)
+	
+	piles_synchronized.emit()
 
 #endregion
 
@@ -87,15 +113,18 @@ func _sync_from_deck() -> void:
 ##Draws a card from the top of a pile. Returns null if pile is empty.
 func draw_card(pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> Card:
 	if not deck or not pile_nodes.has(pile):
+		draw_failed.emit(pile)
 		return null
 	
 	var pile_node = pile_nodes[pile]
 	
 	var card_resource = deck.draw_from_pile(pile)
 	if not card_resource:
+		draw_failed.emit(pile)
 		return null
 	
 	if pile_node.get_child_count() == 0:
+		draw_failed.emit(pile)
 		return null
 	
 	var card = pile_node.get_child(pile_node.get_child_count() - 1)
@@ -108,6 +137,8 @@ func draw_card(pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> Card:
 	
 	card.visible = true
 	card.disabled = false
+	
+	cards_drawn.emit([card], 1, pile)
 	return card
 
 
@@ -147,13 +178,10 @@ func peek_top_cards(count: int, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> Arr
 	var peeked_cards: Array[Card] = []
 	
 	var pile_size = pile_node.get_child_count()
-	var actual_count = min(count, pile_size)
+	var start_index = max(0, pile_size - count)
 	
-	for i in range(actual_count):
-		var index = pile_size - 1 - i
-		var card = pile_node.get_child(index)
-		if card is Card:
-			peeked_cards.append(card)
+	for i in range(pile_size - 1, start_index - 1, -1):
+		peeked_cards.append(pile_node.get_child(i))
 	
 	return peeked_cards
 
@@ -166,15 +194,12 @@ func add_card_to_pile(card: Card, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> v
 	if not deck or not pile_nodes.has(pile):
 		return
 	
-	card.kill_all_tweens()
-	card.is_front_face = front_face_in_pile[pile]
-	
 	var pile_node = pile_nodes[pile]
 	
 	if card.get_parent():
 		if card.get_parent() is CardHand:
 			card.get_parent().remove_card(card, pile_node)
-		else:
+		elif card.get_parent():
 			card.reparent(pile_node)
 	else:
 		pile_node.add_child(card)
@@ -184,14 +209,10 @@ func add_card_to_pile(card: Card, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> v
 	_handle_card_reparenting(card, pile_node.global_position if pile_node is Control else Vector2.ZERO)
 
 
-##Adds a card to a pile at a specific position (0 = bottom, -1 = top).
-##Supports negative indices: -1 = top, -2 = second from top, etc.
+##Adds a card to a pile at a specific index (0 = bottom, -1 = top)
 func add_card_to_pile_at(card: Card, index: int, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> void:
 	if not deck or not pile_nodes.has(pile):
 		return
-	
-	card.kill_all_tweens()
-	card.is_front_face = front_face_in_pile[pile]
 	
 	var pile_node = pile_nodes[pile]
 	
@@ -249,6 +270,7 @@ func remove_card_from_pile(card: Card, pile: CardDeck.Pile = CardDeck.Pile.DRAW)
 	var index = pile_array.find(card.card_data)
 	if index != -1:
 		pile_array.remove_at(index)
+		card_instance_destroyed.emit(card)
 		return true
 	
 	return false
@@ -285,6 +307,7 @@ func remove_card_from_pile_at(index: int, pile: CardDeck.Pile = CardDeck.Pile.DR
 	
 	card.visible = true
 	card.disabled = false
+	card_instance_destroyed.emit(card)
 	return card
 
 #endregion
@@ -394,6 +417,7 @@ func _update_card_visibility() -> void:
 func show_pile_preview_hand(preview_hand: CardHand, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> void:
 	_pile_preview_hand = preview_hand
 	_update_pile_preview_hand(pile)
+	preview_shown.emit(preview_hand, pile)
 
 
 func _update_pile_preview_hand(pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> void:
@@ -419,6 +443,7 @@ func hide_pile_preview_hand() -> void:
 	if _pile_preview_hand:
 		_pile_preview_hand.clear_hand()
 	_pile_preview_hand = null
+	preview_hidden.emit()
 
 
 #endregion
@@ -429,7 +454,9 @@ func hide_pile_preview_hand() -> void:
 func save_deck_state() -> Dictionary:
 	if not deck:
 		return {}
-	return deck.save_state()
+	var state = deck.save_state()
+	deck_state_saved.emit(state)
+	return state
 
 
 ##Loads deck state from a dictionary and rebuilds visual state
@@ -439,5 +466,6 @@ func load_deck_state(state: Dictionary) -> void:
 	
 	deck.load_state(state)
 	_sync_from_deck()
+	deck_state_loaded.emit(state)
 	
 #endregion
