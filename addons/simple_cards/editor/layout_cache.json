@@ -11,17 +11,17 @@
 		"layout_id": "default",
 		"tags": []
 	},
-	"res://examples/balatro_style/standard_back_layout.tscn": {
+	"res://examples/cards/standard_deck/standard_back_layout.tscn": {
 		"enabled": true,
-		"last_modified": 1768556001,
+		"last_modified": 1769865119,
 		"layout_id": "standard_back_layout",
 		"tags": [
 			"back"
 		]
 	},
-	"res://examples/balatro_style/standard_layout.tscn": {
+	"res://examples/cards/standard_deck/standard_layout.tscn": {
 		"enabled": true,
-		"last_modified": 1768891437,
+		"last_modified": 1770833988,
 		"layout_id": "standard_layout",
 		"tags": [
 			"front"

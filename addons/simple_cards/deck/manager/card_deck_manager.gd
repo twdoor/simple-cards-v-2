@@ -386,7 +386,7 @@ func get_total_card_count() -> int:
 
 #region Cleanup
 
-##Clears both piles, freeing all Card nodes
+##Clears piles, freeing all Card nodes
 func clear_deck() -> void:
 	_clear_piles()
 	

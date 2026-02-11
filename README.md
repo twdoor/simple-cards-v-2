@@ -912,20 +912,50 @@ res://addons/simple_cards/layout_ids.gd
 
 ## Examples
 
+### Standard Deck
+
+Located in `examples/cards/standard_deck/` this shows:
+
+- a basic front and back layout for standard/poker decks
+- 52 resources cards for all standard playing cards (except jokers)
+- premade deck with the cards: `standard_deck.tres`
+
+This deck is used in both the balatro and solitaire examples.
+Open standard_layout.tscn to see the front face layout.
+Open standard_back_layout.tscn to see the back face layout.
+
 ### Balatro Style
 
 Located in `examples/balatro_style/`, this demonstrates:
 
-- Custom card resource with suits, values, and modifiers
-- Hand selection and sorting
+- Hand selection and sorting card
+- Applying modifiers to cards
 - Deck management with draw/discard
 - Pile preview functionality
 
-Run the scene to see a Balatro-inspired card game interface.
+Run BalatroExample.tscn to play.
+
+### Solitaire
+
+Located in `examples/solitaire/`, this demonstrates:
+
+- Combined implementation of hands and mats
+- Custom condition rules for card stacking and ordering in the hand. 
+- Custom function for moving cards around
+
+Run SolitaireExample.tscn to play.
 
 ---
 
 ## Changelog
+
+### Version 2.5.1
+
+- **Solitaire**: new example scene, fully playable game of soliaire
+- Added some comments to the examples to explain some functions
+- Updated Balatro example a bit to reflect some changes made over time
+- **ScaleCardAnimation**: now tweens the layout instead of the card to fix some animation order bug 
+- **LineHandShape**: minor improvements; now has align option (begin/center/end) 
 
 ### Version 2.5
 
@@ -953,8 +983,6 @@ Run the scene to see a Balatro-inspired card game interface.
 - `CardDeckManager`: Removed `add_card_to_pile_from_top_at()` - use `add_card_to_pile_at()` with negative numbers 
 
 - `CardHand`: `refresh_arrangement()` was removed, `arrange_cards()` is now a public method instead (does the same thing)
-
-
 
 ### Version 2.3.3
 

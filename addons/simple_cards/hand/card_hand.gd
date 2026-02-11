@@ -223,7 +223,7 @@ func _update_card_reordering() -> void:
 		_drag_start_index = new_index
 		_last_reorder_index = new_index
 		
-		_arrange_cards_except_dragged()
+		_arrange_cards_except_dragged([_dragged_card])
 
 
 func _find_insertion_index(cursor_pos: Vector2) -> int:
@@ -288,7 +288,7 @@ func arrange_cards() -> void:
 	arrangement_completed.emit()
 
 
-func _arrange_cards_except_dragged() -> void:
+func _arrange_cards_except_dragged(skipped_cards: Array[Card]) -> void:
 	if cards.is_empty():
 		return
 	
@@ -296,7 +296,7 @@ func _arrange_cards_except_dragged() -> void:
 	
 	_card_positions.clear()
 	
-	_card_positions = shape.arrange_cards(cards, self, [_dragged_card])
+	_card_positions = shape.arrange_cards(cards, self, skipped_cards)
 
 	_update_z_indices()
 	_update_focus_chain()

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BalatroStyleResource" load_steps=3 format=3 uid="uid://bjash8sjc2cyt"]
+
+[ext_resource type="Script" uid="uid://dox8s17eu2u0u" path="res://examples/cards/standard_deck/standard_card_resource.gd" id="1_v121c"]
+[ext_resource type="Texture2D" uid="uid://d13a1tcqjxkas" path="res://examples/cards/standard_deck/club.png" id="2_h2vvu"]
+
+[resource]
+script = ExtResource("1_v121c")
+name = "Ace of Clubs"
+top_texture = ExtResource("2_h2vvu")
+card_suit = 0
+value = 3
+metadata/_custom_type_script = "uid://dox8s17eu2u0u"

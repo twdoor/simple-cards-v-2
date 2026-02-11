@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BalatroStyleResource" load_steps=3 format=3 uid="uid://dd7jnobj3yvix"]
+
+[ext_resource type="Script" uid="uid://dox8s17eu2u0u" path="res://examples/cards/standard_deck/standard_card_resource.gd" id="1_jkt0j"]
+[ext_resource type="Texture2D" uid="uid://ral2awpcmpdv" path="res://examples/cards/standard_deck/spade.png" id="2_8lbmp"]
+
+[resource]
+script = ExtResource("1_jkt0j")
+name = "Ace of Spades"
+top_texture = ExtResource("2_8lbmp")
+card_suit = 3
+value = 9
+metadata/_custom_type_script = "uid://dox8s17eu2u0u"

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BalatroStyleResource" load_steps=3 format=3 uid="uid://bhxfycg5l0pbv"]
+
+[ext_resource type="Script" uid="uid://dox8s17eu2u0u" path="res://examples/cards/standard_deck/standard_card_resource.gd" id="1_1e0q7"]
+[ext_resource type="Texture2D" uid="uid://bfi67t37l1qlp" path="res://examples/cards/standard_deck/diamond.png" id="2_7nmcy"]
+
+[resource]
+script = ExtResource("1_1e0q7")
+name = "Ace of Diamonds"
+top_texture = ExtResource("2_7nmcy")
+card_suit = 1
+value = 9
+metadata/_custom_type_script = "uid://dox8s17eu2u0u"

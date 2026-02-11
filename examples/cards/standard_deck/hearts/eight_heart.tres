@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BalatroStyleResource" load_steps=3 format=3 uid="uid://yxc3has6awvn"]
+
+[ext_resource type="Script" uid="uid://dox8s17eu2u0u" path="res://examples/cards/standard_deck/standard_card_resource.gd" id="1_na3ut"]
+[ext_resource type="Texture2D" uid="uid://clwd04qm16woo" path="res://examples/cards/standard_deck/heart.png" id="2_na7rx"]
+
+[resource]
+script = ExtResource("1_na3ut")
+name = "Ace of Hearts"
+top_texture = ExtResource("2_na7rx")
+card_suit = 2
+value = 8
+metadata/_custom_type_script = "uid://dox8s17eu2u0u"
