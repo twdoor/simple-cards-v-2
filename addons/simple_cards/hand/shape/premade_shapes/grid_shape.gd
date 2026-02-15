@@ -20,11 +20,10 @@ func _init(cols: int = num_of_cols, rows: int = num_of_rows, col_spacing: float 
 	arrange_by_rows = by_rows
 
 
-func arrange_cards(cards: Array[Card], hand: CardHand, skipped_cards: Array[Card] = []) -> Array[Vector2]:
+func _compute_raw_cards(cards: Array[Card], hand: CardHand) -> Dictionary:
 	var card_count = cards.size()
-	var card_positions: Array[Vector2]
-	if card_count == 0:
-		return []
+	var positions: Array[Vector2] = []
+	var rotations: Array[float] = []
 
 	var actual_cols = num_of_cols
 	var actual_rows = num_of_rows
@@ -40,7 +39,6 @@ func arrange_cards(cards: Array[Card], hand: CardHand, skipped_cards: Array[Card
 	var start_y = -total_height / 2.0
 	
 	for i in card_count:
-		var card = cards[i]
 		var grid_x: int
 		var grid_y: int
 		
@@ -67,16 +65,8 @@ func arrange_cards(cards: Array[Card], hand: CardHand, skipped_cards: Array[Card
 		
 		var x_pos = start_x + grid_x * col_offset + x_offset
 		var y_pos = start_y + grid_y * row_offset + y_offset
-		var grid_pos = Vector2(x_pos, y_pos)
 		
-		var final_pos = grid_pos - card.pivot_offset
-		
-		card_positions.append(grid_pos)
-		if !skipped_cards.is_empty() and skipped_cards.has(card):
-			continue
-		
-		var pos = final_pos + card.position_offset
-		card.tween_position(pos + hand.global_position, .2, true)
-		card.rotation = card.rotation_offset
+		positions.append(Vector2(x_pos, y_pos))
+		rotations.append(0.0)
 	
-	return card_positions
+	return { "positions": positions, "rotations": rotations }

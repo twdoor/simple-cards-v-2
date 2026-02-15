@@ -17,11 +17,10 @@ func _init(radius: float = arc_radius, angle: float = arc_angle, orientation: fl
 	card_spacing = spacing
 
 
-func arrange_cards(cards: Array[Card], hand: CardHand, skipped_cards: Array[Card] = []) -> Array[Vector2]:
+func _compute_raw_cards(cards: Array[Card], hand: CardHand) -> Dictionary:
 	var card_count = cards.size()
-	var card_positions: Array[Vector2]
-	if card_count == 0:
-		return []
+	var positions: Array[Vector2] = []
+	var rotations: Array[float] = []
 	
 	var angle_between = 0.0
 	if card_count > 1:
@@ -30,21 +29,15 @@ func arrange_cards(cards: Array[Card], hand: CardHand, skipped_cards: Array[Card
 		angle_between = max_angle / max(1, card_count - 1)
 	
 	var start_angle = arc_orientation - (angle_between * (card_count - 1)) / 2.0
+	var orientation_rad = deg_to_rad(arc_orientation)
+	var circle_center = Vector2(-arc_radius * cos(orientation_rad), -arc_radius * sin(orientation_rad))
 
 	for i in card_count:
-		var card = cards[i]
 		var current_angle = start_angle + i * angle_between
 		var angle_rad = deg_to_rad(current_angle)
-		var x = arc_radius * cos(angle_rad)
-		var y = arc_radius * sin(angle_rad)
+		var pos = circle_center + Vector2(arc_radius * cos(angle_rad), arc_radius * sin(angle_rad))
 		
-		var final_pos = Vector2(x, y) - card.pivot_offset
-		card_positions.append(Vector2(x, y))
-		if !skipped_cards.is_empty() and skipped_cards.has(card):
-			continue
-		
-		var pos = final_pos + (card.position_offset.rotated(angle_rad + deg_to_rad(90)))  
-		card.tween_position(pos)
-		card.rotation = angle_rad + deg_to_rad(90) + card.rotation_offset
-		
-	return card_positions
+		positions.append(pos)
+		rotations.append(angle_rad + deg_to_rad(90))
+	
+	return { "positions": positions, "rotations": rotations }

@@ -20,11 +20,11 @@ func _init(rot: float = line_rotation, width = max_width, spacing: float = card_
 	max_width = width
 	card_spacing = spacing
 
-func arrange_cards(cards: Array[Card], hand: CardHand, skipped_cards: Array[Card] = []) -> Array[Vector2]:
+
+func _compute_raw_cards(cards: Array[Card], hand: CardHand) -> Dictionary:
 	var card_count = cards.size()
-	var card_positions: Array[Vector2]
-	if card_count == 0:
-		return []
+	var positions: Array[Vector2] = []
+	var rotations: Array[float] = []
 	
 	var card_size = cards[0].size
 	var total_width = (card_count - 1) * card_spacing + card_size.x
@@ -40,20 +40,15 @@ func arrange_cards(cards: Array[Card], hand: CardHand, skipped_cards: Array[Card
 			start_x = -(card_count - 1) * actual_spacing / 2.0
 		Alignment.END:
 			start_x = max_width / 2.0 - card_size.x / 2.0 - (card_count - 1) * actual_spacing
+
+	var rot_rad = deg_to_rad(line_rotation)
+	var card_rot = deg_to_rad(card_rotation_angle)
 	
 	for i in card_count:
-		var card = cards[i]
 		var x_pos = start_x + i * actual_spacing
-		var y_pos = 0.0
-		var rotated_pos = Vector2(x_pos, y_pos).rotated(deg_to_rad(line_rotation))
-		var final_pos = rotated_pos - card.pivot_offset
+		var rotated_pos = Vector2(x_pos, 0.0).rotated(rot_rad)
 		
-		card_positions.append(final_pos + card.pivot_offset)
-		if !skipped_cards.is_empty() and skipped_cards.has(card):
-			continue
-		
-		var pos = final_pos + (card.position_offset.rotated(deg_to_rad(line_rotation)))
-		card.tween_position(pos + hand.global_position, .2 , true)
-		card.rotation = deg_to_rad(card_rotation_angle) + card.rotation_offset
-		
-	return card_positions
+		positions.append(rotated_pos)
+		rotations.append(card_rot)
+	
+	return { "positions": positions, "rotations": rotations }

@@ -17,6 +17,19 @@ border_width_right = 16
 border_width_bottom = 16
 border_color = Color(0.29236764, 0.1102001, 0.029655594, 1)
 
+[sub_resource type="Resource" id="Resource_0qv18"]
+script = ExtResource("7_resxj")
+max_width = 80.0
+card_spacing = 0.0
+metadata/_custom_type_script = "uid://b1s6x4iyt2pps"
+
+[sub_resource type="Resource" id="Resource_8fhha"]
+script = ExtResource("7_resxj")
+line_rotation = 90.0
+max_width = 375.0
+alignment = 0
+metadata/_custom_type_script = "uid://b1s6x4iyt2pps"
+
 [sub_resource type="Resource" id="Resource_2ejia"]
 script = ExtResource("5_3ywlq")
 name = "Draw"
@@ -29,24 +42,11 @@ max_width = 160.0
 alignment = 2
 metadata/_custom_type_script = "uid://b1s6x4iyt2pps"
 
-[sub_resource type="Resource" id="Resource_0qv18"]
-script = ExtResource("7_resxj")
-max_width = 85.0
-card_spacing = 100.0
-metadata/_custom_type_script = "uid://b1s6x4iyt2pps"
-
-[sub_resource type="Resource" id="Resource_8fhha"]
-script = ExtResource("7_resxj")
-line_rotation = 90.0
-max_width = 400.0
-alignment = 0
-metadata/_custom_type_script = "uid://b1s6x4iyt2pps"
-
 [node name="Solitare" type="CanvasLayer" node_paths=PackedStringArray("deal_hand", "foundations", "tableau_piles")]
 script = ExtResource("1_el2jo")
-deal_hand = NodePath("DealHand")
-foundations = [NodePath("Stacks/StackClub"), NodePath("Stacks/StackDiamond"), NodePath("Stacks/StackHeart"), NodePath("Stacks/StackSpade")]
-tableau_piles = [NodePath("Piles/Pile"), NodePath("Piles/Pile2"), NodePath("Piles/Pile3"), NodePath("Piles/Pile4"), NodePath("Piles/Pile5"), NodePath("Piles/Pile6"), NodePath("Piles/Pile7")]
+deal_hand = NodePath("MarginContainer/HBoxContainer/DealHand")
+foundations = [NodePath("MarginContainer/Stacks/Stack"), NodePath("MarginContainer/Stacks/Stack2"), NodePath("MarginContainer/Stacks/Stack3"), NodePath("MarginContainer/Stacks/Stack4")]
+tableau_piles = [NodePath("MarginContainer/Piles/Pile"), NodePath("MarginContainer/Piles/Pile2"), NodePath("MarginContainer/Piles/Pile3"), NodePath("MarginContainer/Piles/Pile4"), NodePath("MarginContainer/Piles/Pile5"), NodePath("MarginContainer/Piles/Pile6"), NodePath("MarginContainer/Piles/Pile7")]
 
 [node name="CardDeckManager" type="Node" parent="."]
 script = ExtResource("2_f1iev")
@@ -64,349 +64,289 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_qytrh")
 
-[node name="DrawCard" type="Button" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 64
+theme_override_constants/margin_top = 64
+theme_override_constants/margin_right = 64
+theme_override_constants/margin_bottom = 64
+
+[node name="Stacks" type="HBoxContainer" parent="MarginContainer"]
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+theme_override_constants/separation = 32
+alignment = 2
+
+[node name="Stack" type="Control" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 112)
-offset_left = 63.0
-offset_top = 64.0
-offset_right = 71.0
-offset_bottom = 72.0
+layout_mode = 2
+script = ExtResource("6_2oijv")
+hand_type = 1
+drop_area = NodePath("CardMat")
+shape = SubResource("Resource_0qv18")
+enable_reordering = false
+metadata/_custom_type_script = "uid://b8kdeax26ggxc"
+
+[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -56.0
+offset_right = 40.0
+offset_bottom = 56.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("8_303tp")
+metadata/_custom_type_script = "uid://du1ike80fkx83"
+
+[node name="Stack2" type="Control" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
+custom_minimum_size = Vector2(80, 112)
+layout_mode = 2
+script = ExtResource("6_2oijv")
+hand_type = 1
+drop_area = NodePath("CardMat")
+shape = SubResource("Resource_0qv18")
+enable_reordering = false
+metadata/_custom_type_script = "uid://b8kdeax26ggxc"
+
+[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack2"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -56.0
+offset_right = 40.0
+offset_bottom = 56.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("8_303tp")
+metadata/_custom_type_script = "uid://du1ike80fkx83"
+
+[node name="Stack3" type="Control" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
+custom_minimum_size = Vector2(80, 112)
+layout_mode = 2
+script = ExtResource("6_2oijv")
+hand_type = 1
+drop_area = NodePath("CardMat")
+shape = SubResource("Resource_0qv18")
+enable_reordering = false
+metadata/_custom_type_script = "uid://b8kdeax26ggxc"
+
+[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack3"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -56.0
+offset_right = 40.0
+offset_bottom = 56.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("8_303tp")
+metadata/_custom_type_script = "uid://du1ike80fkx83"
+
+[node name="Stack4" type="Control" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
+custom_minimum_size = Vector2(80, 112)
+layout_mode = 2
+script = ExtResource("6_2oijv")
+hand_type = 1
+drop_area = NodePath("CardMat")
+shape = SubResource("Resource_0qv18")
+enable_reordering = false
+metadata/_custom_type_script = "uid://b8kdeax26ggxc"
+
+[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack4"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -56.0
+offset_right = 40.0
+offset_bottom = 56.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("8_303tp")
+metadata/_custom_type_script = "uid://du1ike80fkx83"
+
+[node name="Piles" type="HBoxContainer" parent="MarginContainer"]
+custom_minimum_size = Vector2(0, 410)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+theme_override_constants/separation = 32
+
+[node name="Pile" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 2
+script = ExtResource("6_2oijv")
+hand_type = 2
+drop_area = NodePath("CardMat")
+shape = SubResource("Resource_8fhha")
+enable_reordering = false
+metadata/_custom_type_script = "uid://b8kdeax26ggxc"
+
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile"]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 0
+offset_right = 80.0
+offset_bottom = 400.0
+script = ExtResource("8_303tp")
+metadata/_custom_type_script = "uid://du1ike80fkx83"
+
+[node name="Pile2" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 2
+script = ExtResource("6_2oijv")
+hand_type = 2
+drop_area = NodePath("CardMat")
+shape = SubResource("Resource_8fhha")
+enable_reordering = false
+metadata/_custom_type_script = "uid://b8kdeax26ggxc"
+
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile2"]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 0
+offset_right = 80.0
+offset_bottom = 400.0
+script = ExtResource("8_303tp")
+metadata/_custom_type_script = "uid://du1ike80fkx83"
+
+[node name="Pile3" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 2
+script = ExtResource("6_2oijv")
+hand_type = 2
+drop_area = NodePath("CardMat")
+shape = SubResource("Resource_8fhha")
+enable_reordering = false
+metadata/_custom_type_script = "uid://b8kdeax26ggxc"
+
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile3"]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 0
+offset_right = 80.0
+offset_bottom = 400.0
+script = ExtResource("8_303tp")
+metadata/_custom_type_script = "uid://du1ike80fkx83"
+
+[node name="Pile4" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 2
+script = ExtResource("6_2oijv")
+hand_type = 2
+drop_area = NodePath("CardMat")
+shape = SubResource("Resource_8fhha")
+enable_reordering = false
+metadata/_custom_type_script = "uid://b8kdeax26ggxc"
+
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile4"]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 0
+offset_right = 80.0
+offset_bottom = 400.0
+script = ExtResource("8_303tp")
+metadata/_custom_type_script = "uid://du1ike80fkx83"
+
+[node name="Pile5" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 2
+script = ExtResource("6_2oijv")
+hand_type = 2
+drop_area = NodePath("CardMat")
+shape = SubResource("Resource_8fhha")
+enable_reordering = false
+metadata/_custom_type_script = "uid://b8kdeax26ggxc"
+
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile5"]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 0
+offset_right = 80.0
+offset_bottom = 400.0
+script = ExtResource("8_303tp")
+metadata/_custom_type_script = "uid://du1ike80fkx83"
+
+[node name="Pile6" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 2
+script = ExtResource("6_2oijv")
+hand_type = 2
+drop_area = NodePath("CardMat")
+shape = SubResource("Resource_8fhha")
+enable_reordering = false
+metadata/_custom_type_script = "uid://b8kdeax26ggxc"
+
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile6"]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 0
+offset_right = 80.0
+offset_bottom = 400.0
+script = ExtResource("8_303tp")
+metadata/_custom_type_script = "uid://du1ike80fkx83"
+
+[node name="Pile7" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 2
+script = ExtResource("6_2oijv")
+hand_type = 2
+drop_area = NodePath("CardMat")
+shape = SubResource("Resource_8fhha")
+enable_reordering = false
+metadata/_custom_type_script = "uid://b8kdeax26ggxc"
+
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile7"]
+custom_minimum_size = Vector2(80, 400)
+layout_mode = 0
+offset_right = 80.0
+offset_bottom = 400.0
+script = ExtResource("8_303tp")
+metadata/_custom_type_script = "uid://du1ike80fkx83"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+theme_override_constants/separation = 32
+
+[node name="DrawCard" type="Button" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(80, 112)
+layout_mode = 2
 script = ExtResource("4_008rh")
 undraggable = true
 card_data = SubResource("Resource_2ejia")
 metadata/_custom_type_script = "uid://dowgud10rp5yf"
 
-[node name="DealHand" type="Control" parent="."]
-layout_mode = 3
-anchors_preset = 0
-offset_left = 250.0
-offset_top = 120.0
-offset_right = 250.0
-offset_bottom = 120.0
+[node name="DealHand" type="Control" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(160, 112)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
 script = ExtResource("6_2oijv")
 shape = SubResource("Resource_l82jc")
 enable_reordering = false
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
-[node name="Stacks" type="Control" parent="."]
-layout_mode = 3
-anchors_preset = 0
-offset_left = 875.0
-offset_top = 120.0
-offset_right = 875.0
-offset_bottom = 120.0
-
-[node name="StackClub" type="Control" parent="Stacks" node_paths=PackedStringArray("drop_area")]
-anchors_preset = 0
-script = ExtResource("6_2oijv")
-hand_type = 1
-drop_area = NodePath("CardMat")
-shape = SubResource("Resource_0qv18")
-enable_reordering = false
-metadata/_custom_type_script = "uid://b8kdeax26ggxc"
-
-[node name="CardMat" type="Panel" parent="Stacks/StackClub"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -40.0
-offset_top = -56.0
-offset_right = 40.0
-offset_bottom = 56.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("8_303tp")
-metadata/_custom_type_script = "uid://du1ike80fkx83"
-
-[node name="StackDiamond" type="Control" parent="Stacks" node_paths=PackedStringArray("drop_area")]
-anchors_preset = 0
-offset_left = 106.0
-offset_right = 106.0
-script = ExtResource("6_2oijv")
-hand_type = 1
-drop_area = NodePath("CardMat")
-shape = SubResource("Resource_0qv18")
-enable_reordering = false
-metadata/_custom_type_script = "uid://b8kdeax26ggxc"
-
-[node name="CardMat" type="Panel" parent="Stacks/StackDiamond"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -40.0
-offset_top = -56.0
-offset_right = 40.0
-offset_bottom = 56.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("8_303tp")
-metadata/_custom_type_script = "uid://du1ike80fkx83"
-
-[node name="StackHeart" type="Control" parent="Stacks" node_paths=PackedStringArray("drop_area")]
-anchors_preset = 0
-offset_left = 212.0
-offset_right = 212.0
-script = ExtResource("6_2oijv")
-hand_type = 1
-drop_area = NodePath("CardMat")
-shape = SubResource("Resource_0qv18")
-enable_reordering = false
-metadata/_custom_type_script = "uid://b8kdeax26ggxc"
-
-[node name="CardMat" type="Panel" parent="Stacks/StackHeart"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -40.0
-offset_top = -56.0
-offset_right = 40.0
-offset_bottom = 56.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("8_303tp")
-metadata/_custom_type_script = "uid://du1ike80fkx83"
-
-[node name="StackSpade" type="Control" parent="Stacks" node_paths=PackedStringArray("drop_area")]
-anchors_preset = 0
-offset_left = 318.0
-offset_right = 318.0
-script = ExtResource("6_2oijv")
-hand_type = 1
-drop_area = NodePath("CardMat")
-shape = SubResource("Resource_0qv18")
-enable_reordering = false
-metadata/_custom_type_script = "uid://b8kdeax26ggxc"
-
-[node name="CardMat" type="Panel" parent="Stacks/StackSpade"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -40.0
-offset_top = -56.0
-offset_right = 40.0
-offset_bottom = 56.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("8_303tp")
-metadata/_custom_type_script = "uid://du1ike80fkx83"
-
-[node name="Piles" type="Control" parent="."]
-layout_mode = 3
-anchors_preset = 0
-offset_left = 558.0
-offset_top = 454.0
-offset_right = 558.0
-offset_bottom = 454.0
-
-[node name="Pile" type="Control" parent="Piles" node_paths=PackedStringArray("drop_area")]
-anchors_preset = 0
-script = ExtResource("6_2oijv")
-hand_type = 2
-drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
-enable_reordering = false
-metadata/_custom_type_script = "uid://b8kdeax26ggxc"
-
-[node name="CardMat" type="Panel" parent="Piles/Pile"]
-custom_minimum_size = Vector2(80, 400)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("8_303tp")
-metadata/_custom_type_script = "uid://du1ike80fkx83"
-
-[node name="Pile2" type="Control" parent="Piles" node_paths=PackedStringArray("drop_area")]
-anchors_preset = 0
-offset_left = 106.0
-offset_right = 106.0
-script = ExtResource("6_2oijv")
-hand_type = 2
-drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
-enable_reordering = false
-metadata/_custom_type_script = "uid://b8kdeax26ggxc"
-
-[node name="CardMat" type="Panel" parent="Piles/Pile2"]
-custom_minimum_size = Vector2(80, 400)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("8_303tp")
-metadata/_custom_type_script = "uid://du1ike80fkx83"
-
-[node name="Pile3" type="Control" parent="Piles" node_paths=PackedStringArray("drop_area")]
-anchors_preset = 0
-offset_left = 212.0
-offset_right = 212.0
-script = ExtResource("6_2oijv")
-hand_type = 2
-drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
-enable_reordering = false
-metadata/_custom_type_script = "uid://b8kdeax26ggxc"
-
-[node name="CardMat" type="Panel" parent="Piles/Pile3"]
-custom_minimum_size = Vector2(80, 400)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("8_303tp")
-metadata/_custom_type_script = "uid://du1ike80fkx83"
-
-[node name="Pile4" type="Control" parent="Piles" node_paths=PackedStringArray("drop_area")]
-anchors_preset = 0
-offset_left = 318.0
-offset_right = 318.0
-script = ExtResource("6_2oijv")
-hand_type = 2
-drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
-enable_reordering = false
-metadata/_custom_type_script = "uid://b8kdeax26ggxc"
-
-[node name="CardMat" type="Panel" parent="Piles/Pile4"]
-custom_minimum_size = Vector2(80, 400)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("8_303tp")
-metadata/_custom_type_script = "uid://du1ike80fkx83"
-
-[node name="Pile5" type="Control" parent="Piles" node_paths=PackedStringArray("drop_area")]
-anchors_preset = 0
-offset_left = 424.0
-offset_right = 424.0
-script = ExtResource("6_2oijv")
-hand_type = 2
-drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
-enable_reordering = false
-metadata/_custom_type_script = "uid://b8kdeax26ggxc"
-
-[node name="CardMat" type="Panel" parent="Piles/Pile5"]
-custom_minimum_size = Vector2(80, 400)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("8_303tp")
-metadata/_custom_type_script = "uid://du1ike80fkx83"
-
-[node name="Pile6" type="Control" parent="Piles" node_paths=PackedStringArray("drop_area")]
-anchors_preset = 0
-offset_left = 530.0
-offset_right = 530.0
-script = ExtResource("6_2oijv")
-hand_type = 2
-drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
-enable_reordering = false
-metadata/_custom_type_script = "uid://b8kdeax26ggxc"
-
-[node name="CardMat" type="Panel" parent="Piles/Pile6"]
-custom_minimum_size = Vector2(80, 400)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("8_303tp")
-metadata/_custom_type_script = "uid://du1ike80fkx83"
-
-[node name="Pile7" type="Control" parent="Piles" node_paths=PackedStringArray("drop_area")]
-anchors_preset = 0
-offset_left = 636.0
-offset_right = 636.0
-script = ExtResource("6_2oijv")
-hand_type = 2
-drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
-enable_reordering = false
-metadata/_custom_type_script = "uid://b8kdeax26ggxc"
-
-[node name="CardMat" type="Panel" parent="Piles/Pile7"]
-custom_minimum_size = Vector2(80, 400)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("8_303tp")
-metadata/_custom_type_script = "uid://du1ike80fkx83"
-
-[node name="Button" type="Button" parent="."]
+[node name="Button" type="Button" parent="MarginContainer"]
 custom_minimum_size = Vector2(64, 64)
-offset_left = 42.0
-offset_top = 623.0
-offset_right = 147.0
-offset_bottom = 687.0
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
 text = "RESET GAME"

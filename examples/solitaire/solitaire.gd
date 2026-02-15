@@ -13,8 +13,9 @@
 extends CanvasLayer
 
 @onready var deck_manager: CardDeckManager = $CardDeckManager
-@onready var draw_card: Card = $DrawCard
-@onready var button: Button = $Button
+@onready var draw_card: Card = $MarginContainer/HBoxContainer/DrawCard
+@onready var button: Button = $MarginContainer/Button
+
 
 @export var deal_hand: SolitaireHand
 @export var deal_hand_num: int = 1 ## Cards drawn per click (1 = easy, 3 = hard)

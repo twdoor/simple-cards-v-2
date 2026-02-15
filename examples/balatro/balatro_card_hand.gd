@@ -32,12 +32,12 @@ func deselect(card: Card) -> void:
 	arrange_cards()
 
 
-## Clean up selection when a card is removed from the hand (played, discarded, etc.)
-func remove_card(card: Card, new_parent: Node = null) -> void:
+## Clean up selection when a card leaves the hand by any path (remove, transfer, drag out, etc.)
+func _release_card(card: Card) -> void:
 	if selected.has(card):
 		selected.erase(card)
 		card.position_offset = Vector2.ZERO
-	super.remove_card(card, new_parent)
+	super._release_card(card)
 
 
 ## Sort by suit first, then by value within the same suit.
