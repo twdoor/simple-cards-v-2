@@ -436,9 +436,11 @@ A container that arranges multiple cards in a configurable shape.
 
 ```gdscript
 # Add a single card (returns true if successful)
+# Handles hand-to-hand transfers automatically, preserving visual position
 func add_card(card: Card) -> bool
 
 # Add multiple cards (returns number successfully added)
+# Batches the transfer: old hands rearrange once, not per-card
 func add_cards(card_array: Array[Card]) -> int
 
 # Remove a card (does NOT free it)
@@ -462,6 +464,9 @@ func is_hand_full() -> bool
 # Get remaining space
 func get_remaining_space() -> int
 
+# Sort cards using a custom comparison function
+func sort_cards(compare_func: Callable) -> void
+
 # Force arrangement of cards
 func arrange_cards() -> void
 ```
@@ -472,6 +477,11 @@ func arrange_cards() -> void
 # Override to handle card clicks
 func _handle_clicked_card(card: Card) -> void:
     print("Card clicked: ", card.name)
+
+# Override to add cleanup when a card leaves the hand by any path
+# (remove, hand-to-hand transfer, drag out, etc.)
+func _release_card(card: Card) -> void:
+    super._release_card(card)
 ```
 
 #### Example
@@ -502,7 +512,43 @@ func _handle_clicked_card(card: Card) -> void:
 
 ### CardHandShape
 
-Abstract resource class that defines how cards are arranged in a hand.
+Abstract resource class that defines how cards are arranged in a hand. Subclasses only need to implement `_compute_raw_cards()` — the base class handles bounding box adjustment, layout sizing, and tween application automatically.
+
+#### Architecture
+
+The layout process is split into two phases:
+
+1. **`compute_layout()`** — Computes final positions and rotations without moving cards. The hand uses this to update its minimum size before any tweens start, preventing layout jitter.
+2. **`apply_layout()`** — Tweens cards to their computed positions. Called after the hand rect has settled.
+
+#### Methods
+
+```gdscript
+# Computes final card positions and rotations (does NOT move cards)
+# Returns Dictionary with "positions": Array[Vector2] and "rotations": Array[float]
+func compute_layout(cards: Array[Card], hand: CardHand) -> Dictionary
+
+# Tweens cards to the positions from compute_layout(). Skipped cards are not moved.
+func apply_layout(cards: Array[Card], layout: Dictionary, skipped_cards: Array[Card] = []) -> void
+```
+
+#### Creating Custom Shapes
+
+Override `_compute_raw_cards()` to return raw center positions and rotations. The base class automatically adjusts the bounding box so cards fit inside the hand rect.
+
+```gdscript
+class_name MyCustomShape extends CardHandShape
+
+func _compute_raw_cards(cards: Array[Card], hand: CardHand) -> Dictionary:
+    var positions: Array[Vector2] = []
+    var rotations: Array[float] = []
+    
+    for i in cards.size():
+        positions.append(Vector2(i * 100.0, 0.0))
+        rotations.append(0.0)
+    
+    return { "positions": positions, "rotations": rotations }
+```
 
 #### Built-in Shapes
 
@@ -510,9 +556,11 @@ Abstract resource class that defines how cards are arranged in a hand.
 
 ```gdscript
 var line = LineHandShape.new()
-line.line_rotation = 0.0      # Rotation in degrees
-line.max_width = 600.0        # Maximum spread width
-line.card_spacing = 50.0      # Space between cards
+line.line_rotation = 0.0          # Rotation of the line in degrees
+line.max_width = 600.0            # Maximum spread width
+line.card_spacing = 50.0          # Space between cards
+line.alignment = Alignment.CENTER # BEGIN, CENTER, or END alignment
+line.card_rotation_angle = 0.0    # Rotation of individual cards in degrees
 ```
 
 **ArcHandShape**
@@ -541,6 +589,7 @@ Features:
 - Auto-expansion to fit all cards
 - Auto-centering for incomplete last row/column
 - Configurable row-first or column-first arrangement
+- All shapes automatically fit cards within the hand's bounding rect
 
 ---
 
@@ -926,7 +975,7 @@ Open standard_back_layout.tscn to see the back face layout.
 
 ### Balatro Style
 
-Located in `examples/balatro_style/`, this demonstrates:
+Located in `examples/balatro/`, this demonstrates:
 
 - Hand selection and sorting card
 - Applying modifiers to cards
@@ -948,6 +997,19 @@ Run SolitaireExample.tscn to play.
 ---
 
 ## Changelog
+
+### Version 2.5.2
+
+- **CardHandShape Refactor** - Split layout into `compute_layout()` and `apply_layout()` phases. Subclasses now only override `_compute_raw_cards()` — bounding box adjustment, tween application, and sizing are handled by the base class automatically.
+- **Card Placement Fix** - All built-in shapes (Line, Arc, Grid) now correctly place cards inside the hand's bounding rect instead of centering around origin.
+- **`_release_card()` Virtual Method** - New overridable method for cleanup when a card leaves the hand by any path (remove, transfer, drag out). Subclasses should override this instead of `remove_card()` for cleanup logic.
+- **Drag Reordering** - `_find_insertion_index()` now uses 2D slot-based distance instead of x-axis only, fixing reordering for arc and grid shapes.
+- **Minimum Size** - Hand respects `custom_minimum_size` set in the editor; `_get_minimum_size()` returns `Vector2.ZERO` when empty.
+
+**Breaking Changes:**
+
+- `CardHandShape`: `arrange_cards()` replaced by `compute_layout()` + `apply_layout()`. Custom shapes must now override `_compute_raw_cards()` instead of `arrange_cards()`.
+- `CardHand`: `_release_card()` is now the recommended override point for card removal cleanup instead of `remove_card()`.
 
 ### Version 2.5.1
 
