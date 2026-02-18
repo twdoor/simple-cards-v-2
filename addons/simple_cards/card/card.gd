@@ -80,6 +80,7 @@ var layout_name: String = "":
 ##If true uses front_layout else uses back_layout
 var is_front_face: bool = true:
 	set(value):
+		if is_front_face == value: return
 		is_front_face = value
 		if value: layout_name = front_layout_name
 		else: layout_name = back_layout_name
@@ -228,7 +229,7 @@ func tween_rotation(desired_rotation: float = 0, duration: float = 0.2) -> void:
 	_rotation_tween.finished.connect(func(): tween_completed.emit("rotation"))
 
 ##Tween the position. If global is true it uses global_position else postion.
-func tween_position(desired_position: Vector2, duration: float = 0.2, global: bool = false) -> void:
+func tween_position(desired_position: Vector2, duration: float = .3, global: bool = false) -> void:
 	if _pos_tween:
 		_pos_tween.kill()
 	_pos_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)

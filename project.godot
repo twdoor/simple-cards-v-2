@@ -10,10 +10,10 @@ config_version=5
 
 [application]
 
-config/name="SimpleCardsV2"
+config/name="SimpleCards"
 run/main_scene="uid://brvun6l03k0hu"
 config/features=PackedStringArray("4.5", "GL Compatibility")
-config/icon="res://icon.svg"
+config/icon="res://github/assets/simple_card_v2.png"
 
 [autoload]
 
@@ -28,6 +28,10 @@ window/stretch/mode="canvas_items"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/simple_cards/plugin.cfg")
+
+[godots]
+
+version_hint="4.5+"
 
 [input]
 

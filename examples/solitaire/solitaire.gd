@@ -39,20 +39,18 @@ func _ready() -> void:
 
 	draw_card.card_clicked.connect(_on_draw_clicked)
 
-	set_match.call_deferred()
+	set_match()
 
 
 ## Stock pile click: if empty, recycle deal hand back to draw (reversed).
 ## Otherwise draw cards to the deal hand.
 func _on_draw_clicked(_card: Card) -> void:
-	if deck_manager.deck.is_pile_empty(CardDeck.Pile.DRAW):
+	if deck_manager.starting_pile.is_empty():
 		var hand = deal_hand.cards.duplicate()
 		hand.reverse()
-		for card in hand:
-			deal_hand.remove_card(card)
-			deck_manager.add_card_to_pile(card, CardDeck.Pile.DRAW)
+		deck_manager.starting_pile.add_cards(hand)
 		return
-	var cards = deck_manager.draw_cards(deal_hand_num)
+	var cards = deck_manager.starting_pile.draw_cards(deal_hand_num)
 	deal_hand.add_cards(cards)
 
 
@@ -63,18 +61,15 @@ func handle_card_transport(origin_hand: SolitaireHand, card: Card) -> void:
 		if not hand.check_card_conditions(card):
 			continue
 
-		# Top card — can go to any valid pile
 		if card == origin_hand.cards.back():
 			hand.add_card(card)
 			if check_for_win():
 				finish_game()
 			return
 
-		# Foundations only take single cards
 		if foundations.has(hand):
 			continue
 
-		# Stack move — validate the whole sequence first
 		var cards_to_move = _get_valid_pile(origin_hand, card)
 		if cards_to_move.is_empty():
 			continue
@@ -105,23 +100,24 @@ func _get_valid_pile(origin_hand: SolitaireHand, card: Card) -> Array[Card]:
 ## callback flips the top card face-up automatically.
 func set_match() -> void:
 	for pile in [deal_hand] + all_piles:
-		pile.clear_hand()
-
-	deck_manager.clear_deck()
+		pile.clear_and_free()
+	
+	if deck_manager.starting_pile:
+		deck_manager.starting_pile.clear_and_free()
 	deck_manager.setup()
-
+	
 	for i in tableau_piles.size():
-		var cards = deck_manager.draw_cards(i + 1)
-
+		var cards = deck_manager.starting_pile.draw_cards(i + 1)
 		for card in cards:
 			if card.is_front_face:
 				card.flip()
+		
 		tableau_piles[i].add_cards(cards)
 
 
 ## Win condition: draw pile empty, deal hand empty, and all cards face-up.
 func check_for_win() -> bool:
-	if not deck_manager.deck.is_pile_empty() or not deal_hand.cards.is_empty():
+	if not deck_manager.starting_pile.is_empty() or not deal_hand.cards.is_empty():
 		return false
 
 	for pile in all_piles:

@@ -17,7 +17,7 @@ func _init(radius: float = arc_radius, angle: float = arc_angle, orientation: fl
 	card_spacing = spacing
 
 
-func _compute_raw_cards(cards: Array[Card], hand: CardHand) -> Dictionary:
+func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
 	var card_count = cards.size()
 	var positions: Array[Vector2] = []
 	var rotations: Array[float] = []

@@ -7,12 +7,12 @@ class_name CardHandShape extends Resource
 ##[br]Returns a Dictionary with:
 ##[br]- [code]positions[/code]: Array[Vector2] of final center positions (bounding-box adjusted)
 ##[br]- [code]rotations[/code]: Array[float] of card rotations in radians
-func compute_layout(cards: Array[Card], hand: CardHand) -> Dictionary:
+func compute_layout(cards: Array[Card]) -> Dictionary:
 	var card_count = cards.size()
 	if card_count == 0:
 		return { "positions": [] as Array[Vector2], "rotations": [] as Array[float] }
 	
-	var raw_data = _compute_raw_cards(cards, hand)
+	var raw_data = _compute_raw_cards(cards)
 	var raw_positions: Array[Vector2] = raw_data.positions
 	var raw_rotations: Array[float] = raw_data.rotations
 	var min_bounds = Vector2(INF, INF)
@@ -53,4 +53,4 @@ func apply_layout(cards: Array[Card], layout: Dictionary, skipped_cards: Array[C
 ##[br]Must return a Dictionary with:
 ##[br]- [code]positions[/code]: Array[Vector2] of raw center positions
 ##[br]- [code]rotations[/code]: Array[float] of card rotations in radians
-@abstract func _compute_raw_cards(cards: Array[Card], hand: CardHand) -> Dictionary
+@abstract func _compute_raw_cards(cards: Array[Card]) -> Dictionary

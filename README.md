@@ -21,6 +21,7 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
   - [CardHandShape](#cardhandshape)
   - [CardSlot](#cardslot)
   - [CardMat](#cardmat)
+  - [CardPile](#cardpile)
   - [CardDeck](#carddeck)
   - [CardDeckManager](#carddeckmanager)
   - [CardGlobal (CG)](#cardglobal-cg)
@@ -37,10 +38,9 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
 - **Customizable Visuals** - Create unique card faces using the layout system
 - **Reusable Animations** - Plug-and-play animation resources for common card behaviors
 - **Data-Driven Design** - Separate card data (resources) from visuals (layouts)
-- **Hand Management** - Arrange cards in lines, arcs, grids, or custom shapes
-- **Extensible Deck System** - Dictionary-based pile management for easy extension
+- **Hand Management** - Arrange cards in lines, arcs, grids, stacks, or custom shapes
+- **Deck System** - Lightweight deck definitions with a minimal manager you can extend
 - **Card Slots** - Drop zones for placing individual cards
-- **Flip Animations** - Front/back card faces with transition support
 - **Layout Management Panel** - Editor panel to view, create, and manage all card layouts
 - **Fully Documented** - In-editor documentation for all classes
 
@@ -207,7 +207,7 @@ func refresh_layout() -> void
 # Animated transforms
 func tween_scale(desired_scale: Vector2 = Vector2.ONE, duration: float = 0.2) -> void
 func tween_rotation(desired_rotation: float = 0, duration: float = 0.2) -> void
-func tween_position(desired_position: Vector2, duration: float = 0.2, global: bool = false) -> void
+func tween_position(desired_position: Vector2, duration: float = 0.3, global: bool = false) -> void
 
 # Stop all animations
 func kill_all_tweens() -> void
@@ -436,18 +436,19 @@ A container that arranges multiple cards in a configurable shape.
 
 ```gdscript
 # Add a single card (returns true if successful)
-# Handles hand-to-hand transfers automatically, preserving visual position
 func add_card(card: Card) -> bool
 
 # Add multiple cards (returns number successfully added)
-# Batches the transfer: old hands rearrange once, not per-card
 func add_cards(card_array: Array[Card]) -> int
 
-# Remove a card (does NOT free it)
-func remove_card(card: Card, new_parent: Node = null) -> void
+# Remove a card (does NOT free it, returns the card or null)
+func remove_card(card: Card) -> Card
 
 # Remove all cards (does NOT free them)
 func clear_hand() -> void
+
+# Remove all cards and free them
+func clear_and_free() -> void
 
 # Get card by index
 func get_card(index: int) -> Card
@@ -457,6 +458,9 @@ func get_card_count() -> int
 
 # Get index of a card
 func get_card_index(card: Card) -> int
+
+# Check if hand contains a card
+func has_card(card: Card) -> bool
 
 # Check if hand is full
 func is_hand_full() -> bool
@@ -475,13 +479,13 @@ func arrange_cards() -> void
 
 ```gdscript
 # Override to handle card clicks
-func _handle_clicked_card(card: Card) -> void:
-    print("Card clicked: ", card.name)
+func _handle_clicked_card(card: Card) -> void
 
-# Override to add cleanup when a card leaves the hand by any path
-# (remove, hand-to-hand transfer, drag out, etc.)
-func _release_card(card: Card) -> void:
-    super._release_card(card)
+# Called when a card is added to the hand
+func _on_card_added(card: Card, index: int) -> void
+
+# Called when a card is removed from the hand
+func _on_card_removed(card: Card, index: int) -> void
 ```
 
 #### Example
@@ -526,7 +530,7 @@ The layout process is split into two phases:
 ```gdscript
 # Computes final card positions and rotations (does NOT move cards)
 # Returns Dictionary with "positions": Array[Vector2] and "rotations": Array[float]
-func compute_layout(cards: Array[Card], hand: CardHand) -> Dictionary
+func compute_layout(cards: Array[Card]) -> Dictionary
 
 # Tweens cards to the positions from compute_layout(). Skipped cards are not moved.
 func apply_layout(cards: Array[Card], layout: Dictionary, skipped_cards: Array[Card] = []) -> void
@@ -539,7 +543,7 @@ Override `_compute_raw_cards()` to return raw center positions and rotations. Th
 ```gdscript
 class_name MyCustomShape extends CardHandShape
 
-func _compute_raw_cards(cards: Array[Card], hand: CardHand) -> Dictionary:
+func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
     var positions: Array[Vector2] = []
     var rotations: Array[float] = []
     
@@ -584,12 +588,21 @@ grid.row_offset = 150.0       # Vertical spacing
 grid.arrange_by_rows = true   # Fill rows first (true) or columns first (false)
 ```
 
+**StackHandShape**
+
+Places all cards at the same position (stacked on top of each other). Useful for draw/discard piles via `CardPile`.
+
+```gdscript
+var stack = StackHandShape.new()
+```
+
 Features:
 
 - Auto-expansion to fit all cards
 - Auto-centering for incomplete last row/column
 - Configurable row-first or column-first arrangement
 - All shapes automatically fit cards within the hand's bounding rect
+- Shapes can be used by both `CardHand` and `CardPile`
 
 ---
 
@@ -629,8 +642,11 @@ A panel that accepts a single dropped card.
 # Add a card to the slot (returns true if successful)
 func add_card(card: Card) -> bool
 
-# Remove the card from the slot
-func remove_card(new_parent: Node = null) -> Card
+# Remove a specific card from the slot (does NOT free it)
+func remove_card(card: Card) -> Card
+
+# Remove and return the held card (does NOT free it)
+func pop_card() -> Card
 
 # Clear the slot (force=true ignores lock)
 func clear_slot(force: bool = false) -> Card
@@ -671,7 +687,7 @@ func check_conditions(card: Card) -> bool:
 
 ### CardMat
 
-A panel that detects dropped card.
+A panel that detects dropped cards.
 
 #### Signals
 
@@ -693,167 +709,179 @@ func handle_dropped_card(card: Card) -> void:
 
 ---
 
-### CardDeck
+### CardPile
 
-A resource that stores card composition and runtime pile state. Uses dictionary-based pile system for extensibility.
+A container for cards that can function as an invisible holder or a visual pile. CardPile is the building block for deck systems — it holds `Card` nodes as children and provides draw, add, shuffle, and arrangement operations.
 
-#### Enum
+#### Properties
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `shape` | `CardHandShape` | Optional shape for visual arrangement (reuses hand shapes) |
+| `show_cards` | `bool` | If `true`, card nodes are visible in the pile |
+| `face_up` | `bool` | Whether cards in this pile show their front face |
+
+#### Signals
+
+| Signal | Parameters | Description |
+| --- | --- | --- |
+| `card_added` | `card: Card, index: int` | Emitted when a card is added to the pile |
+| `card_removed` | `card: Card` | Emitted when a card is removed from the pile |
+| `pile_emptied` | - | Emitted when the pile becomes empty |
+| `pile_shuffled` | - | Emitted when the pile is shuffled |
+| `pile_changed` | `new_size: int` | Emitted when the pile size changes |
+
+#### Methods
 
 ```gdscript
-enum Pile {
-    DRAW,
-    DISCARD,
-}
+# Core
+func get_card_count() -> int
+func is_empty() -> bool
+func get_cards() -> Array[Card]
+func get_card_at(index: int) -> Card
+
+# Adding cards
+func add_card(card: Card) -> void
+func add_card_at(card: Card, index: int) -> void
+func add_cards(card_array: Array[Card]) -> void
+
+# Drawing / removing cards
+func draw_card() -> Card               # Draw from top
+func draw_cards(count: int) -> Array[Card]
+func draw_card_at(index: int) -> Card
+func remove_card(card: Card) -> Card    # Does NOT free
+func clear_pile() -> void               # Does NOT free
+func clear_and_free() -> void           # Frees all cards
+
+# Pile operations
+func shuffle() -> void
+func peek_top() -> Card
+func peek_top_cards(count: int) -> Array[Card]
+func has_card(card: Card) -> bool
+func get_card_index(card: Card) -> int
+func move_all_to(target_pile: CardPile) -> void
+
+# Arrangement
+func arrange() -> void
 ```
+
+#### Virtual Methods
+
+```gdscript
+# Called when a card is added — override for custom behavior
+func _on_card_added(card: Card, index: int) -> void
+
+# Called when a card is removed — override for custom behavior
+func _on_card_removed(card: Card) -> void
+```
+
+#### Example
+
+```gdscript
+@onready var draw_pile: CardPile = $DrawPile
+@onready var discard_pile: CardPile = $DiscardPile
+@onready var hand: CardHand = $Hand
+
+func deal():
+    var cards = draw_pile.draw_cards(5)
+    hand.add_cards(cards)
+
+func discard(card: Card):
+    discard_pile.add_card(card)
+
+func reshuffle():
+    discard_pile.move_all_to(draw_pile)
+    draw_pile.shuffle()
+```
+
+---
+
+### CardDeck
+
+A pure data resource that defines what cards make up a deck. CardDeck does **not** manage runtime state — use `CardPile` or `CardDeckManager` for that.
 
 #### Properties
 
 | Property | Type | Description |
 | --- | --- | --- |
 | `deck_name` | `StringName` | Optional name for the deck |
-| `card_list` | `Array[CardResource]` | Complete deck composition |
-| `piles` | `Dictionary[Pile, Array]` | Runtime pile state (automatically managed) |
-
-#### Signals
-
-| Signal | Parameters | Description |
-| --- | --- | --- |
-| `pile_shuffled` | `pile: Pile` | Emitted when a pile is shuffled |
-| `pile_emptied` | `pile: Pile` | Emitted when a pile becomes empty |
-| `pile_changed` | `pile: Pile, size: int` | Emitted when a pile's size changes |
-| `card_drawn` | `card_resource: CardResource, from_pile: Pile` | Emitted when a card is drawn from a pile |
-| `card_added_to_pile` | `card_resource: CardResource, pile: Pile, index: int` | Emitted when a card is added to a pile |
-| `card_removed_from_pile` | `card_resource: CardResource, pile: Pile` | Emitted when a card is removed from a pile |
-| `discard_reshuffled` | - | Emitted when discard is reshuffled into draw |
-| `deck_reset` | - | Emitted when reset_to_draw() is called |
+| `cards` | `Array[CardResource]` | The cards that make up this deck |
 
 #### Methods
 
 ```gdscript
-# Initialization
-func reset_to_draw() -> void
-func shuffle_pile(pile: Pile = Pile.DRAW) -> void
+# Returns a duplicate of the card list (safe to mutate)
+func get_cards() -> Array[CardResource]
 
-# Deck building
-func add_card(card: CardResource) -> void
-func remove_card(card: CardResource) -> bool
-func get_card_count(card: CardResource) -> int
-func duplicate_deck() -> CardDeck
+# Returns the number of cards in the deck definition
+func get_size() -> int
 
-# State queries
-func get_pile(pile: Pile) -> Array
-func get_pile_size(pile: Pile = Pile.DRAW) -> int
-func is_pile_empty(pile: Pile = Pile.DRAW) -> bool
-func get_total_card_count() -> int
-
-# State manipulation
-func draw_from_pile(pile: Pile = Pile.DRAW) -> CardResource
-func add_to_pile(card: CardResource, pile: Pile = Pile.DRAW) -> void
-func move_card(card: CardResource, from_pile: Pile, to_pile: Pile) -> bool
-func move_pile_to_pile(from_pile: Pile, to_pile: Pile) -> void
-func move_discard_to_draw() -> void
-
-# Serialization
-func save_state() -> Dictionary
-func load_state(state: Dictionary) -> void
+# Returns true if the deck definition has no cards
+func is_empty() -> bool
 ```
 
 ---
 
 ### CardDeckManager
 
-Manages visual Card nodes from a CardDeck resource. Uses dictionary-based pile system for extensibility.
+Manages a `CardDeck` by populating `CardPile` nodes with `Card` instances. The manager is intentionally minimal — it initializes piles from a deck definition and provides a hook for card creation. For game-specific logic (solitaire dealing, hand limits, turn structure), extend this class.
+
+The manager does **not** own or create piles — you add `CardPile` nodes in the scene tree and assign them via exports or code.
 
 #### Properties
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `deck` | `CardDeck` | The deck being managed |
-| `auto_setup` | `bool` | Auto-setup on ready |
-| `shuffle_on_ready` | `bool` | Shuffle on setup |
-| `show_cards` | `bool` | Show cards in piles |
-| `pile_nodes` | `Dictionary[CardDeck.Pile, Node]` | Container nodes for each pile |
-| `front_face_in_pile` | `Dictionary[CardDeck.Pile, bool]` | Face-up state per pile |
+| `deck` | `CardDeck` | The deck definition to use |
+| `starting_pile` | `CardPile` | The pile to populate on setup (auto-created if null) |
+| `auto_setup` | `bool` | If `true`, calls `setup()` on ready |
+| `shuffle_on_setup` | `bool` | If `true`, shuffles the starting pile after populating it |
 
 #### Signals
 
 | Signal | Parameters | Description |
 | --- | --- | --- |
-| `deck_initialized` | `deck: CardDeck` | Emitted when deck is initialized |
-| `piles_synchronized` | - | Emitted after piles are synchronized |
-| `card_instance_created` | `card: Card, resource: CardResource` | Emitted when a card instance is created |
-| `card_instance_destroyed` | `card: Card` | Emitted when a card instance is destroyed |
-| `cards_drawn` | `cards: Array[Card], count: int, from_pile: CardDeck.Pile` | Emitted when cards are drawn |
-| `draw_failed` | `pile: CardDeck.Pile` | Emitted when draw from empty pile is attempted |
-| `preview_shown` | `preview_hand: CardHand, pile: CardDeck.Pile` | Emitted when preview is shown |
-| `preview_hidden` | - | Emitted when preview is hidden |
-| `deck_state_saved` | `state: Dictionary` | Emitted when deck state is saved |
-| `deck_state_loaded` | `state: Dictionary` | Emitted when deck state is loaded |
+| `deck_initialized` | - | Emitted after `setup()` completes |
+| `card_created` | `card: Card, resource: CardResource` | Emitted when a card instance is created during setup |
 
 #### Methods
 
 ```gdscript
-# Setup
-func setup(starting_deck: CardDeck = deck) -> void
+# Populates the starting pile with Card instances from the deck definition.
+# Override _create_card() to customize card instantiation.
+func setup(source_deck: CardDeck = deck, target_pile: CardPile = starting_pile) -> void
+```
 
-# Drawing cards
-func draw_card(pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> Card
-func draw_cards(count: int, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> Array[Card]
+#### Virtual Methods
 
-# Peeking
-func peek_top_card(pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> Card
-func peek_top_cards(count: int, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> Array[Card]
-
-# Adding cards
-func add_card_to_pile(card: Card, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> void
-func add_card_to_pile_at(card: Card, index: int, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> void
-
-# Removing cards
-func remove_card_from_pile(card: Card, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> bool
-func remove_card_from_pile_at(index: int, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> Card
-
-# Pile operations
-func shuffle(pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> void
-func reshuffle_discard_into_draw() -> void
-func reshuffle_discard_and_shuffle() -> void
-
-# Pile info
-func get_pile_size(pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> int
-func is_pile_empty(pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> bool
-func get_total_card_count() -> int
-
-# Preview
-func show_pile_preview_hand(preview_hand: CardHand, pile: CardDeck.Pile = CardDeck.Pile.DRAW) -> void
-func hide_pile_preview_hand() -> void
-
-# Save/Load
-func save_deck_state() -> Dictionary
-func load_deck_state(state: Dictionary) -> void
-
-# Cleanup
-func clear_deck() -> void
+```gdscript
+# Override to customize card creation (e.g., connect signals, set properties, use a subclass)
+func _create_card(card_resource: CardResource) -> Card
 ```
 
 #### Example
 
 ```gdscript
 @onready var deck_manager: CardDeckManager = $CardDeckManager
+@onready var draw_pile: CardPile = $DrawPile
+@onready var discard_pile: CardPile = $DiscardPile
 @onready var hand: CardHand = $Hand
 
 func _ready():
+    deck_manager.starting_pile = draw_pile
     deck_manager.setup()
     draw_starting_hand()
 
 func draw_starting_hand():
-    var cards = deck_manager.draw_cards(5)
+    var cards = draw_pile.draw_cards(5)
     hand.add_cards(cards)
 
 func discard_card(card: Card):
-    hand.remove_card(card)
-    deck_manager.add_card_to_pile(card, CardDeck.Pile.DISCARD)
+    discard_pile.add_card(card)
 
 func reshuffle():
-    deck_manager.reshuffle_discard_and_shuffle()
+    discard_pile.move_all_to(draw_pile)
+    draw_pile.shuffle()
 ```
 
 ---
@@ -997,6 +1025,27 @@ Run SolitaireExample.tscn to play.
 ---
 
 ## Changelog
+
+### Version 2.6
+
+- **CardPile** — New `Control` node that acts as a container for cards. Supports draw, add, shuffle, peek, and arrangement operations. Can use any `CardHandShape` for visual layout or stack cards invisibly. This is now the building block for deck systems.
+- **CardDeck Simplified** — `CardDeck` is now a pure data resource. It defines *what cards* a deck contains (`cards` array) and nothing else. All runtime pile state, signals, serialization, and the `Pile` enum have been removed. Use `CardPile` nodes for runtime state instead.
+- **CardDeckManager Simplified** — The manager now only creates `Card` instances from a `CardDeck` and populates a `CardPile`. All draw/discard/shuffle/preview/save-load logic has been removed — interact with `CardPile` nodes directly. Override `_create_card()` to customize card instantiation.
+- **Reparenting Overhaul** — `CardHand`, `CardSlot`, and `CardPile` now track cards via `child_exiting_tree`. When a card is reparented away (e.g., via `reparent()` or moving to another container), the source container automatically cleans up its internal state and emits the appropriate signals. Manual `_release_card()` is no longer needed.
+- **CardHand** — Added `clear_and_free()`, `has_card()`, `_on_card_added()`, and `_on_card_removed()` virtual callbacks. `remove_card()` now returns the card instead of void and no longer takes a `new_parent` parameter. Removed `_release_card()`.
+- **CardSlot** — `remove_card()` now takes a `card: Card` parameter instead of `new_parent: Node`. Added `pop_card()` for removing the held card without specifying which card. Swap logic simplified using the new `_take_card()` helper.
+- **CardHandShape** — `compute_layout()` and `_compute_raw_cards()` no longer require a `hand: CardHand` parameter, allowing shapes to be reused by both `CardHand` and `CardPile`.
+- **StackHandShape** — New built-in shape that stacks all cards at the same position. Useful for draw/discard pile visuals.
+- **Card** — Added early-exit guard on `is_front_face` setter to avoid redundant flips.
+- **Check Exports** - Exports like arrays or assigned nodes on the deck and manager might need to be remade/reassigned.
+
+**Breaking Changes:**
+
+- `CardDeck`: No longer contains runtime pile state. The `Pile` enum, all signals, `card_list` (now `cards`), `piles`, `reset_to_draw()`, `draw_from_pile()`, `add_to_pile()`, `move_card()`, `shuffle_pile()`, `save_state()`, `load_state()`, and all related methods have been removed. It is now a pure data resource.
+- `CardDeckManager`: All draw/discard/add/remove/shuffle/preview/save-load methods have been removed. Use `CardPile` methods directly instead. `pile_nodes` and `front_face_in_pile` exports removed. `shuffle_on_ready` renamed to `shuffle_on_setup`. The manager now takes a `starting_pile: CardPile` export instead.
+- `CardHand`: `remove_card()` signature changed from `(card, new_parent)` to `(card)` returning `Card`. `_release_card()` removed — use `_on_card_removed()` instead.
+- `CardSlot`: `remove_card()` signature changed from `(new_parent)` to `(card)`. Use `pop_card()` for the old behavior of removing whatever card is held.
+- `CardHandShape`: `compute_layout()` and `_compute_raw_cards()` no longer take a `hand: CardHand` parameter. Update custom shapes accordingly.
 
 ### Version 2.5.2
 

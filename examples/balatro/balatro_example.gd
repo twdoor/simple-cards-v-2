@@ -4,16 +4,23 @@
 ## applying visual modifiers (Gold/Steel), sorting, and previewing pile contents.
 ##
 ## Scene nodes:
-## - CardDeckManager: manages the deck and draw/discard pile nodes
+## - CardDeckManager: manages the deck, populates the draw pile
+## - Draw (CardPile): the draw pile
+## - Discard (CardPile): the discard pile
 ## - BalatroHand: player's hand (arc shape, max 7, click to select)
 ## - PlayedHand: staging area for played cards (line shape)
-## - PreviewHand: grid display for previewing pile contents
 extends CanvasLayer
 
+@export var deck: CardDeck
+@export var use_stagger_draw: bool = true
+
 @onready var card_deck_manager: CardDeckManager = $CardDeckManager
-@onready var balatro_hand: BalatroHand = $BalatroHand
-@onready var played_hand: CardHand = $PlayedHand
-@onready var preview_hand: CardHand = %PreviewHand
+@onready var played_hand: CardHand = %PlayedHand
+@onready var balatro_hand: BalatroHand = %BalatroHand
+
+
+@onready var draw: CardPile = %Draw
+@onready var discard: CardPile = %Discard
 
 @onready var gold_button: Button = %GoldButton
 @onready var silv_button: Button = %SilvButton
@@ -21,17 +28,17 @@ extends CanvasLayer
 
 @onready var discard_button: Button = %DiscardButton
 @onready var play_button: Button = %PlayButton
-@onready var preview_discard_button: Button = %PreviewDiscardButton
-@onready var preview_draw_button: Button = %PreviewDrawButton
 
 @onready var sort_suit_button: Button = %SortSuitButton
 @onready var sort_value_button: Button = %SortValueButton
 
+@onready var preview_hand: CardHand = %PreviewHand
+@onready var preview_draw: Button = %PreviewDraw
+@onready var preview_discard: Button = %PreviewDiscard
 var preview_visible: bool = false
-var current_preview_pile: Variant = null ## Which CardDeck.Pile is being previewed, or null
+var current_preview_pile: CardPile
 
 var sort_by_suit: bool = false
-var hand_size: int
 
 
 func _ready() -> void:
@@ -42,19 +49,14 @@ func _ready() -> void:
 	play_button.pressed.connect(_on_play_button)
 	sort_suit_button.pressed.connect(_on_sort_suit_pressed)
 	sort_value_button.pressed.connect(_on_sort_value_pressed)
-	preview_discard_button.pressed.connect(_on_preview_discard_pressed)
-	preview_draw_button.pressed.connect(_on_preview_draw_pressed)
+	preview_draw.pressed.connect(_on_preview_draw_pressed)
+	preview_discard.pressed.connect(_on_preview_discard_pressed)
 
 	CG.def_front_layout = LayoutID.STANDARD_LAYOUT
 	CG.def_back_layout = LayoutID.STANDARD_BACK_LAYOUT
 
-	hand_size = balatro_hand.max_hand_size
-
 	card_deck_manager.setup()
 	deal()
-
-	card_deck_manager.hide_pile_preview_hand()
-	preview_visible = false
 
 
 #region Modifier Buttons
@@ -87,36 +89,31 @@ func _on_none_pressed() -> void:
 func _on_discard_pressed() -> void:
 	if balatro_hand.selected.is_empty():
 		return
-
-	## Duplicate since remove_card modifies the selected array as cards move
+	
 	var cards_to_discard := balatro_hand.selected.duplicate()
-	balatro_hand.selected.clear()
+	balatro_hand.clear_selected()
 	for card in cards_to_discard:
-		card_deck_manager.add_card_to_pile(card, CardDeck.Pile.DISCARD)
-
-	_close_preview()
+		discard.add_card(card)
+	
 	deal()
 
 
 func _on_play_button() -> void:
 	if balatro_hand.selected.is_empty():
 		return
-
-	_close_preview()
+	
 	_set_interaction_enabled(false)
-
-	## Duplicate since remove_card modifies the selected array as cards move
+	
 	balatro_hand.sort_selected()
 	var cards_to_play := balatro_hand.selected.duplicate()
-	balatro_hand.selected.clear()
-	played_hand.add_cards(cards_to_play)
-
+	balatro_hand.clear_selected()
+	staggered_draw(cards_to_play, played_hand)
+	
 	await get_tree().create_timer(2).timeout ## Replace with VFX/Logic
-
-	## Duplicate since the array changes as cards are removed
+	
 	for card in played_hand.cards.duplicate():
-		card_deck_manager.add_card_to_pile(card, CardDeck.Pile.DISCARD)
-
+		discard.add_card(card)
+	
 	played_hand.clear_hand()
 	deal()
 	_set_interaction_enabled(true)
@@ -127,31 +124,34 @@ func _on_play_button() -> void:
 #region Dealing
 
 ## Fills the hand back up to max size. If draw pile runs out mid-deal,
-## reshuffles the discard pile and keeps drawing.
+## reshuffles the discard pile into draw and keeps drawing.
 func deal() -> void:
 	var remaining_space := balatro_hand.get_remaining_space()
-	var to_deal: int = remaining_space if remaining_space >= 0 else hand_size
-
+	var to_deal: int = remaining_space if remaining_space >= 0 else balatro_hand.max_hand_size
+	
 	if to_deal <= 0:
 		return
-
-	var pile_size: int = card_deck_manager.get_pile_size(CardDeck.Pile.DRAW)
-
+	
+	var pile_size: int = draw.get_card_count()
+	
 	if pile_size >= to_deal:
-		balatro_hand.add_cards(card_deck_manager.draw_cards(to_deal))
+		staggered_draw(draw.draw_cards(to_deal))
 	else:
 		var overflow := to_deal - pile_size
 		if pile_size > 0:
-			balatro_hand.add_cards(card_deck_manager.draw_cards(pile_size))
-		card_deck_manager.reshuffle_discard_and_shuffle()
-		var new_pile_size := card_deck_manager.get_pile_size(CardDeck.Pile.DRAW)
+			staggered_draw(draw.draw_cards(pile_size))
+	
+		discard.move_all_to(draw)
+		draw.shuffle()
+	
+		var new_pile_size := draw.get_card_count()
 		if new_pile_size > 0:
-			balatro_hand.add_cards(card_deck_manager.draw_cards(mini(overflow, new_pile_size)))
-
+			staggered_draw(draw.draw_cards(mini(overflow, new_pile_size)))
+	
 	for card in balatro_hand.cards:
-		if not card.is_front_face:
+		if !card.is_front_face:
 			card.flip()
-
+	
 	_apply_sort()
 
 #endregion
@@ -163,72 +163,18 @@ func _on_sort_suit_pressed() -> void:
 	sort_by_suit = true
 	balatro_hand.sort_by_suit()
 
-
+	
 func _on_sort_value_pressed() -> void:
 	sort_by_suit = false
 	balatro_hand.sort_by_value()
 
 
-## Re-applies whichever sort is currently active. Called after dealing.
 func _apply_sort() -> void:
 	if sort_by_suit:
 		balatro_hand.sort_by_suit()
 	else:
 		balatro_hand.sort_by_value()
 
-#endregion
-
-
-#region Preview
-
-## Preview buttons toggle their pile. Clicking the same one again closes it,
-## clicking the other one switches to that pile.
-
-func _on_preview_discard_pressed() -> void:
-	if preview_visible and current_preview_pile == CardDeck.Pile.DISCARD:
-		_close_preview()
-		return
-
-	if card_deck_manager.is_pile_empty(CardDeck.Pile.DISCARD):
-		return
-
-	_show_preview(CardDeck.Pile.DISCARD)
-
-
-func _on_preview_draw_pressed() -> void:
-	if preview_visible and current_preview_pile == CardDeck.Pile.DRAW:
-		_close_preview()
-		return
-
-	if card_deck_manager.is_pile_empty(CardDeck.Pile.DRAW):
-		return
-
-	_show_preview(CardDeck.Pile.DRAW)
-
-
-func _show_preview(pile: CardDeck.Pile) -> void:
-	preview_visible = true
-	current_preview_pile = pile
-	_set_ui_enabled(false)
-	card_deck_manager.show_pile_preview_hand(preview_hand, pile)
-	_sort_preview(preview_hand)
-	for card in preview_hand.cards:
-		card.disabled = true
-
-
-func _close_preview() -> void:
-	if preview_visible:
-		card_deck_manager.hide_pile_preview_hand()
-	preview_visible = false
-	current_preview_pile = null
-	_set_ui_enabled(true)
-
-
-func _sort_preview(hand: CardHand) -> void:
-	hand.sort_cards(func(a: Card, b: Card) -> bool:
-		if a.card_data.card_suit != b.card_data.card_suit:
-			return a.card_data.card_suit < b.card_data.card_suit
-		return a.card_data.value < b.card_data.value)
 
 #endregion
 
@@ -237,30 +183,114 @@ func _sort_preview(hand: CardHand) -> void:
 
 ## Hides/shows everything. Used by pile preview to take over the screen.
 func _set_ui_enabled(enabled: bool) -> void:
-	discard_button.disabled = not enabled
-	play_button.disabled = not enabled
-	sort_suit_button.disabled = not enabled
-	sort_value_button.disabled = not enabled
-	gold_button.disabled = not enabled
-	silv_button.disabled = not enabled
-	none_button.disabled = not enabled
-
-	for pile in card_deck_manager.pile_nodes.values():
-		pile.visible = enabled
+	discard_button.disabled = !enabled
+	play_button.disabled = !enabled
+	sort_suit_button.disabled = !enabled
+	sort_value_button.disabled = !enabled
+	gold_button.disabled = !enabled
+	silv_button.disabled = !enabled
+	none_button.disabled = !enabled
+	
 	balatro_hand.visible = enabled
 
 
-## Disables interaction without hiding anything, so card animations still play.
 func _set_interaction_enabled(enabled: bool) -> void:
-	discard_button.disabled = not enabled
-	play_button.disabled = not enabled
-	sort_suit_button.disabled = not enabled
-	sort_value_button.disabled = not enabled
-	gold_button.disabled = not enabled
-	silv_button.disabled = not enabled
-	none_button.disabled = not enabled
-
+	discard_button.disabled = !enabled
+	play_button.disabled = !enabled
+	sort_suit_button.disabled = !enabled
+	sort_value_button.disabled = !enabled
+	gold_button.disabled = !enabled
+	silv_button.disabled = !enabled
+	none_button.disabled = !enabled
+	
 	for card in balatro_hand.cards:
-		card.disabled = not enabled
+		card.disabled = !enabled
+
+#endregion
+
+#region Preview Functions
+
+func _on_preview_discard_pressed() -> void:
+	if preview_visible and current_preview_pile == discard:
+		_close_preview()
+		return
+
+	if discard.is_empty():
+		return
+
+	_show_preview(discard)
+
+
+func _on_preview_draw_pressed() -> void:
+	if preview_visible and current_preview_pile == draw:
+		_close_preview()
+		return
+
+	if draw.is_empty():
+		return
+
+	_show_preview(draw)
+
+
+func _show_preview(pile: CardPile) -> void:
+	preview_visible = true
+	current_preview_pile = pile
+	_set_ui_enabled(false)
+	show_pile_preview_hand(current_preview_pile.get_cards())
+	_sort_preview(preview_hand)
+	for card in preview_hand.cards:
+		card.disabled = true
+
+
+func _close_preview() -> void:
+	if preview_visible:
+		hide_pile_preview_hand()
+	preview_visible = false
+	current_preview_pile = null
+	_set_ui_enabled(true)
+
+
+func show_pile_preview_hand(cards: Array[Card]) -> void:
+	_update_pile_preview_hand(cards)
+
+
+func _update_pile_preview_hand(cards: Array[Card]) -> void:
+	if cards.is_empty():
+		return
+	
+	preview_hand.clear_hand()
+	var preview_cards: Array[Card] = []
+	var preview_card = cards
+	
+	for child in preview_card:
+		if child is Card:
+			var card_proxy: Card = Card.new(child.card_data)
+			card_proxy.name = child.name + "_preview"
+			card_proxy.set_meta("source_card", child)
+			preview_cards.append(card_proxy)
+	
+	preview_hand.add_cards(preview_cards)
+	_sort_preview(preview_hand)
+
+
+func hide_pile_preview_hand() -> void:
+	if preview_hand:
+		preview_hand.clear_and_free()
+
+
+func _sort_preview(hand: CardHand) -> void:
+	hand.sort_cards(func(a: Card, b: Card) -> bool:
+		if a.card_data.card_suit != b.card_data.card_suit:
+			return a.card_data.card_suit < b.card_data.card_suit
+		return a.card_data.value < b.card_data.value)
+
+
+func staggered_draw(cards: Array[Card], hand: CardHand = balatro_hand, use_it: bool = use_stagger_draw):
+	if use_it:
+		for card in cards:
+			hand.add_card(card)
+			await get_tree().create_timer(.075).timeout
+	else: hand.add_cards(cards)
+
 
 #endregion

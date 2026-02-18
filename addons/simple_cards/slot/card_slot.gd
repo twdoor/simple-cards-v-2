@@ -50,10 +50,13 @@ var _card_currently_over: Card = null
 var _card_origin_parent: Node = null
 ## Tracks if the card being dragged originated from THIS slot
 var _card_originated_from_this_slot: bool = false
+## Guard flag to prevent child_exiting_tree from firing during intentional operations.
+var _suppress_auto_remove: bool = false
 
 func _ready() -> void:
 	CG.holding_card.connect(_on_card_held)
 	CG.dropped_card.connect(_on_card_dropped)
+	child_exiting_tree.connect(_on_card_child_exiting)
 	
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
@@ -92,7 +95,7 @@ func is_locked() -> bool:
 	return slot_locked
 
 
-##Adds a card to this slot via code. Returns [code]true[/code] if successful. [br]Fails if slot is occupied or locked. Handles reparenting from CardHand or other CardSlot.
+##Adds a card to this slot via code. Returns [code]true[/code] if successful. [br]Fails if slot is occupied or locked.
 func add_card(card: Card) -> bool:
 	if slot_locked:
 		card_rejected.emit(card, "slot_locked")
@@ -107,17 +110,7 @@ func add_card(card: Card) -> bool:
 		card_rejected.emit(card, "source_locked")
 		return false
 	
-	if current_parent is CardSlot:
-		current_parent._disconnect_card_signals(card)
-		current_parent.held_card = null
-		current_parent.slot_emptied.emit()
-		card.reparent(self)
-	elif current_parent is CardHand:
-		current_parent.remove_card(card, self)
-	elif current_parent:
-		card.reparent(self)
-	else:
-		add_child(card)
+	_take_card(card)
 	
 	held_card = card
 	_connect_card_signals(card)
@@ -127,30 +120,48 @@ func add_card(card: Card) -> bool:
 	return true
 
 
-##Removes the card from this slot. [color=red]DOES NOT FREE THE CARD[/color] [br]Returns the removed card, or [code]null[/code] if slot was empty or locked.
-func remove_card(new_parent: Node = null) -> Card:
+##Removes a specific card from this slot. Returns the card if removed, or [code]null[/code] if not found or locked.
+##[color=red]Does NOT free the card.[/color]
+func remove_card(card: Card) -> Card:
+	if slot_locked:
+		return null
+	if held_card != card:
+		return null
+	
+	if card.get_parent() == self:
+		var stored_global_pos = card.global_position
+		remove_child(card)
+		card.global_position = stored_global_pos
+	else:
+		_on_card_child_exiting(card)
+	
+	return card
+
+
+##Removes and returns the held card, or [code]null[/code] if empty or locked.
+##[color=red]Does NOT free the card.[/color]
+func pop_card() -> Card:
 	if slot_locked:
 		return null
 	if held_card == null:
 		return null
 	
 	var card = held_card
-	_disconnect_card_signals(card)
-	held_card = null
 	
 	if card.get_parent() == self:
-		if new_parent:
-			card.reparent(new_parent)
-		else:
-			var stored_global_pos = card.global_position
-			remove_child(card)
-			card.global_position = stored_global_pos
+		var stored_global_pos = card.global_position
+		remove_child(card)
+		card.global_position = stored_global_pos
+	else:
+		_on_card_child_exiting(card)
 	
-	slot_emptied.emit()
 	return card
 
 
-##Clears the slot, removing any held card. [color=red]DOES NOT FREE THE CARD[/color] [br]Returns the removed card, or [code]null[/code] if slot was empty. [br]If [param force] is [code]true[/code], clears even if locked.
+##Clears the slot, removing any held card.
+##[color=red]DOES NOT FREE THE CARD[/color]
+##[br]Returns the removed card, or [code]null[/code] if slot was empty.
+##[br]If [param force] is [code]true[/code], clears even if locked.
 func clear_slot(force: bool = false) -> Card:
 	if slot_locked and not force:
 		return null
@@ -158,15 +169,14 @@ func clear_slot(force: bool = false) -> Card:
 		return null
 	
 	var card = held_card
-	_disconnect_card_signals(card)
-	held_card = null
 	
 	if card.get_parent() == self:
 		var stored_global_pos = card.global_position
 		remove_child(card)
 		card.global_position = stored_global_pos
+	else:
+		_on_card_child_exiting(card)
 	
-	slot_emptied.emit()
 	return card
 
 
@@ -179,6 +189,9 @@ func is_empty() -> bool:
 func swap_with(other_slot: CardSlot) -> bool:
 	if slot_locked or other_slot.slot_locked:
 		return false
+	
+	_suppress_auto_remove = true
+	other_slot._suppress_auto_remove = true
 	
 	var this_card = held_card
 	var other_card = other_slot.held_card
@@ -214,6 +227,8 @@ func swap_with(other_slot: CardSlot) -> bool:
 	else:
 		other_slot.slot_emptied.emit()
 	
+	_suppress_auto_remove = false
+	other_slot._suppress_auto_remove = false
 	return true
 
 
@@ -225,12 +240,7 @@ func transfer_to_hand(hand: CardHand) -> bool:
 		return false
 	
 	var card = held_card
-	_disconnect_card_signals(card)
-	held_card = null
-	
 	var success = hand.add_card(card)
-	if success:
-		slot_emptied.emit()
 	return success
 
 
@@ -272,7 +282,6 @@ func _on_card_dropped() -> void:
 			if abandon_on_empty_space: _abandon_card(held_card)
 			else: _position_card_in_center(held_card)
 	
-	# Reset state
 	_card_over = false
 	_card_currently_over = null
 	_card_originated_from_this_slot = false
@@ -285,18 +294,13 @@ func _abandon_card(card: Card) -> void:
 	if not card:
 		return
 	
-	_disconnect_card_signals(card)
-	held_card = null
-	
 	var target = abandon_reparent_target if abandon_reparent_target else get_parent()
 	if target and card.get_parent() == self:
 		card.reparent(target)
 	
 	card.rotation = 0.0
 	card.scale = Vector2.ONE
-	
 	card_abandoned.emit(card)
-	slot_emptied.emit()
 
 
 #region Signal Management
@@ -355,36 +359,16 @@ func _handle_card_drop(incoming_card: Card) -> void:
 		return
 	
 	var original_parent = incoming_card_parent
-	var original_slot: CardSlot = null if original_parent is not CardSlot else original_parent
-	var incoming_was_in_hand = original_parent is CardHand
-	var incoming_was_in_slot = original_parent is CardSlot
 	_disconnect_card_signals(current_card)
-
-	if incoming_was_in_hand:
-		original_parent.remove_card(incoming_card, self)
-	elif incoming_was_in_slot:
-		original_parent._disconnect_card_signals(incoming_card)
-		original_parent.held_card = null
-		original_parent.slot_emptied.emit()
-		incoming_card.reparent(self)
-	else:
-		if incoming_card.get_parent():
-			incoming_card.reparent(self)
-		else:
-			add_child(incoming_card)
+	
+	_take_card(incoming_card)
 	
 	held_card = incoming_card
 	_connect_card_signals(incoming_card)
 	_position_card_in_center(incoming_card)
 	
-	if incoming_was_in_hand:
+	if original_parent and original_parent.has_method("add_card"):
 		original_parent.add_card(current_card)
-	elif incoming_was_in_slot:
-		current_card.reparent(original_slot)
-		original_slot.held_card = current_card
-		original_slot._connect_card_signals(current_card)
-		original_slot._position_card_in_center(current_card)
-		original_slot.slot_filled.emit(current_card)
 	
 	card_dropped.emit(incoming_card)
 	slot_swapped.emit(current_card, incoming_card)
@@ -403,6 +387,22 @@ func _return_card_to_parent(card: Card) -> void:
 		parent._position_card_in_center(card)
 
 
+## Takes ownership of a card.
+func _take_card(card: Card) -> void:
+	card.kill_all_tweens()
+	var parent = card.get_parent()
+	
+	if parent == self:
+		return
+	
+	if parent:
+		card.reparent(self, true)
+	else:
+		var stored_pos = card.global_position
+		add_child(card)
+		card.global_position = stored_pos
+
+
 ##Positions a card at the center of this slot
 func _position_card_in_center(card: Card) -> void:
 	card.kill_all_tweens()
@@ -410,7 +410,7 @@ func _position_card_in_center(card: Card) -> void:
 	var slot_rect = get_global_rect()
 	var slot_center = slot_rect.get_center()
 	var target_global_position = slot_center - card.pivot_offset
-	
+
 
 	var target_local_position = target_global_position - global_position
 	card.tween_position(target_local_position, placement_duration, false)
@@ -437,18 +437,7 @@ func _place_card(card: Card) -> void:
 		_return_card_to_parent(card)
 		return
 	
-	if current_parent is CardSlot:
-		current_parent._disconnect_card_signals(card)
-		current_parent.held_card = null
-		current_parent.slot_emptied.emit()
-		card.reparent(self)
-	elif current_parent is CardHand:
-		current_parent.remove_card(card, self)
-	else:
-		if current_parent:
-			card.reparent(self)
-		else:
-			add_child(card)
+	_take_card(card)
 
 	held_card = card
 	_connect_card_signals(card)
@@ -459,3 +448,18 @@ func _place_card(card: Card) -> void:
 ##Triggered when a card tried to be placed in the slot. [color=red]Overwrite[/color] to implement custom rules.
 func check_conditions(card: Card) -> bool:
 	return true
+
+
+## Auto-cleanup: called when any child leaves this node (e.g. via [code]reparent[/code]).
+func _on_card_child_exiting(node: Node) -> void:
+	if _suppress_auto_remove:
+		return
+	if not node is Card:
+		return
+	var card: Card = node as Card
+	if held_card != card:
+		return
+	
+	_disconnect_card_signals(card)
+	held_card = null
+	slot_emptied.emit()

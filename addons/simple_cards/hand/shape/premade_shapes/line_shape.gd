@@ -21,7 +21,7 @@ func _init(rot: float = line_rotation, width = max_width, spacing: float = card_
 	card_spacing = spacing
 
 
-func _compute_raw_cards(cards: Array[Card], hand: CardHand) -> Dictionary:
+func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
 	var card_count = cards.size()
 	var positions: Array[Vector2] = []
 	var rotations: Array[float] = []

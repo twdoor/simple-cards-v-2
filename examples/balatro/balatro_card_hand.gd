@@ -2,7 +2,6 @@
 ## Selected cards get visually bumped upward. Used in the Balatro example.
 ##
 ## Important: always duplicate the selected array before moving cards to another
-## container, because remove_card cleans up the array as cards leave the hand.
 class_name BalatroHand extends CardHand
 
 @export var max_selected: int = 5
@@ -32,23 +31,15 @@ func deselect(card: Card) -> void:
 	arrange_cards()
 
 
-## Clean up selection when a card leaves the hand by any path (remove, transfer, drag out, etc.)
-func _release_card(card: Card) -> void:
-	if selected.has(card):
-		selected.erase(card)
-		card.position_offset = Vector2.ZERO
-	super._release_card(card)
-
-
 ## Sort by suit first, then by value within the same suit.
 func sort_by_suit() -> void:
 	sort_cards(func(a: Card, b: Card) -> bool:
 		if a.card_data.card_suit != b.card_data.card_suit:
 			return a.card_data.card_suit < b.card_data.card_suit
-		return a.card_data.value < b.card_data.value)
+		return a.card_data.value > b.card_data.value)
 
 
-## Sort by value (high to low), then by suit as tiebreaker.
+## Sort by value, then by suit as tiebreaker.
 func sort_by_value() -> void:
 	sort_cards(func(a: Card, b: Card) -> bool:
 		if a.card_data.value != b.card_data.value:
@@ -68,3 +59,6 @@ func clear_selected() -> void:
 		card.position_offset = Vector2.ZERO
 	selected.clear()
 	arrange_cards()
+
+func _on_card_added(card: Card, _index: int) -> void:
+	card.is_front_face = true

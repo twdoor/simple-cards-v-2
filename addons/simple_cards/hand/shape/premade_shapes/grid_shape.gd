@@ -20,7 +20,7 @@ func _init(cols: int = num_of_cols, rows: int = num_of_rows, col_spacing: float 
 	arrange_by_rows = by_rows
 
 
-func _compute_raw_cards(cards: Array[Card], hand: CardHand) -> Dictionary:
+func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
 	var card_count = cards.size()
 	var positions: Array[Vector2] = []
 	var rotations: Array[float] = []

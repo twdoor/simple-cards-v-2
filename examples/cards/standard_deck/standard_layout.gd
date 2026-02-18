@@ -7,9 +7,9 @@
 extends CardLayout
 
 @onready var card_color: PanelContainer = %CardColor
-@onready var texture_1: TextureRect = %Texture1
 @onready var value_1: Label = %Value1
 @onready var value_2: Label = %Value2
+@onready var texture_1: TextureRect = %Texture1
 @onready var texture_2: TextureRect = %Texture2
 @onready var texture: TextureRect = %Texture
 
@@ -27,11 +27,11 @@ func _update_display() -> void:
 func set_color() -> void:
 	match res.current_modifier:
 		res.Modifier.NONE:
-			card_color.self_modulate = Color.BISQUE
+			card_color.self_modulate = Color("ffe1d1ff")
 		res.Modifier.GOLD:
-			card_color.self_modulate = Color.GOLD
+			card_color.self_modulate = Color("ffd3a3")
 		res.Modifier.STEEL:
-			card_color.self_modulate = Color.LIGHT_STEEL_BLUE
+			card_color.self_modulate = Color("99c2db")
 
 
 ## Converts numeric value to display text (A, J, Q, K for face cards).
