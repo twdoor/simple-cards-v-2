@@ -30,7 +30,8 @@ var delete_dialog: ConfirmationDialog
 
 var open_icon: Texture2D
 var delete_icon: Texture2D
-
+var refresh_icon: Texture2D
+var new_icon: Texture2D
 
 func _ready() -> void:
 	cache = LayoutCache.new()
@@ -40,11 +41,13 @@ func _ready() -> void:
 		var base_control = editor_interface.get_base_control()
 		open_icon = base_control.get_theme_icon("Load", "EditorIcons")
 		delete_icon = base_control.get_theme_icon("Remove", "EditorIcons")
-	
+		refresh_icon = base_control.get_theme_icon("RotateRight", "EditorIcons")
+		new_icon = base_control.get_theme_icon("Add", "EditorIcons")
+		
 	_build_ui()
 	_build_create_dialog()
 	_build_delete_dialog()
-	cache.scan_project()
+	cache.sync_cache()
 
 
 func _build_ui() -> void:
@@ -56,7 +59,7 @@ func _build_ui() -> void:
 	add_child(hsplit)
 	
 	var left_panel = VBoxContainer.new()
-	left_panel.custom_minimum_size = Vector2(350, 150)
+	left_panel.custom_minimum_size = Vector2(350, 100)
 	hsplit.add_child(left_panel)
 	
 	var toolbar = HBoxContainer.new()
@@ -74,13 +77,14 @@ func _build_ui() -> void:
 	toolbar.add_child(tag_filter)
 	
 	refresh_button = Button.new()
-	refresh_button.text = "↻"
+	refresh_button.icon = refresh_icon
 	refresh_button.tooltip_text = "Rescan project for layouts"
 	refresh_button.pressed.connect(_on_refresh_pressed)
 	toolbar.add_child(refresh_button)
 	
 	create_button = Button.new()
-	create_button.text = "New"
+	create_button.icon = new_icon
+	create_button.tooltip_text = "Create a new layout"
 	create_button.pressed.connect(_on_create_pressed)
 	toolbar.add_child(create_button)
 	
@@ -106,51 +110,57 @@ func _build_ui() -> void:
 
 
 func _build_details_panel() -> void:
+	var title_bar:= MarginContainer.new()
+	title_bar.add_theme_constant_override("margin_right", 6)
+	details_panel.add_child(title_bar)
+	
 	var title = Label.new()
 	title.text = "Layout Details"
 	title.add_theme_font_size_override("font_size", 18)
-	details_panel.add_child(title)
+	title_bar.add_child(title)
+	
+	delete_button = Button.new()
+	delete_button.pressed.connect(_on_delete_pressed)
+	delete_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	if delete_icon:
+		delete_button.icon = delete_icon
+	title_bar.add_child(delete_button)
+	
 	
 	details_panel.add_child(HSeparator.new())
 	
-	var path_section = VBoxContainer.new()
+	var path_section = HBoxContainer.new()
 	details_panel.add_child(path_section)
 	var path_title = Label.new()
 	path_title.text = "Path:"
 	path_section.add_child(path_title)
 	path_label = Label.new()
+	path_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	path_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	path_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	path_section.add_child(path_label)
 	
 	details_panel.add_child(HSeparator.new())
 	
-	var id_section = VBoxContainer.new()
+	var id_section = HBoxContainer.new()
 	details_panel.add_child(id_section)
 	var id_title = Label.new()
 	id_title.text = "Layout ID:"
 	id_section.add_child(id_title)
 	id_edit = LineEdit.new()
+	id_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	id_edit.text_submitted.connect(_on_id_submitted)
 	id_section.add_child(id_edit)
 	
-	var tags_section = VBoxContainer.new()
+	var tags_section = HBoxContainer.new()
 	details_panel.add_child(tags_section)
 	var tags_title = Label.new()
 	tags_title.text = "Tags (comma-separated):"
 	tags_section.add_child(tags_title)
 	tags_edit = LineEdit.new()
+	tags_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tags_edit.text_submitted.connect(_on_tags_submitted)
 	tags_section.add_child(tags_edit)
-	
-	details_panel.add_child(HSeparator.new())
-	
-	delete_button = Button.new()
-	delete_button.text = "Delete Layout"
-	delete_button.pressed.connect(_on_delete_pressed)
-	if delete_icon:
-		delete_button.icon = delete_icon
-	details_panel.add_child(delete_button)
 
 
 func _build_create_dialog() -> void:
@@ -231,7 +241,6 @@ func _create_layout_item(layout_data: Dictionary) -> Control:
 	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	item.set_meta("path", path)
 	
-	# Checkbox
 	var checkbox = CheckBox.new()
 	checkbox.button_pressed = enabled
 	checkbox.tooltip_text = "Enable/disable layout for runtime"
@@ -293,7 +302,7 @@ func _populate_layout_list() -> void:
 				if tag.to_lower().contains(search_text):
 					matches = true
 					break
-			if not matches:
+			if not matches: 
 				continue
 		
 		if not selected_tag.is_empty() and selected_tag not in tags:
@@ -418,7 +427,6 @@ func _on_id_submitted(new_id: String) -> void:
 		return
 	
 	if not cache.set_layout_id(selected_path, new_id):
-		# Revert to original
 		_populate_details(selected_path)
 
 
@@ -472,7 +480,7 @@ func _validate_create_dialog() -> void:
 	if layout_id.is_empty():
 		error_msg = "Layout ID cannot be empty"
 	elif not layout_id.is_valid_identifier():
-		error_msg = "Layout ID must be alphanumeric with underscores only"
+		error_msg = "Layout ID cannot conatin special characters"
 	elif cache.layout_id_exists(layout_id):
 		error_msg = "Layout ID '%s' already exists" % layout_id
 	
@@ -528,7 +536,6 @@ func _on_create_confirmed() -> void:
 			if not cleaned.is_empty():
 				tags.append(cleaned)
 	
-	# Copy default layout
 	var err = DirAccess.copy_absolute(LayoutCache.DEFAULT_LAYOUT_PATH, path)
 	if err != OK:
 		push_error("Failed to copy layout: %s" % error_string(err))

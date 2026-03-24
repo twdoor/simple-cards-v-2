@@ -58,7 +58,6 @@ func _generate_layout_ids_file() -> void:
 	lines.append("class_name LayoutID")
 	lines.append("")
 	
-	# Collect all enabled layout IDs
 	var ids: Array[String] = []
 	for path in layouts.keys():
 		var data = layouts[path]
@@ -69,7 +68,6 @@ func _generate_layout_ids_file() -> void:
 	
 	ids.sort()
 	
-	# Generate constants
 	for id in ids:
 		var const_name = id.to_upper()
 		lines.append('const %s: StringName = &"%s"' % [const_name, id])
@@ -103,26 +101,45 @@ func _generate_layout_ids_file() -> void:
 
 #region Scanning
 
-## Full project scan - finds all layouts by parsing .tscn files
+## Non-destructive startup sync: removes only entries whose files are deleted from disk, and adds any new layouts found.
+func sync_cache() -> void:
+	print("LayoutCache: Syncing cache...")
+	
+	var paths_to_remove: Array[String] = []
+	for path in layouts.keys():
+		if not FileAccess.file_exists(path):
+			paths_to_remove.append(path)
+	
+	for path in paths_to_remove:
+		layouts.erase(path)
+	
+	var found_paths: Array[String] = []
+	_scan_directory_recursive("res://", found_paths)
+	
+	_ensure_default_layouts()
+	
+	save_cache()
+	cache_updated.emit()
+	print("LayoutCache: %d layouts after sync" % layouts.size())
+
+
+## Full project rescan — finds all layouts and removes entries whose files exist but no longer carry layout metadata.  Only call this from an explicit user action (e.g. the Refresh button), never on startup.
 func scan_project() -> void:
 	print("LayoutCache: Scanning project for layouts...")
 	
 	var found_paths: Array[String] = []
 	_scan_directory_recursive("res://", found_paths)
 	
-	# Remove layouts that no longer exist on disk
 	var paths_to_remove: Array[String] = []
 	for path in layouts.keys():
 		if not FileAccess.file_exists(path):
 			paths_to_remove.append(path)
 		elif path not in found_paths and not _is_default_layout(path):
-			# Scene exists but is no longer a layout (metadata removed)
 			paths_to_remove.append(path)
 	
 	for path in paths_to_remove:
 		layouts.erase(path)
 	
-	# Ensure defaults exist
 	_ensure_default_layouts()
 	
 	save_cache()
@@ -167,7 +184,6 @@ func _parse_scene_file(scene_path: String) -> Dictionary:
 	
 	var content = file.get_as_text()
 	
-	# Check for is_layout metadata
 	if not "metadata/is_layout = true" in content:
 		return {}
 	
@@ -177,20 +193,17 @@ func _parse_scene_file(scene_path: String) -> Dictionary:
 		"last_modified": FileAccess.get_modified_time(scene_path)
 	}
 	
-	# Extract layout_id
 	var id_regex = RegEx.new()
 	id_regex.compile('metadata/layout_id\\s*=\\s*"([^"]*)"')
 	var id_match = id_regex.search(content)
 	if id_match:
 		result.layout_id = id_match.get_string(1)
 	
-	# Extract tags
 	var tags_regex = RegEx.new()
 	tags_regex.compile('metadata/tags\\s*=\\s*\\[([^\\]]*)\\]')
 	var tags_match = tags_regex.search(content)
 	if tags_match:
 		var tags_str = tags_match.get_string(1)
-		# Parse individual tags from the array string
 		var tag_regex = RegEx.new()
 		tag_regex.compile('"([^"]*)"')
 		var tag_matches = tag_regex.search_all(tags_str)
@@ -202,7 +215,6 @@ func _parse_scene_file(scene_path: String) -> Dictionary:
 
 func _update_layout_entry(path: String, info: Dictionary) -> void:
 	if path in layouts:
-		# Preserve enabled state, update rest
 		var was_enabled = layouts[path].get("enabled", true)
 		layouts[path] = {
 			"layout_id": info.layout_id,
