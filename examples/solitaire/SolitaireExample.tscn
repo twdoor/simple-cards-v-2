@@ -1,15 +1,15 @@
-[gd_scene load_steps=20 format=3 uid="uid://dajkkw30vo3rp"]
+[gd_scene load_steps=22 format=3 uid="uid://dajkkw30vo3rp"]
 
 [ext_resource type="Script" uid="uid://dwquwtady16or" path="res://examples/solitaire/solitaire.gd" id="1_el2jo"]
 [ext_resource type="Script" uid="uid://bisyk4bowdvsf" path="res://addons/simple_cards/deck/manager/card_deck_manager.gd" id="2_f1iev"]
 [ext_resource type="Resource" uid="uid://u1x8i453q018" path="res://examples/cards/standard_deck/standard_deck.tres" id="3_x6rcj"]
 [ext_resource type="Script" uid="uid://dowgud10rp5yf" path="res://addons/simple_cards/card/card.gd" id="4_008rh"]
-[ext_resource type="Script" uid="uid://dox8s17eu2u0u" path="res://examples/cards/standard_deck/standard_card_resource.gd" id="5_3ywlq"]
-[ext_resource type="Script" uid="uid://cle02hultetj5" path="res://addons/simple_cards/hand/shape/premade_shapes/stack_shape.gd" id="5_f1iev"]
+[ext_resource type="Script" uid="uid://cle02hultetj5" path="res://addons/simple_cards/shape/premade_shapes/stack_shape.gd" id="5_f1iev"]
 [ext_resource type="Script" uid="uid://b8kdeax26ggxc" path="res://examples/solitaire/solitaire_hand.gd" id="6_2oijv"]
-[ext_resource type="Script" uid="uid://b1s6x4iyt2pps" path="res://addons/simple_cards/hand/shape/premade_shapes/line_shape.gd" id="7_resxj"]
+[ext_resource type="Script" uid="uid://b1s6x4iyt2pps" path="res://addons/simple_cards/shape/premade_shapes/line_shape.gd" id="7_resxj"]
 [ext_resource type="Script" uid="uid://du1ike80fkx83" path="res://addons/simple_cards/mat/card_mat.gd" id="8_303tp"]
-[ext_resource type="Script" uid="uid://d2l8uaoel5whd" path="res://addons/simple_cards/pile/card_pile.gd" id="10_x6rcj"]
+[ext_resource type="Script" uid="uid://ddqdtbqqh2xxi" path="res://examples/solitaire/fan_tail_shape.gd" id="10_008rh"]
+[ext_resource type="Script" uid="uid://d2l8uaoel5whd" path="res://addons/simple_cards/containers/pile/card_pile.gd" id="10_x6rcj"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qytrh"]
 bg_color = Color(0.1619519, 0.27889124, 0.20867068, 1)
@@ -18,6 +18,8 @@ border_width_top = 16
 border_width_right = 16
 border_width_bottom = 16
 border_color = Color(0.32194266, 0.19428441, 0.19088537, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_f1iev"]
 
 [sub_resource type="Resource" id="Resource_x6rcj"]
 script = ExtResource("5_f1iev")
@@ -51,21 +53,27 @@ max_width = 375.0
 alignment = 0
 metadata/_custom_type_script = "uid://b1s6x4iyt2pps"
 
-[sub_resource type="Resource" id="Resource_2ejia"]
-script = ExtResource("5_3ywlq")
-name = "Draw"
-custom_layout_name = &"standard_back_layout"
-metadata/_custom_type_script = "uid://dox8s17eu2u0u"
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_x6rcj"]
 
-[sub_resource type="Resource" id="Resource_l82jc"]
-script = ExtResource("7_resxj")
-max_width = 160.0
-alignment = 2
-metadata/_custom_type_script = "uid://b1s6x4iyt2pps"
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_f1iev"]
+bg_color = Color(0.12941177, 0.23137255, 0.14509805, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+corner_detail = 16
+
+[sub_resource type="Resource" id="Resource_resxj"]
+script = ExtResource("10_008rh")
+stack_spacing = 6.0
+fan_spacing = 35.0
+max_length = 90.0
+metadata/_custom_type_script = "uid://ddqdtbqqh2xxi"
 
 [node name="Solitare" type="CanvasLayer" node_paths=PackedStringArray("deal_hand", "foundations", "tableau_piles")]
 script = ExtResource("1_el2jo")
 deal_hand = NodePath("MarginContainer/HBoxContainer/DealHand")
+deal_hand_num = 3
 foundations = [NodePath("MarginContainer/Stacks/Stack"), NodePath("MarginContainer/Stacks/Stack2"), NodePath("MarginContainer/Stacks/Stack3"), NodePath("MarginContainer/Stacks/Stack4")]
 tableau_piles = [NodePath("MarginContainer/Piles/Pile"), NodePath("MarginContainer/Piles/Pile2"), NodePath("MarginContainer/Piles/Pile3"), NodePath("MarginContainer/Piles/Pile4"), NodePath("MarginContainer/Piles/Pile5"), NodePath("MarginContainer/Piles/Pile6"), NodePath("MarginContainer/Piles/Pile7")]
 
@@ -102,14 +110,15 @@ size_flags_vertical = 0
 theme_override_constants/separation = 32
 alignment = 2
 
-[node name="Stack" type="Control" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
+[node name="Stack" type="Panel" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 112)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
 script = ExtResource("6_2oijv")
 hand_type = 1
 drop_area = NodePath("CardMat")
-shape = SubResource("Resource_x6rcj")
 enable_reordering = false
+shape = SubResource("Resource_x6rcj")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
 [node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack"]
@@ -129,14 +138,15 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Stack2" type="Control" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
+[node name="Stack2" type="Panel" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 112)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
 script = ExtResource("6_2oijv")
 hand_type = 1
 drop_area = NodePath("CardMat")
-shape = SubResource("Resource_008rh")
 enable_reordering = false
+shape = SubResource("Resource_008rh")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
 [node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack2"]
@@ -156,14 +166,15 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Stack3" type="Control" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
+[node name="Stack3" type="Panel" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 112)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
 script = ExtResource("6_2oijv")
 hand_type = 1
 drop_area = NodePath("CardMat")
-shape = SubResource("Resource_3ywlq")
 enable_reordering = false
+shape = SubResource("Resource_3ywlq")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
 [node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack3"]
@@ -183,14 +194,15 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Stack4" type="Control" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
+[node name="Stack4" type="Panel" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 112)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
 script = ExtResource("6_2oijv")
 hand_type = 1
 drop_area = NodePath("CardMat")
-shape = SubResource("Resource_2oijv")
 enable_reordering = false
+shape = SubResource("Resource_2oijv")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
 [node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack4"]
@@ -217,15 +229,15 @@ size_flags_horizontal = 8
 size_flags_vertical = 8
 theme_override_constants/separation = 32
 
-[node name="Pile" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
 script = ExtResource("6_2oijv")
 hand_type = 2
 drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
 enable_reordering = false
-max_hand_size = 14
+shape = SubResource("Resource_8fhha")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
 [node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile"]
@@ -237,15 +249,15 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile2" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile2" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
 script = ExtResource("6_2oijv")
 hand_type = 2
 drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
 enable_reordering = false
-max_hand_size = 14
+shape = SubResource("Resource_8fhha")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
 [node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile2"]
@@ -257,15 +269,15 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile3" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile3" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
 script = ExtResource("6_2oijv")
 hand_type = 2
 drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
 enable_reordering = false
-max_hand_size = 14
+shape = SubResource("Resource_8fhha")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
 [node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile3"]
@@ -277,15 +289,15 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile4" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile4" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
 script = ExtResource("6_2oijv")
 hand_type = 2
 drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
 enable_reordering = false
-max_hand_size = 14
+shape = SubResource("Resource_8fhha")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
 [node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile4"]
@@ -297,15 +309,15 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile5" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile5" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
 script = ExtResource("6_2oijv")
 hand_type = 2
 drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
 enable_reordering = false
-max_hand_size = 14
+shape = SubResource("Resource_8fhha")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
 [node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile5"]
@@ -317,15 +329,15 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile6" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile6" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
 script = ExtResource("6_2oijv")
 hand_type = 2
 drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
 enable_reordering = false
-max_hand_size = 14
+shape = SubResource("Resource_8fhha")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
 [node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile6"]
@@ -337,15 +349,15 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile7" type="Control" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile7" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
 script = ExtResource("6_2oijv")
 hand_type = 2
 drop_area = NodePath("CardMat")
-shape = SubResource("Resource_8fhha")
 enable_reordering = false
-max_hand_size = 14
+shape = SubResource("Resource_8fhha")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
 [node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile7"]
@@ -368,10 +380,11 @@ custom_minimum_size = Vector2(80, 112)
 layout_mode = 2
 script = ExtResource("4_008rh")
 undraggable = true
-card_data = SubResource("Resource_2ejia")
+front_layout_name = &"standard_back_layout"
+back_layout_name = &"standard_back_layout"
 metadata/_custom_type_script = "uid://dowgud10rp5yf"
 
-[node name="CardPile" type="Control" parent="MarginContainer/HBoxContainer/DrawCard"]
+[node name="CardPile" type="Panel" parent="MarginContainer/HBoxContainer/DrawCard"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -380,21 +393,23 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 mouse_behavior_recursive = 1
+theme_override_styles/panel = SubResource("StyleBoxEmpty_x6rcj")
 script = ExtResource("10_x6rcj")
 metadata/_custom_type_script = "uid://d2l8uaoel5whd"
 
-[node name="DealHand" type="Control" parent="MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(160, 112)
+[node name="DealHand" type="Panel" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(170, 112)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_f1iev")
 script = ExtResource("6_2oijv")
-shape = SubResource("Resource_l82jc")
 enable_reordering = false
+shape = SubResource("Resource_resxj")
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
 [node name="Button" type="Button" parent="MarginContainer"]
-custom_minimum_size = Vector2(64, 64)
+custom_minimum_size = Vector2(128, 64)
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 8

@@ -1,5 +1,3 @@
-# card_global.gd
-
 ##The global singleton calls used by the SimpleCards plugin. [color=red]Do not instantiate[/color]
 class_name CardGlobal extends Control
 
@@ -101,7 +99,6 @@ func _load_layouts_from_cache() -> void:
 	for path in cache_data.keys():
 		var layout_data = cache_data[path]
 		
-		# Skip disabled layouts
 		if not layout_data.get("enabled", true):
 			continue
 		
@@ -113,7 +110,6 @@ func _load_layouts_from_cache() -> void:
 		
 		_register_layout_entry(layout_id, path, tags)
 	
-	# Ensure defaults are registered
 	_register_default_layouts()
 	
 	print("CardGlobal: Loaded %d layouts from cache" % _layouts.size())

@@ -7,16 +7,18 @@
 ## - CardDeckManager: manages the deck, populates the draw pile
 ## - Draw (CardPile): the draw pile
 ## - Discard (CardPile): the discard pile
-## - BalatroHand: player's hand (arc shape, max 7, click to select)
+## - BalatroHand: player's hand (arc shape, max 8, click to select)
 ## - PlayedHand: staging area for played cards (line shape)
 extends CanvasLayer
 
 @export var deck: CardDeck
 @export var use_stagger_draw: bool = true
+@export var stagger_delay: float = 0.075
 
 @onready var card_deck_manager: CardDeckManager = $CardDeckManager
 @onready var played_hand: CardHand = %PlayedHand
 @onready var balatro_hand: BalatroHand = %BalatroHand
+@onready var combo_label: Label = $ComboLabel
 
 
 @onready var draw: CardPile = %Draw
@@ -40,6 +42,7 @@ var current_preview_pile: CardPile
 
 var sort_by_suit: bool = false
 
+signal draw_finished
 
 func _ready() -> void:
 	gold_button.pressed.connect(_on_gold_pressed)
@@ -51,9 +54,6 @@ func _ready() -> void:
 	sort_value_button.pressed.connect(_on_sort_value_pressed)
 	preview_draw.pressed.connect(_on_preview_draw_pressed)
 	preview_discard.pressed.connect(_on_preview_discard_pressed)
-
-	CG.def_front_layout = LayoutID.STANDARD_LAYOUT
-	CG.def_back_layout = LayoutID.STANDARD_BACK_LAYOUT
 
 	card_deck_manager.setup()
 	deal()
@@ -92,8 +92,7 @@ func _on_discard_pressed() -> void:
 	
 	var cards_to_discard := balatro_hand.selected.duplicate()
 	balatro_hand.clear_selected()
-	for card in cards_to_discard:
-		discard.add_card(card)
+	balatro_hand.move_cards_to(cards_to_discard, discard)
 	
 	deal()
 
@@ -107,14 +106,19 @@ func _on_play_button() -> void:
 	balatro_hand.sort_selected()
 	var cards_to_play := balatro_hand.selected.duplicate()
 	balatro_hand.clear_selected()
-	staggered_draw(cards_to_play, played_hand)
 	
-	await get_tree().create_timer(2).timeout ## Replace with VFX/Logic
+	if use_stagger_draw:
+		await balatro_hand.move_cards_to(cards_to_play, played_hand, -1, stagger_delay)
+	else:
+		balatro_hand.move_cards_to(cards_to_play, played_hand)
 	
-	for card in played_hand.cards.duplicate():
-		discard.add_card(card)
+	combo_label.show()
+	await combo_label.tween_text(combo_label.handle_combos(played_hand.cards))
+	await get_tree().create_timer(1.5).timeout
+	await combo_label.tween_text("", .25)
+	combo_label.hide()
 	
-	played_hand.clear_hand()
+	played_hand.move_all_to(discard)
 	deal()
 	_set_interaction_enabled(true)
 
@@ -127,30 +131,33 @@ func _on_play_button() -> void:
 ## reshuffles the discard pile into draw and keeps drawing.
 func deal() -> void:
 	var remaining_space := balatro_hand.get_remaining_space()
-	var to_deal: int = remaining_space if remaining_space >= 0 else balatro_hand.max_hand_size
+	var to_deal: int = remaining_space if remaining_space >= 0 else balatro_hand.max_cards
 	
 	if to_deal <= 0:
 		return
 	
 	var pile_size: int = draw.get_card_count()
+	var stagger: float = stagger_delay if use_stagger_draw else 0.0
 	
 	if pile_size >= to_deal:
-		staggered_draw(draw.draw_cards(to_deal))
+		await draw.deal_to(balatro_hand, to_deal, -1, stagger)
 	else:
 		var overflow := to_deal - pile_size
 		if pile_size > 0:
-			staggered_draw(draw.draw_cards(pile_size))
+			await draw.deal_to(balatro_hand, pile_size, -1, stagger)
 	
-		discard.move_all_to(draw)
+		await discard.move_all_to(draw, 0)
 		draw.shuffle()
 	
 		var new_pile_size := draw.get_card_count()
 		if new_pile_size > 0:
-			staggered_draw(draw.draw_cards(mini(overflow, new_pile_size)))
+			await draw.deal_to(balatro_hand, mini(overflow, new_pile_size), -1, stagger)
 	
 	for card in balatro_hand.cards:
 		if !card.is_front_face:
 			card.flip()
+	
+	draw_finished.emit()
 	
 	_apply_sort()
 
@@ -258,18 +265,15 @@ func _update_pile_preview_hand(cards: Array[Card]) -> void:
 	if cards.is_empty():
 		return
 	
-	preview_hand.clear_hand()
-	var preview_cards: Array[Card] = []
-	var preview_card = cards
+	preview_hand.clear_and_free()
 	
-	for child in preview_card:
+	for child in cards:
 		if child is Card:
 			var card_proxy: Card = Card.new(child.card_data)
 			card_proxy.name = child.name + "_preview"
 			card_proxy.set_meta("source_card", child)
-			preview_cards.append(card_proxy)
+			card_proxy.move_to(preview_hand, 0)
 	
-	preview_hand.add_cards(preview_cards)
 	_sort_preview(preview_hand)
 
 
@@ -283,14 +287,6 @@ func _sort_preview(hand: CardHand) -> void:
 		if a.card_data.card_suit != b.card_data.card_suit:
 			return a.card_data.card_suit < b.card_data.card_suit
 		return a.card_data.value < b.card_data.value)
-
-
-func staggered_draw(cards: Array[Card], hand: CardHand = balatro_hand, use_it: bool = use_stagger_draw):
-	if use_it:
-		for card in cards:
-			hand.add_card(card)
-			await get_tree().create_timer(.075).timeout
-	else: hand.add_cards(cards)
 
 
 #endregion

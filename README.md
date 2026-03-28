@@ -1,8 +1,8 @@
 # <img src="https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/simple_card_v2.png" width="8%"> Simple Cards
 
-A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, deck builders, or any card-based interface using Control nodes that work seamlessly in both 2D and 3D projects.
+A flexible, UI-based card system plugin for **Godot 4.5.1+**. Build card games, deck builders, or any card-based interface using Control nodes that work seamlessly in both 2D and 3D projects.
 
-![Example Animation](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/example.gif)
+![Example Animation](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/gui_minijam_example.gif)
 
 ------
 
@@ -17,11 +17,12 @@ A flexible, UI-based card system plugin for **Godot 4.5**. Build card games, dec
   - [CardResource](#cardresource)
   - [CardLayout](#cardlayout)
   - [CardAnimationResource](#cardanimationresource)
+  - [CardContainer](#cardcontainer)
+  - [ContainerShape](#containershape)
   - [CardHand](#cardhand)
-  - [CardHandShape](#cardhandshape)
+  - [CardPile](#cardpile)
   - [CardSlot](#cardslot)
   - [CardMat](#cardmat)
-  - [CardPile](#cardpile)
   - [CardDeck](#carddeck)
   - [CardDeckManager](#carddeckmanager)
   - [CardGlobal (CG)](#cardglobal-cg)
@@ -188,10 +189,16 @@ A draggable button that represents a single card.
 | `tween_started` | `tween_type: String` | Emitted when a tween starts |
 | `tween_completed` | `tween_type: String` | Emitted when a tween completes |
 | `card_data_changed` | `new_data: CardResource` | Emitted when card_data is set |
+| `move_completed` | `card: Card` | Emitted when `move_to()` finishes |
 
 #### Methods
 
 ```gdscript
+# Move this card to a CardContainer (hand, pile, or slot)
+# Handles reparenting, registration, and animation in one call.
+# duration: -1 uses target default, 0 snaps instantly
+func move_to(target: CardContainer, duration: float = -1, index: int = -1) -> void
+
 # Flip the card between front and back
 func flip() -> void
 
@@ -217,7 +224,12 @@ func kill_all_tweens() -> void
 
 ```gdscript
 var card = Card.new(my_resource)
-add_child(card)
+
+# Move a card to a hand (animated)
+card.move_to(hand)
+
+# Move instantly (setup/dealing)
+card.move_to(pile, 0)
 
 # Listen for clicks
 card.card_clicked.connect(func(c): print("Clicked: ", c.card_data))
@@ -242,7 +254,8 @@ Abstract base class for storing card data. **Extend this class** to add your own
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `custom_layout_name` | `StringName` | Override the default front layout for this card |
+| `front_layout_name` | `StringName` | Override the default front layout for this card |
+| `back_layout_name` | `StringName` | Override the default back layout for this card |
 
 #### Example
 
@@ -312,7 +325,7 @@ func _focus_in() -> void
 func _focus_out() -> void
 ```
 
-**IMPORTANT!!** Overriding any of the flip/focus/update functions will also will override the signals emission.In this case you will need to implement the stared and completed signals yourself.
+**IMPORTANT!!** Overriding any of the flip/focus/update functions will also will override the signals emission. In this case you will need to implement the stared and completed signals yourself.
 
 ```gdscript
 # Overrite example
@@ -405,125 +418,112 @@ func play_animation(layout: CardLayout) -> void:
 
 ---
 
-### CardHand
+### CardContainer
 
-A container that arranges multiple cards in a configurable shape.
+Base class for all card containers (`CardHand`, `CardPile`, `CardSlot`). Extends `Panel`. Manages the internal card array, layout computation via `ContainerShape`, and the registration interface used by `Card.move_to()`.
 
 #### Properties
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `shape` | `CardHandShape` | Defines the arrangement (line, arc, custom) |
-| `enable_reordering` | `bool` | Allow drag-reordering within the hand |
-| `max_hand_size` | `int` | Maximum cards allowed (-1 for unlimited) |
-| `cards` | `Array[Card]` | Read-only copy of cards in hand |
+| `shape` | `ContainerShape` | Layout shape. If `null`, cards stack at the origin |
+| `max_cards` | `int` | Maximum cards allowed (`-1` for unlimited) |
+| `card_move_duration` | `float` | Default tween duration for cards settling into position |
+| `cards` | `Array[Card]` | Internal card array |
 
 #### Signals
 
 | Signal | Parameters | Description |
 | --- | --- | --- |
-| `card_added` | `card: Card, index: int` | Emitted when a card is added to the hand |
-| `card_removed` | `card: Card, index: int` | Emitted when a card is removed from the hand |
-| `hand_empty` | - | Emitted when the last card is removed |
-| `hand_full` | - | Emitted when max_hand_size is reached |
-| `hand_cleared` | - | Emitted when clear_hand() is called |
-| `cards_reordered` | `new_order: Array[Card]` | Emitted when cards are reordered |
-| `card_position_changed` | `card: Card, old_index: int, new_index: int` | Emitted when a specific card changes position in hand |
-| `arrangement_started` | - | Emitted before arrange_cards() |
-| `arrangement_completed` | - | Emitted after arrange_cards() completes |
+| `card_added` | `card: Card, index: int` | Emitted when a card is added |
+| `card_removed` | `card: Card, index: int` | Emitted when a card is removed |
+| `container_empty` | - | Emitted when the last card is removed |
+| `container_full` | - | Emitted when `max_cards` is reached |
 
 #### Methods
 
 ```gdscript
-# Add a single card (returns true if successful)
-func add_card(card: Card) -> bool
-
-# Add multiple cards (returns number successfully added)
-func add_cards(card_array: Array[Card]) -> int
-
-# Remove a card (does NOT free it, returns the card or null)
-func remove_card(card: Card) -> Card
-
-# Remove all cards (does NOT free them)
-func clear_hand() -> void
-
-# Remove all cards and free them
-func clear_and_free() -> void
-
-# Get card by index
-func get_card(index: int) -> Card
-
-# Get card count
+# Queries
 func get_card_count() -> int
-
-# Get index of a card
-func get_card_index(card: Card) -> int
-
-# Check if hand contains a card
+func is_empty() -> bool
+func is_full() -> bool
 func has_card(card: Card) -> bool
+func get_card_at(index: int) -> Card       # Negative indices count from end
+func get_cards() -> Array[Card]
+func get_card_index(card: Card) -> int
+func get_remaining_space() -> int           # -1 if unlimited
 
-# Check if hand is full
-func is_hand_full() -> bool
+# Acceptance (called by Card.move_to)
+func can_accept_card(card: Card) -> bool
 
-# Get remaining space
-func get_remaining_space() -> int
+# Layout
+func get_card_target_position(card: Card) -> Vector2
+func get_card_target_rotation(card: Card) -> float
+func arrange(duration: float = -1) -> void
 
-# Sort cards using a custom comparison function
+# Bulk operations
+func deal_to(target: CardContainer, count: int, duration: float = -1, stagger: float = 0.0) -> int
+func move_cards_to(card_array: Array[Card], target: CardContainer, duration: float = -1, stagger: float = 0.0) -> int
+func move_all_to(target: CardContainer, duration: float = -1, stagger: float = 0.0) -> int
 func sort_cards(compare_func: Callable) -> void
 
-# Force arrangement of cards
-func arrange_cards() -> void
+# Clear
+func clear_and_free() -> void       # Frees all cards
 ```
 
 #### Virtual Methods
 
 ```gdscript
-# Override to handle card clicks
-func _handle_clicked_card(card: Card) -> void
+# Override for subclass-specific setup (called at end of _ready)
+func _container_ready() -> void
 
-# Called when a card is added to the hand
+# Called when a card is added/removed
 func _on_card_added(card: Card, index: int) -> void
-
-# Called when a card is removed from the hand
 func _on_card_removed(card: Card, index: int) -> void
+
+# Override to apply/restore container-specific state
+func _apply_card_state(card: Card) -> void
+func _restore_card_state(card: Card) -> void
+
+# Override to add custom acceptance rules
+func _check_conditions(card: Card) -> bool
+
+# Override for custom signal connections
+func _connect_card_signals(card: Card) -> void
+func _disconnect_card_signals(card: Card) -> void
 ```
 
 #### Example
 
 ```gdscript
 @onready var hand: CardHand = $CardHand
+@onready var pile: CardPile = $DrawPile
 
-func _ready():
-    # Configure the hand
-    hand.shape = ArcHandShape.new(500, 45, 270, 60)
-    hand.max_hand_size = 7
-    
-    # Add cards
-    for i in 5:
-        var card = Card.new(card_resources[i])
-        hand.add_card(card)
+func deal():
+    # Deal 5 cards from pile to hand with stagger animation
+    await pile.deal_to(hand, 5, 0.3, 0.1)
 
-# Custom click handling
-class_name MyHand extends CardHand
+func discard(card: Card):
+    # Move a single card
+    card.move_to(pile)
 
-func _handle_clicked_card(card: Card) -> void:
-    # Play the card
-    remove_card(card)
-    $PlayArea.add_child(card)
+func discard_selected(selected: Array[Card]):
+    # Move multiple cards
+    hand.move_cards_to(selected, pile)
+
+func reshuffle():
+    # Instant bulk move + shuffle
+    await discard.move_all_to(pile, 0)
+    pile.shuffle()
 ```
 
 ---
 
-### CardHandShape
+### ContainerShape
 
-Abstract resource class that defines how cards are arranged in a hand. Subclasses only need to implement `_compute_raw_cards()` — the base class handles bounding box adjustment, layout sizing, and tween application automatically.
+Abstract resource class that defines how cards are arranged in a `CardContainer`. Subclasses only need to implement `_compute_raw_cards()` — the base class handles bounding box adjustment automatically.
 
-#### Architecture
-
-The layout process is split into two phases:
-
-1. **`compute_layout()`** — Computes final positions and rotations without moving cards. The hand uses this to update its minimum size before any tweens start, preventing layout jitter.
-2. **`apply_layout()`** — Tweens cards to their computed positions. Called after the hand rect has settled.
+Shapes only compute positions — they do not move or tween cards. The container's `arrange()` method handles animation.
 
 #### Methods
 
@@ -531,17 +531,14 @@ The layout process is split into two phases:
 # Computes final card positions and rotations (does NOT move cards)
 # Returns Dictionary with "positions": Array[Vector2] and "rotations": Array[float]
 func compute_layout(cards: Array[Card]) -> Dictionary
-
-# Tweens cards to the positions from compute_layout(). Skipped cards are not moved.
-func apply_layout(cards: Array[Card], layout: Dictionary, skipped_cards: Array[Card] = []) -> void
 ```
 
 #### Creating Custom Shapes
 
-Override `_compute_raw_cards()` to return raw center positions and rotations. The base class automatically adjusts the bounding box so cards fit inside the hand rect.
+Override `_compute_raw_cards()` to return raw center positions and rotations. The base class automatically adjusts the bounding box so cards fit inside the container rect.
 
 ```gdscript
-class_name MyCustomShape extends CardHandShape
+class_name MyCustomShape extends ContainerShape
 
 func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
     var positions: Array[Vector2] = []
@@ -556,10 +553,10 @@ func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
 
 #### Built-in Shapes
 
-**LineHandShape**
+**LineShape**
 
 ```gdscript
-var line = LineHandShape.new()
+var line = LineShape.new()
 line.line_rotation = 0.0          # Rotation of the line in degrees
 line.max_width = 600.0            # Maximum spread width
 line.card_spacing = 50.0          # Space between cards
@@ -567,20 +564,20 @@ line.alignment = Alignment.CENTER # BEGIN, CENTER, or END alignment
 line.card_rotation_angle = 0.0    # Rotation of individual cards in degrees
 ```
 
-**ArcHandShape**
+**ArcShape**
 
 ```gdscript
-var arc = ArcHandShape.new()
+var arc = ArcShape.new()
 arc.arc_radius = 400.0        # Circle radius
 arc.arc_angle = 60.0          # Total arc angle (degrees)
 arc.arc_orientation = 270.0   # Where the arc points (270 = up)
 arc.card_spacing = 50.0       # Space between cards
 ```
 
-**GridHandShape**
+**GridShape**
 
 ```gdscript
-var grid = GridHandShape.new()
+var grid = GridShape.new()
 grid.num_of_cols = 3          # Number of columns
 grid.num_of_rows = 3          # Number of rows
 grid.col_offset = 120.0       # Horizontal spacing
@@ -588,12 +585,12 @@ grid.row_offset = 150.0       # Vertical spacing
 grid.arrange_by_rows = true   # Fill rows first (true) or columns first (false)
 ```
 
-**StackHandShape**
+**StackShape**
 
 Places all cards at the same position (stacked on top of each other). Useful for draw/discard piles via `CardPile`.
 
 ```gdscript
-var stack = StackHandShape.new()
+var stack = StackShape.new()
 ```
 
 Features:
@@ -601,14 +598,117 @@ Features:
 - Auto-expansion to fit all cards
 - Auto-centering for incomplete last row/column
 - Configurable row-first or column-first arrangement
-- All shapes automatically fit cards within the hand's bounding rect
-- Shapes can be used by both `CardHand` and `CardPile`
+- All shapes automatically fit cards within the container's bounding rect
+
+---
+
+### CardHand
+
+A card container that arranges cards in a visual hand layout. Adds drag-based reordering, focus chain management, and z-index stacking on top of `CardContainer`.
+
+#### Properties
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `enable_reordering` | `bool` | Allow drag-reordering within the hand |
+
+*Inherits `shape`, `max_cards`, `card_move_duration`, `cards` from `CardContainer`.*
+
+#### Signals
+
+| Signal | Parameters | Description |
+| --- | --- | --- |
+| `cards_reordered` | `new_order: Array[Card]` | Emitted when cards are reordered |
+| `card_position_changed` | `card: Card, old_index: int, new_index: int` | Emitted when a card changes position in hand |
+
+*Inherits `card_added`, `card_removed`, `container_empty`, `container_full` from `CardContainer`.*
+
+#### Virtual Methods
+
+```gdscript
+# Override to handle card clicks (selection, play, etc.)
+func _handle_clicked_card(card: Card) -> void
+```
+
+*Inherits `_on_card_added`, `_on_card_removed`, `_apply_card_state`, `_restore_card_state`, `_check_conditions` from `CardContainer`.*
+
+#### Example
+
+```gdscript
+@onready var hand: CardHand = $CardHand
+
+func _ready():
+    hand.shape = ArcShape.new(500, 45, 270, 60)
+    hand.max_cards = 7
+
+# Custom click handling
+class_name MyHand extends CardHand
+
+func _handle_clicked_card(card: Card) -> void:
+    card.move_to(play_area)
+```
+
+---
+
+### CardPile
+
+A card container for invisible holders or visual piles. Extends `CardContainer`. Cards in a pile are disabled and optionally hidden.
+
+#### Properties
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `show_cards` | `bool` | If `true`, card nodes are visible in the pile |
+| `face_up` | `bool` | Whether cards in this pile show their front face |
+
+*Inherits `shape`, `max_cards`, `card_move_duration`, `cards` from `CardContainer`.*
+
+#### Signals
+
+| Signal | Parameters | Description |
+| --- | --- | --- |
+| `pile_shuffled` | - | Emitted when the pile is shuffled |
+
+*Inherits `card_added`, `card_removed`, `container_empty`, `container_full` from `CardContainer`.*
+
+#### Methods
+
+```gdscript
+# Pile operations
+func shuffle() -> void
+func peek_top() -> Card
+func peek_cards(count: int, index: int = 1) -> Array[Card]  # Positive index = from top, negative = from bottom
+```
+
+*Inherits all query, bulk, and clear methods from `CardContainer`.*
+
+#### Virtual Methods
+
+*Inherits `_on_card_added`, `_on_card_removed`, `_apply_card_state`, `_restore_card_state`, `_check_conditions` from `CardContainer`.*
+
+#### Example
+
+```gdscript
+@onready var draw_pile: CardPile = $DrawPile
+@onready var discard_pile: CardPile = $DiscardPile
+@onready var hand: CardHand = $Hand
+
+func deal():
+    await draw_pile.deal_to(hand, 5, 0.3, 0.1)
+
+func discard(card: Card):
+    card.move_to(discard_pile)
+
+func reshuffle():
+    await discard_pile.move_all_to(draw_pile, 0)
+    draw_pile.shuffle()
+```
 
 ---
 
 ### CardSlot
 
-A panel that accepts a single dropped card.
+A single-card container that detects when a held card is dropped on it. Extends `CardContainer` with `max_cards = 1`.
 
 #### Signals
 
@@ -616,22 +716,21 @@ A panel that accepts a single dropped card.
 | --- | --- | --- |
 | `card_entered` | `card: Card` | Card started hovering over slot |
 | `card_exited` | `card: Card` | Card stopped hovering |
-| `card_dropped` | `card: Card` | Card was dropped on slot |
+| `card_dropped_on` | `card: Card` | Card was dropped on slot |
 | `card_abandoned` | `card: Card` | Card was removed via abandon (dropped on empty space) |
 | `slot_lock_changed` | `is_locked: bool` | Slot lock state changed |
 | `slot_hovered` | - | Emitted when mouse enters slot area |
 | `slot_unhovered` | - | Emitted when mouse exits slot area |
-| `slot_filled` | `card: Card` | Emitted when a card is successfully placed in the slot |
-| `slot_emptied` | - | Emitted when a card is removed from the slot |
 | `slot_swapped` | `old_card: Card, new_card: Card` | Emitted when cards are swapped |
 | `card_rejected` | `card: Card, reason: String` | Emitted when a card is rejected |
+
+*Inherits `card_added`, `card_removed`, `container_empty`, `container_full` from `CardContainer`.*
 
 #### Properties
 
 | Property | Type | Default | Description |
 | --- | --- | --- | --- |
-| `held_card`| `Card` | `null` | The card currently in this slot |
-| `slot_locked` | `bool` | `false` | Prevents cards from being dragged out or swapped in |
+| `slot_locked` | `bool` | `false` | Prevents cards from being placed or removed |
 | `allow_swap` | `bool` | `true`  | When `false`, occupied slots reject incoming cards |
 | `abandon_on_empty_space` | `bool` | `false` | Cards dropped on empty space are removed from slot |
 | `abandon_reparent_target` | `Node` | `null`  | Where abandoned cards go (defaults to slot's parent) |
@@ -639,29 +738,11 @@ A panel that accepts a single dropped card.
 #### Methods
 
 ```gdscript
-# Add a card to the slot (returns true if successful)
-func add_card(card: Card) -> bool
-
-# Remove a specific card from the slot (does NOT free it)
-func remove_card(card: Card) -> Card
-
-# Remove and return the held card (does NOT free it)
-func pop_card() -> Card
-
-# Clear the slot (force=true ignores lock)
-func clear_slot(force: bool = false) -> Card
-
-# Check if slot is empty
-func is_empty() -> bool
-
 # Get the held card without removing it
 func get_card() -> Card
 
-# Swap cards with another slot
+# Swap cards with another slot (fails if either is locked or empty)
 func swap_with(other_slot: CardSlot) -> bool
-
-# Transfer card to a hand
-func transfer_to_hand(hand: CardHand) -> bool
 
 # Lock/unlock helpers
 func lock() -> void
@@ -669,16 +750,16 @@ func unlock() -> void
 func is_locked() -> bool
 ```
 
+*Inherits all query, bulk, and clear methods from `CardContainer`. Use `card.move_to(slot)` to place cards and `slot.get_card().move_to(target)` to transfer them.*
+
 #### Virtual Methods
 
 ```gdscript
 # Override to handle clicks on the slotted card
-func _on_card_clicked(card: Card) -> void:
-    print("Slotted card clicked: ", card.name)
+func _on_card_clicked(card: Card) -> void
     
-# Override to implement specific conditions on addig a card. (conditions are checked after slot lock)
-func check_conditions(card: Card) -> bool:
-	return true
+# Override to implement specific conditions on placing a card (checked after slot lock)
+func check_conditions(card: Card) -> bool
 ```
 
 **Swapping Cards Between Slots:** When dropping a card on an occupied slot, the cards automatically swap positions (unless `allow_swap` is `false`).
@@ -709,92 +790,6 @@ func handle_dropped_card(card: Card) -> void:
 
 ---
 
-### CardPile
-
-A container for cards that can function as an invisible holder or a visual pile. CardPile is the building block for deck systems — it holds `Card` nodes as children and provides draw, add, shuffle, and arrangement operations.
-
-#### Properties
-
-| Property | Type | Description |
-| --- | --- | --- |
-| `shape` | `CardHandShape` | Optional shape for visual arrangement (reuses hand shapes) |
-| `show_cards` | `bool` | If `true`, card nodes are visible in the pile |
-| `face_up` | `bool` | Whether cards in this pile show their front face |
-
-#### Signals
-
-| Signal | Parameters | Description |
-| --- | --- | --- |
-| `card_added` | `card: Card, index: int` | Emitted when a card is added to the pile |
-| `card_removed` | `card: Card` | Emitted when a card is removed from the pile |
-| `pile_emptied` | - | Emitted when the pile becomes empty |
-| `pile_shuffled` | - | Emitted when the pile is shuffled |
-| `pile_changed` | `new_size: int` | Emitted when the pile size changes |
-
-#### Methods
-
-```gdscript
-# Core
-func get_card_count() -> int
-func is_empty() -> bool
-func get_cards() -> Array[Card]
-func get_card_at(index: int) -> Card
-
-# Adding cards
-func add_card(card: Card) -> void
-func add_card_at(card: Card, index: int) -> void
-func add_cards(card_array: Array[Card]) -> void
-
-# Drawing / removing cards
-func draw_card() -> Card               # Draw from top
-func draw_cards(count: int) -> Array[Card]
-func draw_card_at(index: int) -> Card
-func remove_card(card: Card) -> Card    # Does NOT free
-func clear_pile() -> void               # Does NOT free
-func clear_and_free() -> void           # Frees all cards
-
-# Pile operations
-func shuffle() -> void
-func peek_top() -> Card
-func peek_top_cards(count: int) -> Array[Card]
-func has_card(card: Card) -> bool
-func get_card_index(card: Card) -> int
-func move_all_to(target_pile: CardPile) -> void
-
-# Arrangement
-func arrange() -> void
-```
-
-#### Virtual Methods
-
-```gdscript
-# Called when a card is added — override for custom behavior
-func _on_card_added(card: Card, index: int) -> void
-
-# Called when a card is removed — override for custom behavior
-func _on_card_removed(card: Card) -> void
-```
-
-#### Example
-
-```gdscript
-@onready var draw_pile: CardPile = $DrawPile
-@onready var discard_pile: CardPile = $DiscardPile
-@onready var hand: CardHand = $Hand
-
-func deal():
-    var cards = draw_pile.draw_cards(5)
-    hand.add_cards(cards)
-
-func discard(card: Card):
-    discard_pile.add_card(card)
-
-func reshuffle():
-    discard_pile.move_all_to(draw_pile)
-    draw_pile.shuffle()
-```
-
----
 
 ### CardDeck
 
@@ -873,14 +868,13 @@ func _ready():
     draw_starting_hand()
 
 func draw_starting_hand():
-    var cards = draw_pile.draw_cards(5)
-    hand.add_cards(cards)
+    await draw_pile.deal_to(hand, 5, 0.3, 0.1)
 
 func discard_card(card: Card):
-    discard_pile.add_card(card)
+    card.move_to(discard_pile)
 
 func reshuffle():
-    discard_pile.move_all_to(draw_pile)
+    await discard_pile.move_all_to(draw_pile, 0)
     draw_pile.shuffle()
 ```
 
@@ -1012,6 +1006,9 @@ Located in `examples/balatro/`, this demonstrates:
 
 Run BalatroExample.tscn to play.
 
+![Balatro Example Animation](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/balatro_example_new.gif)
+
+
 ### Solitaire
 
 Located in `examples/solitaire/`, this demonstrates:
@@ -1022,9 +1019,41 @@ Located in `examples/solitaire/`, this demonstrates:
 
 Run SolitaireExample.tscn to play.
 
+![Solitaire Example Animation](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/solitaire_example.gif)
+
 ---
 
 ## Changelog
+
+### Version 2.7
+
+- **CardContainer Base Class** — New `Panel`-based base class for `CardHand`, `CardPile`, and `CardSlot`. Shared logic (card array, layout computation, signals, queries, bulk operations, clear/free) lives here once instead of being duplicated across three files.
+- **`Card.move_to()`** — New single-call API for moving cards between containers. Handles reparenting, registration, and animated tweening. Replaces the old `add_card()` / `draw_card()` / `remove_card()` pattern. Supports custom duration (`0` for instant) and insertion index.
+- **Bulk Operations** — `deal_to()`, `move_cards_to()`, and `move_all_to()` on `CardContainer` for batch card transfers with optional stagger animation. Instant moves (`duration = 0`) use batch mode for efficient layout computation.
+- **ContainerShape** — Renamed from `CardHandShape`. Shapes now only compute positions and rotations (pure data) — they no longer tween cards. All built-in shapes renamed: `LineShape`, `ArcShape`, `GridShape`, `StackShape`. The `shape` export now lives on `CardContainer`, so all container types can use shapes.
+- **CardResource Layouts** — `custom_layout_name` replaced with `front_layout_name` and `back_layout_name`, allowing per-card override of both faces. !this have priority over default layouts!
+- **CardSlot** — Now extends `CardContainer` with `max_cards = 1`. Simplified API — use `card.move_to(slot)` to place and `slot.get_card().move_to(target)` to transfer. Swap logic, abandon, and lock all preserved.
+- **CardPile** — Now extends `CardContainer`. `draw_card()` / `draw_cards()` removed — use `pile.peek_top().move_to(target)` or `pile.deal_to(target, count)` instead. `peek_top()` remains for single-card access. `peek_top_cards()` replaced by `peek_cards(count, index)` which takes a 1-based directional index (positive = from top, negative = from bottom).
+- **CardHand** — Now extends `CardContainer`. Reordering, focus chain, and z-index management preserved. All shared methods moved to base class.
+- **Signal Consolidation** — `hand_empty`, `pile_emptied`, `slot_emptied` → `container_empty`. `hand_full` → `container_full`. `slot_filled` → `card_added`. `pile_changed` removed (use `card_added`/`card_removed` + `get_card_count()`).
+- **`move_completed` Signal** — New signal on `Card`, emitted when `move_to()` finishes (after tween or instant snap).
+- Fixed LayoutID/LayoutCache not properly saving on MacOS.
+
+**Breaking Changes:**
+
+- `CardHand`, `CardPile`, `CardSlot` now extend `CardContainer` (which extends `Panel`) instead of `Control`/`Panel` directly. !!This will break every scene that has Hands or Piles unless replaced or changed to Panel instead of Control in the .tscn code (open .tscn file with code editor)!!
+- `add_card()`, `add_cards()`, `remove_card()`, `draw_card()`, `draw_cards()`, `draw_card_at()`, `add_card_at()` removed from all containers. Use `card.move_to(target)` and bulk methods instead.
+- `clear_hand()`, `clear_pile()`, `clear_slot()` removed. Use `clear_and_free()` to free all cards, or `move_all_to()` to transfer them to another container.
+- `arrange_cards()` → `arrange()`.
+- `max_hand_size` → `max_cards`.
+- `is_hand_full()` → `is_full()`.
+- `held_card` on `CardSlot` → `get_card()`.
+- `pop_card()`, `transfer_to_hand()` removed from `CardSlot` — use `move_to()` directly. `swap_with()` retained.
+- `hand_empty`, `hand_full`, `hand_cleared`, `pile_emptied`, `pile_changed`, `slot_filled`, `slot_emptied` signals removed — use `container_empty`, `container_full`, `card_added`, `card_removed`.
+- `CardHandShape` → `ContainerShape`. `LineHandShape` → `LineShape`, `ArcHandShape` → `ArcShape`, `GridHandShape` → `GridShape`, `StackHandShape` → `StackShape`.
+- `apply_layout()` removed from `ContainerShape` — shapes only compute, containers handle animation.
+- `CardResource`: `custom_layout_name` → `front_layout_name` + `back_layout_name`.
+
 
 ### Version 2.6
 
@@ -1153,6 +1182,7 @@ Run SolitaireExample.tscn to play.
 For feedback, suggestions, or issues:
 
 - **Twitter/X:** [@twdoortoo](https://twitter.com/twdoortoo)
+- **Mail:** twdoor@proton.me
 - **GitHub Issues:** [Create an issue](https://github.com/twdoor/simple-cards-v-2/issues)
 
 ---

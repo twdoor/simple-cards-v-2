@@ -5,4 +5,5 @@
 class_name CardResource extends Resource
 
 ##If valid, the layout will be used instead of the default front layout.
-@export var custom_layout_name: StringName = ""
+@export var front_layout_name: StringName = ""
+@export var back_layout_name: StringName = ""

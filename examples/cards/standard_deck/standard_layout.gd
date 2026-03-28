@@ -15,13 +15,12 @@ extends CardLayout
 
 var res: StandardCardResource
 
-
 func _update_display() -> void:
 	res = card_resource as StandardCardResource
 	set_color()
 	set_texture(res.top_texture)
 	set_value()
-
+	
 
 ## Tints the card background based on the modifier.
 func set_color() -> void:
@@ -31,7 +30,7 @@ func set_color() -> void:
 		res.Modifier.GOLD:
 			card_color.self_modulate = Color("ffd3a3")
 		res.Modifier.STEEL:
-			card_color.self_modulate = Color("99c2db")
+			card_color.self_modulate = Color("d3e5f0c0")
 
 
 ## Converts numeric value to display text (A, J, Q, K for face cards).
@@ -39,14 +38,14 @@ func set_value() -> void:
 	var text: String = ""
 
 	match res.value:
-		1:
-			text = "A"
 		11:
 			text = "J"
 		12:
 			text = "Q"
 		13:
 			text = "K"
+		14:
+			text = "A"
 		_:
 			text = str(res.value)
 

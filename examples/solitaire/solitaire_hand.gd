@@ -36,12 +36,17 @@ var _drag_followers: Array[Card] = []
 
 ## Call this once during scene setup to wire up the pile's signals.
 func set_solitaire_signals() -> void:
-	arrangement_completed.connect(_on_card_modified)
 	if drop_area:
 		drop_area.card_dropped.connect(_on_mat_card_dropped)
 
 
-## After any arrangement change, update which cards are interactable.
+## When [code]true[/code], card interactability and face state are updated after every
+## layout change. Set to [code]false[/code] during animated dealing, then call
+## [method apply_rules] when finished.
+var auto_update: bool = true
+
+
+## After any layout change, update which cards are interactable.
 ## SIMPLE/SUIT_MATCH: only the top card is enabled.
 ## COLOR_MATCH: face-up cards are interactive, face-down cards are locked.
 func _on_card_modified() -> void:
@@ -62,9 +67,22 @@ func _on_card_modified() -> void:
 			cards.back().undraggable = false
 			cards.back().disabled = false
 
+
+## Manually applies pile rules. Call after dealing with [member auto_update] off.
+func apply_rules() -> void:
+	_on_card_modified()
+
+
+## Fires _on_card_modified after every layout recomputation (if auto_update is on).
+func _compute_layout() -> void:
+	super._compute_layout()
+	if auto_update:
+		_on_card_modified()
+
+
 #region Multi-Drag Stack
 
-## Override: keep drag followers at high z_index during drag so they render above the hand.
+## Override: keep drag followers at high z_index during drag.
 func _update_z_indices() -> void:
 	for i in cards.size():
 		if cards[i] == _dragged_card:
@@ -75,31 +93,10 @@ func _update_z_indices() -> void:
 		cards[i].z_index = i
 
 
-## Override: exclude drag followers from arrangement so they don't snap back to hand positions.
-func arrange_cards() -> void:
-	if _drag_followers.is_empty():
-		super.arrange_cards()
-		return
-
-	if cards.is_empty():
-		update_minimum_size()
-		return
-
-	arrangement_started.emit()
-
-	var layout = shape.compute_layout(cards)
-	_card_positions = layout.positions
-
-	_update_z_indices()
-	_update_focus_chain()
-	update_minimum_size()
-
-	var skipped: Array[Card] = [_dragged_card]
-	skipped.append_array(_drag_followers)
-	shape.apply_layout(cards, layout, skipped)
-
-	cards_reordered.emit(cards)
-	arrangement_completed.emit()
+## Override: skip drag followers during settling.
+func _settle_card(card: Card, duration: float) -> void:
+	if _drag_followers.has(card): return
+	super._settle_card(card, duration)
 
 
 ## Override: when a card from this hand starts being held, build the drag stack.
@@ -134,9 +131,7 @@ func _on_holding_card(card: Card) -> void:
 		follower.disabled = true
 		follower.z_index = 900
 
-
 	set_process(true)
-
 
 
 ## Override _process: skip reordering when dragging a stack, only update followers.
@@ -146,7 +141,7 @@ func _process(delta: float) -> void:
 	_update_drag_followers(delta)
 
 
-## Moves follower cards in a chain — each follows the one above it, creating a trailing effect.
+## Moves follower cards in a chain — each follows the one above it.
 func _update_drag_followers(delta: float) -> void:
 	if _dragged_card == null or _drag_followers.is_empty():
 		return
@@ -165,7 +160,7 @@ func _update_drag_followers(delta: float) -> void:
 			lerp_weight)
 
 
-## Override: handle drop cleanup and transfer followers to the receiving hand.
+## Override: handle drop cleanup and transfer followers to the receiving container.
 func _finish_card_drop() -> void:
 	var had_followers = not _drag_followers.is_empty()
 	var followers_copy = _drag_followers.duplicate()
@@ -174,25 +169,19 @@ func _finish_card_drop() -> void:
 	for follower in _drag_followers:
 		follower.disabled = false
 
-
-
 	_drag_followers.clear()
-
-
 	_dragged_card = null
-
 	
 	super._finish_card_drop()
 	
 	if had_followers and lead_card and lead_card.get_parent() != self:
 		var target = lead_card.get_parent()
-		if target is CardHand:
+		if target is CardContainer:
 			for follower in followers_copy:
-				target.add_card(follower)
+				follower.move_to(target)
 
 
 ## Returns the current drag stack (lead card + followers).
-## Drop targets use this to receive the full sequence on drop.
 func get_drag_stack() -> Array[Card]:
 	if _dragged_card == null:
 		return []
@@ -206,25 +195,45 @@ func get_drag_stack() -> Array[Card]:
 #region Drop Handling
 
 ## Called when a card is dropped on this hand's CardMat.
-## Checks the source for a drag stack and adds the full valid sequence.
+## Conditions are checked automatically by [method Card.move_to].
+## If the source has a drag stack, moves the full sequence.
 func _on_mat_card_dropped(card: Card) -> void:
-	if not check_card_conditions(card):
-		return
-
 	var source_hand = card.get_parent()
 	if source_hand is SolitaireHand and source_hand.hand_type == type.COLOR_MATCH:
 		var stack = source_hand.get_drag_stack()
 		if stack.size() > 1 and stack[0] == card:
-			for stack_card in stack:
-				add_card(stack_card)
+			card.move_to(self)
+			if card.get_parent() != self: return  # Lead rejected — don't move followers
+			for i in range(1, stack.size()):
+				stack[i].move_to(self)
 			return
 
-	add_card(card)
+	card.move_to(self)
 
 #endregion
 
 
 #region Validation
+
+## Hooks solitaire rules into CardContainer's acceptance check.
+## This makes [method Card.move_to] respect pile rules automatically.
+## Bypassed when [member auto_update] is off (setup/dealing mode).
+func _check_conditions(card: Card) -> bool:
+	if not auto_update: return true
+	match hand_type:
+		type.SIMPLE:
+			return true
+		type.SUIT_MATCH, type.COLOR_MATCH:
+			if cards.is_empty():
+				var card_data = card.card_data as StandardCardResource
+				match hand_type:
+					type.SUIT_MATCH:
+						return card_data.value == 14
+					type.COLOR_MATCH:
+						return card_data.value == 13
+			return _is_valid_follow(cards.back(), card)
+	return false
+
 
 func _is_alternating_color(suit1: StandardCardResource.Suit, suit2: StandardCardResource.Suit) -> bool:
 	var blacks = [StandardCardResource.Suit.CLUBS, StandardCardResource.Suit.SPADE]
@@ -239,25 +248,18 @@ func _is_valid_follow(after_card: Card, card: Card) -> bool:
 
 	match hand_type:
 		type.SUIT_MATCH:
-			return card_data.card_suit == after_data.card_suit and card_data.value == after_data.value + 1
+			var cond_1: bool = card_data.card_suit == after_data.card_suit
+			var cond_2: bool = card_data.value == after_data.value + 1
+			var cond_3: bool = card_data.value == 2 and after_data.value == 14
+			var cond_4: bool = cond_2 or cond_3
+			return cond_1 and cond_4
 		type.COLOR_MATCH:
-			return _is_alternating_color(after_data.card_suit, card_data.card_suit) and card_data.value == after_data.value - 1
+			var cond_1: bool = _is_alternating_color(after_data.card_suit, card_data.card_suit)
+			var cond_2: bool = card_data.value == after_data.value - 1
+			var cond_3: bool = after_data.value != 14
+			var cond_4: bool = cond_2 and cond_3
+			return cond_1 and cond_4
 	return false
-
-
-## Can this card be placed on this pile?
-## Empty pile: Aces start foundations, Kings start tableau.
-## Otherwise delegates to _is_valid_follow.
-func check_card_conditions(card: Card) -> bool:
-	if cards.is_empty():
-		var card_data = card.card_data as StandardCardResource
-		match hand_type:
-			type.SUIT_MATCH:
-				return card_data.value == 1
-			type.COLOR_MATCH:
-				return card_data.value == 13
-		return false
-	return _is_valid_follow(cards.back(), card)
 
 
 ## Checks if two cards form a valid consecutive pair. Used to validate stack moves.

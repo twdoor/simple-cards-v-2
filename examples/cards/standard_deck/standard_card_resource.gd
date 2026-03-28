@@ -6,7 +6,7 @@ class_name StandardCardResource extends CardResource
 @export var top_texture: Texture2D
 @export var current_modifier: Modifier = Modifier.NONE
 @export var card_suit: Suit = Suit.ALL
-@export var value: int = 1 ## 1 = Ace, 11 = Jack, 12 = Queen, 13 = King
+@export_range(2,14) var value: int = 2 ## 14 = Ace, 11 = Jack, 12 = Queen, 13 = King
 
 ## Changes the card's background color in the layout.
 enum Modifier {
@@ -20,5 +20,11 @@ enum Suit {
 	DIAMOND,
 	HEART,
 	SPADE,
-	ALL, ## Wildcard / no specific suit
+	ALL, # Wildcard
 }
+
+
+##Set the layouts in the init of resource if you have multiple layout for multiple cards.
+func _init() -> void:
+	front_layout_name = LayoutID.STANDARD_LAYOUT
+	back_layout_name = LayoutID.STANDARD_BACK_LAYOUT

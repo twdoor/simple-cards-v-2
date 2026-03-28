@@ -26,9 +26,6 @@ var all_piles: Array[SolitaireHand] = []
 
 
 func _ready() -> void:
-	CG.def_front_layout = LayoutID.STANDARD_LAYOUT
-	CG.def_back_layout = LayoutID.STANDARD_BACK_LAYOUT
-
 	button.pressed.connect(set_match)
 
 	all_piles = foundations + tableau_piles
@@ -46,23 +43,25 @@ func _ready() -> void:
 ## Otherwise draw cards to the deal hand.
 func _on_draw_clicked(_card: Card) -> void:
 	if deck_manager.starting_pile.is_empty():
-		var hand = deal_hand.cards.duplicate()
-		hand.reverse()
-		deck_manager.starting_pile.add_cards(hand)
+		draw_card.disabled = true
+		var hand_cards: Array[Card] = deal_hand.cards.duplicate()
+		hand_cards.reverse()
+		deal_hand.move_cards_to(hand_cards, deck_manager.starting_pile, .1, .02)
+		await deal_hand.container_empty
+		draw_card.disabled = false
 		return
-	var cards = deck_manager.starting_pile.draw_cards(deal_hand_num)
-	deal_hand.add_cards(cards)
+	deck_manager.starting_pile.deal_to(deal_hand, deal_hand_num)
 
 
 ## Auto-move: tries to place the clicked card on the first valid pile.
 ## Single cards can go to foundations or tableau; stacks only go to tableau.
 func handle_card_transport(origin_hand: SolitaireHand, card: Card) -> void:
 	for hand in all_piles:
-		if not hand.check_card_conditions(card):
+		if not hand.can_accept_card(card):
 			continue
 
 		if card == origin_hand.cards.back():
-			hand.add_card(card)
+			card.move_to(hand)
 			if check_for_win():
 				finish_game()
 			return
@@ -74,9 +73,7 @@ func handle_card_transport(origin_hand: SolitaireHand, card: Card) -> void:
 		if cards_to_move.is_empty():
 			continue
 
-		for c in cards_to_move:
-			hand.add_card(c)
-			await get_tree().create_timer(.1).timeout
+		await origin_hand.move_cards_to(cards_to_move, hand, -1, 0.1)
 
 		if check_for_win():
 			finish_game()
@@ -96,8 +93,8 @@ func _get_valid_pile(origin_hand: SolitaireHand, card: Card) -> Array[Card]:
 
 
 ## New game: clear everything, reset the deck, deal tableau piles.
-## Each pile i gets i+1 cards, all face-down. The pile's _on_card_modified
-## callback flips the top card face-up automatically.
+## Each pile i gets i+1 cards. Cards come from pile face-down.
+## Rules are applied after each pile is fully dealt.
 func set_match() -> void:
 	for pile in [deal_hand] + all_piles:
 		pile.clear_and_free()
@@ -107,12 +104,10 @@ func set_match() -> void:
 	deck_manager.setup()
 	
 	for i in tableau_piles.size():
-		var cards = deck_manager.starting_pile.draw_cards(i + 1)
-		for card in cards:
-			if card.is_front_face:
-				card.flip()
-		
-		tableau_piles[i].add_cards(cards)
+		tableau_piles[i].auto_update = false
+		await deck_manager.starting_pile.deal_to(tableau_piles[i], i + 1, 0.5, 0.05)
+		tableau_piles[i].auto_update = true
+		tableau_piles[i].apply_rules()
 
 
 ## Win condition: draw pile empty, deal hand empty, and all cards face-up.
@@ -144,18 +139,18 @@ func _animate_card_collection() -> void:
 
 		var card = pile.cards.back()
 		for foundation in foundations:
-			if foundation.check_card_conditions(card):
-				foundation.add_card(card)
-				await get_tree().create_timer(0.1).timeout
+			if foundation.can_accept_card(card):
+				card.move_to(foundation, .1)
+				await card.move_completed
 				_animate_card_collection()
 				return
 
 	if not deal_hand.cards.is_empty() and deal_hand.cards.back().is_front_face:
 		var card = deal_hand.cards.back()
 		for foundation in foundations:
-			if foundation.check_card_conditions(card):
-				foundation.add_card(card)
-				await get_tree().create_timer(0.1).timeout
+			if foundation.can_accept_card(card):
+				card.move_to(foundation, .1)
+				await card.move_completed
 				_animate_card_collection()
 				return
 

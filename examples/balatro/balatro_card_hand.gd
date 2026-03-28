@@ -23,12 +23,12 @@ func toggle_select(card: Card) -> void:
 
 func select(card: Card) -> void:
 	card.position_offset = Vector2(0, -40)
-	arrange_cards()
+	arrange()
 
 
 func deselect(card: Card) -> void:
 	card.position_offset = Vector2.ZERO
-	arrange_cards()
+	arrange()
 
 
 ## Sort by suit first, then by value within the same suit.
@@ -58,7 +58,7 @@ func clear_selected() -> void:
 	for card in selected:
 		card.position_offset = Vector2.ZERO
 	selected.clear()
-	arrange_cards()
+	arrange()
 
 func _on_card_added(card: Card, _index: int) -> void:
 	card.is_front_face = true

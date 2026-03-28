@@ -1,44 +1,46 @@
-##Simple card with basic drag and drop functionality.
+## Simple card with basic drag and drop functionality.
 @icon("res://addons/simple_cards/card/icon_card.png")
 class_name Card extends Button
 
-##Emitted when cards is pressed but not dragged
+## Emitted when card is pressed but not dragged.
 signal card_clicked(card: Card)
-##Emitted when mouse enters card area
+## Emitted when mouse enters card area.
 signal card_hovered()
-##Emitted when mouse exits card area
+## Emitted when mouse exits card area.
 signal card_unhovered()
-##Emitted when drag threshold exceeded
+## Emitted when drag threshold exceeded.
 signal drag_started(card: Card)
-##Emitted when drag completes
+## Emitted when drag completes.
 signal drag_ended(card: Card)
-##Emitted when flip() is called
+## Emitted when [method flip] is called.
 signal card_flipped(is_front_face: bool)
-##Emitted when card gains focus
+## Emitted when card gains focus.
 signal card_focused()
-##Emitted when card loses focus
+## Emitted when card loses focus.
 signal card_unfocused()
-##Emitted when layout switches
+## Emitted when layout switches.
 signal layout_changed(layout_name: StringName)
-##Emitted when a tween starts
+## Emitted when a tween starts.
 signal tween_started(tween_type: String)
-##Emitted when a tween completes
+## Emitted when a tween completes.
 signal tween_completed(tween_type: String)
-##Emitted when card_data is set
+## Emitted when [member card_data] is set.
 signal card_data_changed(new_data: CardResource)
+## Emitted when [method move_to] finishes (after tween completes or instant snap).
+signal move_completed(card: Card)
 
-##Coefficient used in lerp movenment functions
+## Coefficient used in lerp movement functions.
 @export var drag_coef: float = -30
-##Max angle the card will swing when moving
+## Max angle the card will swing when moving.
 @export var max_card_rotation_deg: float = 25
-##Distance in px the cursor has to move when card is pressed to trigger dragging
+## Distance in px the cursor must move when pressed to trigger dragging.
 @export var drag_threshold: float = 10
 
-##Center position of the card
+## Center position of the card.
 var center_pos: Vector2
-##Used in the drag functions
+## True when the card is being dragged.
 var holding: bool = false
-##True when card is focused
+## True when the card has focus.
 var focused: bool = false
 
 var _cursor_down_pos: Vector2
@@ -46,19 +48,21 @@ var _last_pos: Vector2
 var _dragging_offset: Vector2 = Vector2.ZERO
 var _released: bool = true
 
-##Used to add custom offsets in [CardHand]
+## Used to add custom offsets in containers (e.g. selected bump in a hand).
 var position_offset: Vector2 = Vector2.ZERO
-##Used to add custom offsets in [CardHand]
+## Used to add custom rotation offsets in containers.
 var rotation_offset: float = 0
+## Stored origin global position for batch moves. Reset after tween starts.
+var _move_origin: Vector2 = Vector2.INF
 
 var _scale_tween: Tween
 var _rotation_tween: Tween
 var _pos_tween: Tween
 
-#If true, disables drag function
+## If true, disables drag function.
 @export var undraggable: bool = false
 
-##Holds the refrence to the card resource
+## Holds the reference to the card resource.
 @export var card_data: CardResource:
 	set(value):
 		card_data = value
@@ -66,18 +70,18 @@ var _pos_tween: Tween
 			_layout.card_resource = value
 		card_data_changed.emit(value)
 
-@export var front_layout_name: StringName  = CG.def_front_layout
+@export var front_layout_name: StringName = CG.def_front_layout
 @export var back_layout_name: StringName = CG.def_back_layout
 
 var _layout: CardLayout
-##Name of current layout. On setter, layout is updated
+## Name of current layout. On setter, layout is updated.
 var layout_name: String = "":
 	set(value):
 		layout_name = value
 		if is_node_ready():
 			_setup_layout()
 
-##If true uses front_layout else uses back_layout
+## If true uses front_layout else uses back_layout.
 var is_front_face: bool = true:
 	set(value):
 		if is_front_face == value: return
@@ -102,8 +106,11 @@ func _ready() -> void:
 	mouse_exited.connect(_on_mouse_exited)
 	
 
-	if card_data and CG.get_available_layouts().has(card_data.custom_layout_name):
-			front_layout_name = card_data.custom_layout_name
+	if card_data and CG.get_available_layouts().has(card_data.front_layout_name):
+		front_layout_name = card_data.front_layout_name
+	if card_data and CG.get_available_layouts().has(card_data.back_layout_name):
+		back_layout_name = card_data.back_layout_name
+
 
 	_setup_layout(true)
 	set_card_size()
@@ -117,7 +124,7 @@ func set_card_size():
 		custom_minimum_size = size
 
 	self_modulate.a = 0
-	center_pos = Vector2(size.x/2 , size.y/2)
+	center_pos = Vector2(size.x / 2, size.y / 2)
 	pivot_offset = center_pos
 
 
@@ -129,7 +136,6 @@ func _process(delta: float) -> void:
 func _drag(delta: float) -> void:
 	if !holding: return
 	
-
 	global_position = lerp(
 		global_position,
 		CG.get_cursor_position() - _dragging_offset, 
@@ -137,7 +143,66 @@ func _drag(delta: float) -> void:
 	_set_movement_rotation(delta)
 
 
-#region signal connections
+#region Movement
+
+## Moves this card into a [CardContainer]. Handles reparenting, registration,
+## and animation in one call.
+## [br][br]
+## [param duration]: Tween duration. [code]-1[/code] uses the target's default.
+## [code]0[/code] snaps instantly.
+## [br][param index]: Insertion index. [code]-1[/code] appends to end.
+func move_to(target: CardContainer, duration: float = -1, index: int = -1) -> void:
+	if !target: return
+	if !target.can_accept_card(self): return
+	
+	var from_global = global_position
+
+	_reparent_to(target)
+	target._register_card(self, index)
+	kill_all_tweens()
+	global_position = from_global
+	
+	if target._batch_mode:
+		_move_origin = from_global
+		return
+	
+	var dur: float = duration if duration >= 0.0 else target.card_move_duration
+	
+	var target_pos = target.get_card_target_position(self)
+	var target_rot = target.get_card_target_rotation(self)
+	
+	if dur <= 0.0:
+		position = target_pos
+		rotation_degrees = target_rot
+		move_completed.emit(self)
+	else:
+		tween_position(target_pos, dur)
+		rotation_degrees = target_rot
+		if _pos_tween:
+			_pos_tween.finished.connect(func(): move_completed.emit(self), CONNECT_ONE_SHOT)
+
+
+## Reparents this card to [param new_parent], preserving global position.
+func _reparent_to(new_parent: Node) -> void:
+	kill_all_tweens()
+	var current = get_parent()
+	if current == new_parent: return
+	if current:
+		reparent(new_parent, true)
+	else:
+		var stored_global = global_position
+		new_parent.add_child(self)
+		global_position = stored_global
+
+
+## Returns [code]true[/code] if this card is inside a [CardContainer].
+func _is_owned() -> bool:
+	return get_parent() is CardContainer
+
+#endregion
+
+
+#region Signal Connections
 
 func _on_button_down() -> void:
 	_released = false
@@ -151,8 +216,7 @@ func _on_button_up() -> void:
 		CG.current_held_item = null
 		drag_ended.emit(self)
 		
-
-		if !_is_owened():
+		if !_is_owned():
 			tween_rotation()
 			tween_scale()
 		
@@ -171,7 +235,6 @@ func _check_for_hold() -> bool:
 		var current_cursor_pos = CG.get_cursor_position()
 		var drag_distance = _cursor_down_pos.distance_to(current_cursor_pos)
 		
-
 		if drag_distance > drag_threshold and !undraggable:
 			rotation = 0
 			holding = true
@@ -208,9 +271,9 @@ func _on_mouse_exited() -> void:
 
 #endregion
 
-#region transform functions
+#region Transform Functions
 
-##Tween the scale
+## Tween the scale.
 func tween_scale(desired_scale: Vector2 = Vector2.ONE, duration: float = 0.2) -> void:
 	if _scale_tween:
 		_scale_tween.kill()
@@ -219,7 +282,7 @@ func tween_scale(desired_scale: Vector2 = Vector2.ONE, duration: float = 0.2) ->
 	tween_started.emit("scale")
 	_scale_tween.finished.connect(func(): tween_completed.emit("scale"))
 
-##Tween the rotation
+## Tween the rotation.
 func tween_rotation(desired_rotation: float = 0, duration: float = 0.2) -> void:
 	if _rotation_tween:
 		_rotation_tween.kill()
@@ -228,7 +291,7 @@ func tween_rotation(desired_rotation: float = 0, duration: float = 0.2) -> void:
 	tween_started.emit("rotation")
 	_rotation_tween.finished.connect(func(): tween_completed.emit("rotation"))
 
-##Tween the position. If global is true it uses global_position else postion.
+## Tween the position. If [param global] is true, tweens [code]global_position[/code].
 func tween_position(desired_position: Vector2, duration: float = .3, global: bool = false) -> void:
 	if _pos_tween:
 		_pos_tween.kill()
@@ -242,19 +305,18 @@ func tween_position(desired_position: Vector2, duration: float = .3, global: boo
 
 func _set_movement_rotation(delta: float) -> void:
 	var desired_rotation: float = clamp(
-		(global_position- _last_pos).x,
+		(global_position - _last_pos).x,
 		-max_card_rotation_deg,
 		max_card_rotation_deg)
 		
-
 	rotation_degrees = lerp(
 		rotation_degrees,
 		 desired_rotation,
-		 1 - exp(drag_coef *delta))
+		 1 - exp(drag_coef * delta))
 	
-	_last_pos = global_position 
+	_last_pos = global_position
 
-##Does what it says :[rb]
+## Kills all active tweens on this card.
 func kill_all_tweens() -> void:
 	if _scale_tween:
 		_scale_tween.kill()
@@ -268,7 +330,7 @@ func kill_all_tweens() -> void:
 
 #endregion
 
-#region layout funcs
+#region Layout Functions
 
 func _setup_layout(no_animations: bool = false) -> void:
 	if _layout:
@@ -276,7 +338,6 @@ func _setup_layout(no_animations: bool = false) -> void:
 			await _layout._flip_out()
 		_layout.queue_free()
 		_layout = null
-
 
 	if is_front_face:
 		_layout = CG.create_layout(front_layout_name)
@@ -300,7 +361,7 @@ func _setup_layout(no_animations: bool = false) -> void:
 	layout_changed.emit(layout_name)
 
 
-##Sets the layout of either the front or back layout depanding on the value of is_front
+## Sets the layout of either the front or back face.
 func set_layout(new_layout_name: String, is_front: bool = true) -> void:
 	if is_front:
 		front_layout_name = new_layout_name
@@ -311,20 +372,16 @@ func set_layout(new_layout_name: String, is_front: bool = true) -> void:
 func get_layout() -> CardLayout:
 	return _layout
 	
-##Refreshes layout
+## Refreshes layout display.
 func refresh_layout() -> void:
 	if _layout:
 		_layout._update_display()
 
-##Flips the card face
+## Flips the card face.
 func flip() -> void:
 	is_front_face = !is_front_face
 	card_flipped.emit(is_front_face)
 #endregion
-
-func _is_owened() -> bool:
-	var parent = get_parent()
-	return parent is CardHand or parent is CardSlot
 
 func _exit_tree() -> void:
 	kill_all_tweens()
