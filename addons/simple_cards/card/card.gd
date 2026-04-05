@@ -105,16 +105,15 @@ func _ready() -> void:
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 	
-
 	if card_data and CG.get_available_layouts().has(card_data.front_layout_name):
 		front_layout_name = card_data.front_layout_name
 	if card_data and CG.get_available_layouts().has(card_data.back_layout_name):
 		back_layout_name = card_data.back_layout_name
-
-
+	
 	_setup_layout(true)
 	set_card_size()
 	set_process(false)
+	_card_ready()
 
 
 func set_card_size():
@@ -200,7 +199,6 @@ func _is_owned() -> bool:
 	return get_parent() is CardContainer
 
 #endregion
-
 
 #region Signal Connections
 
@@ -382,6 +380,11 @@ func flip() -> void:
 	is_front_face = !is_front_face
 	card_flipped.emit(is_front_face)
 #endregion
+
+## Called at the end of [method _ready]. Override for subclass setup.
+func _card_ready() -> void:
+	pass
+
 
 func _exit_tree() -> void:
 	kill_all_tweens()

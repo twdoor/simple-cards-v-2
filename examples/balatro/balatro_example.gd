@@ -54,7 +54,7 @@ func _ready() -> void:
 	sort_value_button.pressed.connect(_on_sort_value_pressed)
 	preview_draw.pressed.connect(_on_preview_draw_pressed)
 	preview_discard.pressed.connect(_on_preview_discard_pressed)
-
+	
 	card_deck_manager.setup()
 	deal()
 

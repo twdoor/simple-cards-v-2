@@ -49,11 +49,13 @@ func _restore_card_state(card: Card) -> void:
 
 ## Shuffles the card order randomly.
 func shuffle() -> void:
-	cards.shuffle()
-	for card in cards:
-		move_child(card, -1)
-	pile_shuffled.emit()
+	for i in range(cards.size() - 1, 0, -1):
+		var j = CG.rng.randi_range(0, i)
+		var tmp = cards[i]
+		cards[i] = cards[j]
+		cards[j] = tmp
 	arrange()
+	pile_shuffled.emit()
 
 
 ## Returns the top card without removing it. Returns [code]null[/code] if empty.
@@ -97,5 +99,12 @@ func peek_cards(count: int, index: int = 1) -> Array[Card]:
 func _update_visibility() -> void:
 	for card in cards:
 		card.visible = show_cards
+
+#endregion
+
+#region Overridable Callbacks
+
+## Called after the pile is shuffled. Override for custom behavior.
+func _handle_shuffled_pile() -> void: pass
 
 #endregion

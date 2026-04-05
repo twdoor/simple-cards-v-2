@@ -138,7 +138,9 @@ func _register_card(card: Card, index: int = -1) -> void:
 	
 	_on_card_added(card, index)
 	card_added.emit(card, index)
-	if is_full(): container_full.emit()
+	if is_full():
+		container_full.emit()
+		_on_container_full()
 
 
 ## Unregisters a card from internal state. Triggered by [signal child_exiting_tree].
@@ -157,8 +159,9 @@ func _unregister_card(card: Card) -> void:
 	
 	_on_card_removed(card, index)
 	card_removed.emit(card, index)
-	if cards.is_empty(): container_empty.emit()
-
+	if cards.is_empty(): 
+		container_empty.emit()
+		_on_container_empty()
 
 ## Registers a card without triggering layout or signals.
 ## Used for atomic multi-card operations like swaps.
@@ -325,6 +328,7 @@ func clear_and_free() -> void:
 	_suppress_auto_remove = false
 	update_minimum_size()
 	container_empty.emit()
+	_on_container_empty()
 
 #endregion
 
@@ -332,36 +336,34 @@ func clear_and_free() -> void:
 #region Overridable Callbacks
 
 ## Called at the end of [method _ready]. Override for subclass setup.
-func _container_ready() -> void:
-	pass
+func _container_ready() -> void: pass
 
 ## Called after a card is registered. Override for custom behavior.
-func _on_card_added(card: Card, index: int) -> void:
-	pass
+func _on_card_added(card: Card, index: int) -> void: pass
 
 ## Called after a card is unregistered. Override for custom behavior.
-func _on_card_removed(card: Card, index: int) -> void:
-	pass
+func _on_card_removed(card: Card, index: int) -> void: pass
+
+## Called if container becomes empty. Override for custom behavior.
+func _on_container_empty() -> void: pass
+
+## Called if container becomes full. Override for custom behavior.
+func _on_container_full() -> void: pass
 
 ## Override to apply container-specific state when a card enters (e.g. face down, disabled).
-func _apply_card_state(card: Card) -> void:
-	pass
+func _apply_card_state(card: Card) -> void: pass
 
 ## Override to restore card state when it leaves this container.
-func _restore_card_state(card: Card) -> void:
-	pass
+func _restore_card_state(card: Card) -> void: pass
 
 ## Override to add custom acceptance rules. Called by [method can_accept_card].
-func _check_conditions(card: Card) -> bool:
-	return true
+func _check_conditions(card: Card) -> bool: return true
 
 ## Override to connect custom signals when a card is registered.
-func _connect_card_signals(card: Card) -> void:
-	pass
+func _connect_card_signals(card: Card) -> void: pass
 
 ## Override to disconnect custom signals when a card is unregistered.
-func _disconnect_card_signals(card: Card) -> void:
-	pass
+func _disconnect_card_signals(card: Card) -> void: pass
 
 #endregion
 

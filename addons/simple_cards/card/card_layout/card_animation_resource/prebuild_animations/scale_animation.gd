@@ -14,3 +14,4 @@ func play_animation(layout: CardLayout):
 	scale_tween = layout.create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BOUNCE)
 	scale_tween.tween_property(layout, "scale", scale_value, duration)
 	layout.card_instance.z_index += custom_z_index
+	await scale_tween.finished

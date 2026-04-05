@@ -53,6 +53,7 @@ var current_held_item: Card = null:
 		else:
 			dropped_card.emit()
 
+var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 ##Global function to get cursor position
 func get_cursor_position() -> Vector2:

@@ -19,3 +19,5 @@ func play_animation(layout: CardLayout):
 			fade_tween.tween_property(layout.card_instance, "modulate", Color.WHITE, fade_duration).from(Color.TRANSPARENT)
 		Fade.OUT:
 			fade_tween.tween_property(layout.card_instance, "modulate", Color.TRANSPARENT, fade_duration).from(Color.WHITE)
+	
+	await fade_tween.finished

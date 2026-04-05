@@ -220,6 +220,15 @@ func tween_position(desired_position: Vector2, duration: float = 0.3, global: bo
 func kill_all_tweens() -> void
 ```
 
+#### Virtual Methods
+
+```gdscript
+#Triggers at the end of the _ready() function of the card. Override if needed
+func _card_ready() -> void
+  
+```
+
+
 #### Example
 
 ```gdscript
@@ -481,6 +490,10 @@ func _container_ready() -> void
 func _on_card_added(card: Card, index: int) -> void
 func _on_card_removed(card: Card, index: int) -> void
 
+## Called if container becomes empty/full
+func _on_container_empty() -> void
+func _on_container_full() -> void
+
 # Override to apply/restore container-specific state
 func _apply_card_state(card: Card) -> void
 func _restore_card_state(card: Card) -> void
@@ -611,6 +624,7 @@ A card container that arranges cards in a visual hand layout. Adds drag-based re
 | Property | Type | Description |
 | --- | --- | --- |
 | `enable_reordering` | `bool` | Allow drag-reordering within the hand |
+|`enable_pile_drag`| `bool` | Allow dragging of multiple cards |
 
 *Inherits `shape`, `max_cards`, `card_move_duration`, `cards` from `CardContainer`.*
 
@@ -618,7 +632,7 @@ A card container that arranges cards in a visual hand layout. Adds drag-based re
 
 | Signal | Parameters | Description |
 | --- | --- | --- |
-| `cards_reordered` | `new_order: Array[Card]` | Emitted when cards are reordered |
+| `cards_reordered` | `new_order: Array[Card]` | Emitted after cards are reordered |
 | `card_position_changed` | `card: Card, old_index: int, new_index: int` | Emitted when a card changes position in hand |
 
 *Inherits `card_added`, `card_removed`, `container_empty`, `container_full` from `CardContainer`.*
@@ -628,6 +642,20 @@ A card container that arranges cards in a visual hand layout. Adds drag-based re
 ```gdscript
 # Override to handle card clicks (selection, play, etc.)
 func _handle_clicked_card(card: Card) -> void
+
+## Called after cards are reordered. Override to custom behavior.
+func _handle_reordered_cards(cards: Array[Card]) -> void
+
+## If [enable_pile_drag] is true will drag multiple cards
+
+## Override this to customize the way cards are picked
+func _get_drag_companions(card: Card) -> Array[Card]
+
+## Override this to customize the arangement of dragged cards
+func _get_companion_offsets(dragged_card: Card, companions: Array[Card]) -> Array[Vector2]
+
+## Returns the held card plus all active followers.
+func get_drag_stack() -> Array[Card]
 ```
 
 *Inherits `_on_card_added`, `_on_card_removed`, `_apply_card_state`, `_restore_card_state`, `_check_conditions` from `CardContainer`.*
@@ -683,6 +711,13 @@ func peek_cards(count: int, index: int = 1) -> Array[Card]  # Positive index = f
 *Inherits all query, bulk, and clear methods from `CardContainer`.*
 
 #### Virtual Methods
+
+```gdscript
+## Called after the pile is shuffled. Override for custom behavior.
+func _handle_shuffled_pile() -> void
+```
+
+
 
 *Inherits `_on_card_added`, `_on_card_removed`, `_apply_card_state`, `_restore_card_state`, `_check_conditions` from `CardContainer`.*
 
@@ -760,6 +795,33 @@ func _on_card_clicked(card: Card) -> void
     
 # Override to implement specific conditions on placing a card (checked after slot lock)
 func check_conditions(card: Card) -> bool
+
+## Called after a card occupies the slot
+func _handle_card_entered(card: Card) -> void
+
+## Called after a card leaves the slot
+func _handle_card_exited(card: Card) -> void
+
+## Called after a card is dropped
+func _handle_card_dropped_on(card: Card) -> void
+
+## Called after the lock state changes
+func _handle_slot_lock_changed(is_locked: bool) -> void
+
+## Called after the mouse entered the slot
+func _handle_slot_hovered() -> void
+
+## Called after the mouse exited the mat
+func _handle_slot_unhovered() -> void
+
+## Called after the card is swapped
+func _handle_slot_swapped(old_card: Card, new_card: Card) -> void
+
+## Called if the card is rejected
+func _handle_card_rejected(card: Card, reason: String) -> void
+
+## Called if the card is abandoned
+func _handle_card_abandoned(card: Card) -> void
 ```
 
 **Swapping Cards Between Slots:** When dropping a card on an occupied slot, the cards automatically swap positions (unless `allow_swap` is `false`).
@@ -784,8 +846,19 @@ A panel that detects dropped cards.
 
 ```gdscript
 # Override to handle action when card is dropped
-func handle_dropped_card(card: Card) -> void:
-    pass
+func handle_dropped_card(card: Card) -> void
+
+## Called after a card entered the mat
+func _handle_card_entered(card: Card) -> void
+
+## Called after a card exited the mat
+func _handle_card_exited(card: Card) -> void
+
+## Called after the mouse entered the mat
+func _handle_mat_hovered() -> void
+
+## Called after the mouse exited the mat 
+func _handle_mat_unhovered() -> void
 ```
 
 ---
@@ -892,6 +965,7 @@ The global singleton providing shared state and utilities. Access via `CG`.
 | `def_back_layout` | `StringName` | Default back layout ID |
 | `current_held_item` | `Card` | Currently dragged card |
 | `card_index` | `int` | Auto-incrementing card counter |
+|`rng`|`RandomNumberGenerator`|Responsible for random events of in the addon|
 
 #### Signals
 
@@ -1024,6 +1098,11 @@ Run SolitaireExample.tscn to play.
 ---
 
 ## Changelog
+
+### Version 2.8
+- Integrated the multicard dragging from the solitaire example into the main hand script with extra functionality.
+- Added a lot of virtual methods for all containers, the `_handle_...` functions trigger at the same time with their respective signal to give more flexibility when making subclasses of containers. 
+- CardGlobal now has a 'rng' variable to control random events (only pile shuffle for now)
 
 ### Version 2.7
 

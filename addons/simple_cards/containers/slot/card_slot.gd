@@ -150,7 +150,9 @@ func swap_with(other_slot: CardSlot) -> bool:
 	other_slot._settle_card(this_card, other_slot.card_move_duration)
 	
 	slot_swapped.emit(this_card, other_card)
+	_handle_slot_swapped(this_card, other_card)
 	other_slot.slot_swapped.emit(other_card, this_card)
+	other_slot._handle_slot_swapped(other_card, this_card)
 	return true
 
 #endregion
@@ -160,20 +162,28 @@ func swap_with(other_slot: CardSlot) -> bool:
 
 func can_accept_card(card: Card) -> bool:
 	if cards.has(card): return false
+	var reason: String = ""
+	
 	
 	if slot_locked:
-		card_rejected.emit(card, "slot_locked")
+		reason = "slot_locked"
+		card_rejected.emit(card, reason)
+		_handle_card_rejected(card, reason)
 		return false
 	
 	if !check_conditions(card):
-		card_rejected.emit(card, "failed_conditions")
+		reason = "failed_conditions"
+		card_rejected.emit(card, reason)
+		_handle_card_rejected(card, reason)
 		return false
 	
 	if is_full() and allow_swap:
 		return true
 	
 	if is_full():
-		card_rejected.emit(card, "slot_full")
+		reason = "slot_full"
+		card_rejected.emit(card, reason)
+		_handle_card_rejected(card, reason)
 		return false
 	
 	return true
@@ -217,11 +227,13 @@ func _process(_delta: float) -> void:
 		_card_over = true
 		_card_currently_over = CG.current_held_item
 		card_entered.emit(_card_currently_over)
+		_handle_card_entered(_card_currently_over)
 	
 	elif not is_over and _card_over:
 		_card_over = false
 		if _card_currently_over:
 			card_exited.emit(_card_currently_over)
+			_handle_card_exited(_card_currently_over)
 		_card_currently_over = null
 
 
@@ -266,16 +278,19 @@ func _handle_drop(incoming: Card) -> void:
 	if source == self and cards.has(incoming):
 		_settle_card(incoming, card_move_duration)
 		card_dropped_on.emit(incoming)
+		_handle_card_dropped_on(incoming)
 		return
 	
 	if cards.is_empty():
 		incoming.move_to(self)
 		card_dropped_on.emit(incoming)
+		_handle_card_dropped_on(incoming)
 		return
 	
 	if allow_swap:
 		_swap_cards(incoming, source)
 		card_dropped_on.emit(incoming)
+		_handle_card_dropped_on(incoming)
 		return
 	
 	_return_to_source(incoming)
@@ -324,7 +339,7 @@ func _swap_cards(incoming: Card, source: Node) -> void:
 	card_added.emit(incoming, 0)
 	card_removed.emit(old_card, 0)
 	slot_swapped.emit(old_card, incoming)
-
+	_handle_slot_swapped(old_card, incoming)
 
 ## Returns a card to its source container for re-settling.
 func _return_to_source(card: Card) -> void:
@@ -348,10 +363,11 @@ func _abandon_card(card: Card) -> void:
 	var target = abandon_reparent_target if abandon_reparent_target else get_parent()
 	if target and card.get_parent() == self:
 		card.kill_all_tweens()
-		card.reparent(target, true)  # triggers _unregister via child_exiting_tree
+		card.reparent(target, true)
 	card.rotation = 0.0
 	card.scale = Vector2.ONE
 	card_abandoned.emit(card)
+	_handle_card_abandoned(card)
 
 #endregion
 
@@ -375,9 +391,41 @@ func _on_card_clicked(card: Card) -> void:
 
 func _on_mouse_entered() -> void:
 	slot_hovered.emit()
-
+	_handle_slot_hovered()
 
 func _on_mouse_exited() -> void:
 	slot_unhovered.emit()
+	_handle_slot_unhovered()
+	
+#endregion
+
+#region Overridable Callbacks
+
+## Called after a card occupies the slot. Override for custom behavior.
+func _handle_card_entered(card: Card) -> void: pass
+
+## Called after a card leaves the slot. Override for custom behavior.
+func _handle_card_exited(card: Card) -> void: pass
+
+## Called after a card is dropped. Override for custom behavior.
+func _handle_card_dropped_on(card: Card) -> void: pass
+
+## Called after the lock state changes. Override for custom behavior.
+func _handle_slot_lock_changed(is_locked: bool) -> void: pass
+
+## Called after the mouse entered the slot. Override for custom behavior.
+func _handle_slot_hovered() -> void: pass
+
+## Called after the mouse exited the mat. Override for custom behavior.
+func _handle_slot_unhovered() -> void: pass
+
+## Called after the card is swapped. Override for custom behavior.
+func _handle_slot_swapped(old_card: Card, new_card: Card) -> void: pass
+
+## Called if the card is rejected. Override for custom behavior.
+func _handle_card_rejected(card: Card, reason: String) -> void: pass
+
+## Called if the card is abandoned. Override for custom behavior.
+func _handle_card_abandoned(card: Card) -> void: pass
 
 #endregion
