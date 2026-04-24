@@ -480,7 +480,7 @@ func _validate_create_dialog() -> void:
 	if layout_id.is_empty():
 		error_msg = "Layout ID cannot be empty"
 	elif not layout_id.is_valid_identifier():
-		error_msg = "Layout ID cannot conatin special characters"
+		error_msg = "Layout ID cannot contain special characters"
 	elif cache.layout_id_exists(layout_id):
 		error_msg = "Layout ID '%s' already exists" % layout_id
 	

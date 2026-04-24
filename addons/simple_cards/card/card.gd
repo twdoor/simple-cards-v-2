@@ -20,10 +20,6 @@ signal card_focused()
 signal card_unfocused()
 ## Emitted when layout switches.
 signal layout_changed(layout_name: StringName)
-## Emitted when a tween starts.
-signal tween_started(tween_type: String)
-## Emitted when a tween completes.
-signal tween_completed(tween_type: String)
 ## Emitted when [member card_data] is set.
 signal card_data_changed(new_data: CardResource)
 ## Emitted when [method move_to] finishes (after tween completes or instant snap).
@@ -58,6 +54,7 @@ var _move_origin: Vector2 = Vector2.INF
 var _scale_tween: Tween
 var _rotation_tween: Tween
 var _pos_tween: Tween
+var _layout_switching: bool = false
 
 ## If true, disables drag function.
 @export var undraggable: bool = false
@@ -228,23 +225,22 @@ func _on_button_up() -> void:
 	else:
 		card_clicked.emit(self)
 
-func _check_for_hold() -> bool:
+func _check_for_hold() -> void:
 	if !_released and !holding:
 		var current_cursor_pos = CG.get_cursor_position()
 		var drag_distance = _cursor_down_pos.distance_to(current_cursor_pos)
-		
+
 		if drag_distance > drag_threshold and !undraggable:
 			rotation = 0
 			holding = true
 			_dragging_offset = center_pos
 			CG.current_held_item = self
 			drag_started.emit(self)
-			return true
-	return false
 
 func _on_focus_entered() -> void:
 	if _layout:
 		await _layout._focus_in()
+	if !is_inside_tree(): return
 	focused = true
 	card_focused.emit()
 	set_process(true)
@@ -252,6 +248,7 @@ func _on_focus_entered() -> void:
 func _on_focus_exited() -> void:
 	if _layout:
 		await _layout._focus_out()
+	if !is_inside_tree(): return
 	focused = false
 	card_unfocused.emit()
 	if !holding: set_process(false)
@@ -277,8 +274,6 @@ func tween_scale(desired_scale: Vector2 = Vector2.ONE, duration: float = 0.2) ->
 		_scale_tween.kill()
 	_scale_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BOUNCE)
 	_scale_tween.tween_property(self, "scale", desired_scale, duration)
-	tween_started.emit("scale")
-	_scale_tween.finished.connect(func(): tween_completed.emit("scale"))
 
 ## Tween the rotation.
 func tween_rotation(desired_rotation: float = 0, duration: float = 0.2) -> void:
@@ -286,20 +281,16 @@ func tween_rotation(desired_rotation: float = 0, duration: float = 0.2) -> void:
 		_rotation_tween.kill()
 	_rotation_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
 	_rotation_tween.tween_property(self, "rotation_degrees", desired_rotation, duration)
-	tween_started.emit("rotation")
-	_rotation_tween.finished.connect(func(): tween_completed.emit("rotation"))
 
 ## Tween the position. If [param global] is true, tweens [code]global_position[/code].
 func tween_position(desired_position: Vector2, duration: float = .3, global: bool = false) -> void:
 	if _pos_tween:
 		_pos_tween.kill()
 	_pos_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tween_started.emit("position")
 	if global:
 		_pos_tween.tween_property(self, "global_position", desired_position, duration)
 	else:
 		_pos_tween.tween_property(self, "position", desired_position, duration)
-	_pos_tween.finished.connect(func(): tween_completed.emit("position"))
 
 func _set_movement_rotation(delta: float) -> void:
 	var desired_rotation: float = clamp(
@@ -331,6 +322,9 @@ func kill_all_tweens() -> void:
 #region Layout Functions
 
 func _setup_layout(no_animations: bool = false) -> void:
+	if _layout_switching: return
+	_layout_switching = true
+
 	if _layout:
 		if !no_animations:
 			await _layout._flip_out()
@@ -341,21 +335,23 @@ func _setup_layout(no_animations: bool = false) -> void:
 		_layout = CG.create_layout(front_layout_name)
 	else:
 		_layout = CG.create_layout(back_layout_name)
-	
+
 	if not _layout:
 		push_error("Card: Failed to create layout")
+		_layout_switching = false
 		return
-	
+
 	add_child(_layout)
 	_layout.setup(self, card_data)
 	if !no_animations:
 		await _layout._flip_in()
-	
+
 	_layout.anchors_preset = Control.PRESET_FULL_RECT
-	_layout.mouse_filter = Control.MOUSE_FILTER_IGNORE 
+	_layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layout.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_DISABLED
 	_layout.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
-	
+
+	_layout_switching = false
 	layout_changed.emit(layout_name)
 
 

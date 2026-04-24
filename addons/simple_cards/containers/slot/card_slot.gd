@@ -171,7 +171,7 @@ func can_accept_card(card: Card) -> bool:
 		_handle_card_rejected(card, reason)
 		return false
 	
-	if !check_conditions(card):
+	if !_check_conditions(card):
 		reason = "failed_conditions"
 		card_rejected.emit(card, reason)
 		_handle_card_rejected(card, reason)
@@ -190,7 +190,7 @@ func can_accept_card(card: Card) -> bool:
 
 
 ## Override to add custom placement rules. Called by [method can_accept_card].
-func check_conditions(card: Card) -> bool:
+func _check_conditions(card: Card) -> bool:
 	return true
 
 #endregion

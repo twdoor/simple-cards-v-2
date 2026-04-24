@@ -22,17 +22,17 @@ func _init(rot: float = line_rotation, width: float = max_width, spacing: float 
 	card_spacing = spacing
 
 
-func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
+func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 	var card_count = cards.size()
 	var positions: Array[Vector2] = []
 	var rotations: Array[float] = []
-	
+
 	var card_size = cards[0].size
 	var total_width = (card_count - 1) * card_spacing + card_size.x
 	var actual_spacing = card_spacing
 	if total_width > max_width:
 		actual_spacing = (max_width - card_size.x) / max(1, card_count - 1)
-	
+
 	var start_x: float
 	match alignment:
 		Alignment.BEGIN:
@@ -44,11 +44,11 @@ func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
 
 	var rot_rad = deg_to_rad(line_rotation)
 	var card_rot = deg_to_rad(card_rotation_angle)
-	
+
 	for i in card_count:
 		var x_pos = start_x + i * actual_spacing
 		var rotated_pos = Vector2(x_pos, 0.0).rotated(rot_rad)
 		positions.append(rotated_pos)
 		rotations.append(card_rot)
-	
-	return { "positions": positions, "rotations": rotations }
+
+	return LayoutResult.new(positions, rotations)

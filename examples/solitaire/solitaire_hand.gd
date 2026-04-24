@@ -16,6 +16,16 @@ class_name SolitaireHand extends CardHand
 ## Emitted when a card is clicked. The main scene handles finding the right destination.
 signal go_to_pile(origin_hand: SolitaireHand, card: Card)
 
+## Emitted after a card is dropped onto this hand via drag-and-drop.
+## Carries pre-move state so the undo system can record the action.
+signal card_dropped_from_drag(
+	source: CardContainer,
+	target: SolitaireHand,
+	cards: Array[Card],
+	source_index: int,
+	flipped_card: Card
+)
+
 enum type {
 	SIMPLE,      ## Deal/waste pile
 	SUIT_MATCH,  ## Foundation (same suit, Ace → King)
@@ -103,8 +113,24 @@ func _get_drag_companions(card: Card) -> Array[Card]:
 
 ## Called when a card is dropped on this hand's CardMat.
 ## Conditions are checked automatically by [method Card.move_to].
+## Captures pre-move state for the undo system before executing the move.
 func _on_mat_card_dropped(card: Card) -> void:
+	var source_hand: CardContainer = card.get_parent()
+
+	var src_idx: int = source_hand.cards.find(card) if source_hand is CardContainer else -1
+	var drag_stack: Array[Card] = source_hand.get_drag_stack() if source_hand is CardHand else [card]
+	if drag_stack.is_empty():
+		drag_stack = [card]
+
+	var flip_card: Card = null
+	if source_hand is SolitaireHand and src_idx > 0:
+		var candidate: Card = source_hand.cards[src_idx - 1]
+		if not candidate.is_front_face:
+			flip_card = candidate
+
 	card.move_to(self)
+
+	card_dropped_from_drag.emit(source_hand, self, drag_stack, src_idx, flip_card)
 
 #endregion
 

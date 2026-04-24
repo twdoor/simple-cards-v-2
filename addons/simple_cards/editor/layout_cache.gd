@@ -5,6 +5,7 @@ const CACHE_PATH = "res://addons/simple_cards/editor/layout_cache.json"
 const LAYOUTS_ENUM_PATH = "res://addons/simple_cards/layout_ids.gd"
 const DEFAULT_LAYOUT_PATH = "res://addons/simple_cards/card/card_layout/default_card_layout.tscn"
 const DEFAULT_BACK_LAYOUT_PATH = "res://addons/simple_cards/card/card_layout/default_card_back_layout.tscn"
+const DEBUG_LOG: bool = false
 
 signal cache_updated
 
@@ -12,8 +13,24 @@ signal cache_updated
 ## Structure: { "path": { "layout_id": String, "tags": Array, "enabled": bool, "last_modified": int } }
 var layouts: Dictionary = {}
 
+var _id_regex: RegEx
+var _tags_regex: RegEx
+var _tag_regex: RegEx
+var _id_write_regex: RegEx
+var _tags_write_regex: RegEx
+
 
 func _init() -> void:
+	_id_regex = RegEx.new()
+	_id_regex.compile('metadata/layout_id\\s*=\\s*"([^"]*)"')
+	_tags_regex = RegEx.new()
+	_tags_regex.compile('metadata/tags\\s*=\\s*\\[([^\\]]*)\\]')
+	_tag_regex = RegEx.new()
+	_tag_regex.compile('"([^"]*)"')
+	_id_write_regex = RegEx.new()
+	_id_write_regex.compile('(metadata/layout_id\\s*=\\s*)"[^"]*"')
+	_tags_write_regex = RegEx.new()
+	_tags_write_regex.compile('(metadata/tags\\s*=\\s*)\\[[^\\]]*\\]')
 	load_cache()
 
 
@@ -92,7 +109,7 @@ func _generate_layout_ids_file() -> void:
 	var file = FileAccess.open(LAYOUTS_ENUM_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string("\n".join(lines))
-		print("LayoutCache: Generated %s with %d layouts" % [LAYOUTS_ENUM_PATH, ids.size()])
+		if DEBUG_LOG: print("LayoutCache: Generated %s with %d layouts" % [LAYOUTS_ENUM_PATH, ids.size()])
 	else:
 		push_error("LayoutCache: Failed to write layout IDs file")
 
@@ -103,7 +120,7 @@ func _generate_layout_ids_file() -> void:
 
 ## Non-destructive startup sync: removes only entries whose files are deleted from disk, and adds any new layouts found.
 func sync_cache() -> void:
-	print("LayoutCache: Syncing cache...")
+	if DEBUG_LOG: print("LayoutCache: Syncing cache...")
 	
 	var paths_to_remove: Array[String] = []
 	for path in layouts.keys():
@@ -120,12 +137,12 @@ func sync_cache() -> void:
 	
 	save_cache()
 	cache_updated.emit()
-	print("LayoutCache: %d layouts after sync" % layouts.size())
+	if DEBUG_LOG: print("LayoutCache: %d layouts after sync" % layouts.size())
 
 
 ## Full project rescan — finds all layouts and removes entries whose files exist but no longer carry layout metadata.  Only call this from an explicit user action (e.g. the Refresh button), never on startup.
 func scan_project() -> void:
-	print("LayoutCache: Scanning project for layouts...")
+	if DEBUG_LOG: print("LayoutCache: Scanning project for layouts...")
 	
 	var found_paths: Array[String] = []
 	_scan_directory_recursive("res://", found_paths)
@@ -144,7 +161,7 @@ func scan_project() -> void:
 	
 	save_cache()
 	cache_updated.emit()
-	print("LayoutCache: Found %d layouts" % layouts.size())
+	if DEBUG_LOG: print("LayoutCache: Found %d layouts" % layouts.size())
 
 
 func _scan_directory_recursive(path: String, found_paths: Array[String]) -> void:
@@ -160,17 +177,24 @@ func _scan_directory_recursive(path: String, found_paths: Array[String]) -> void
 	
 	while file_name != "":
 		var full_path = path + file_name
-		
+
 		if dir.current_is_dir():
 			if not file_name.begins_with("."):
 				_scan_directory_recursive(full_path + "/", found_paths)
-		
+
 		elif file_name.ends_with(".tscn"):
-			var layout_info = _parse_scene_file(full_path)
-			if not layout_info.is_empty():
+			var mod_time = FileAccess.get_modified_time(full_path)
+			var cached = layouts.get(full_path, {})
+			var cached_time = cached.get("last_modified", -1)
+
+			if full_path in layouts and mod_time == cached_time:
 				found_paths.append(full_path)
-				_update_layout_entry(full_path, layout_info)
-		
+			else:
+				var layout_info = _parse_scene_file(full_path)
+				if not layout_info.is_empty():
+					found_paths.append(full_path)
+					_update_layout_entry(full_path, layout_info)
+
 		file_name = dir.get_next()
 	
 	dir.list_dir_end()
@@ -193,20 +217,14 @@ func _parse_scene_file(scene_path: String) -> Dictionary:
 		"last_modified": FileAccess.get_modified_time(scene_path)
 	}
 	
-	var id_regex = RegEx.new()
-	id_regex.compile('metadata/layout_id\\s*=\\s*"([^"]*)"')
-	var id_match = id_regex.search(content)
+	var id_match = _id_regex.search(content)
 	if id_match:
 		result.layout_id = id_match.get_string(1)
-	
-	var tags_regex = RegEx.new()
-	tags_regex.compile('metadata/tags\\s*=\\s*\\[([^\\]]*)\\]')
-	var tags_match = tags_regex.search(content)
+
+	var tags_match = _tags_regex.search(content)
 	if tags_match:
 		var tags_str = tags_match.get_string(1)
-		var tag_regex = RegEx.new()
-		tag_regex.compile('"([^"]*)"')
-		var tag_matches = tag_regex.search_all(tags_str)
+		var tag_matches = _tag_regex.search_all(tags_str)
 		for tag_match in tag_matches:
 			result.tags.append(tag_match.get_string(1))
 	
@@ -329,7 +347,7 @@ func delete_layout(path: String) -> bool:
 	save_cache()
 	cache_updated.emit()
 	
-	print("LayoutCache: Deleted layout at %s" % path)
+	if DEBUG_LOG: print("LayoutCache: Deleted layout at %s" % path)
 	return true
 
 
@@ -345,19 +363,14 @@ func _write_metadata_to_scene(scene_path: String) -> void:
 	var layout_data = layouts[scene_path]
 	
 	
-	var id_regex = RegEx.new()
-	id_regex.compile('(metadata/layout_id\\s*=\\s*)"[^"]*"')
-	content = id_regex.sub(content, '$1"%s"' % layout_data.layout_id)
-	
-	
+	content = _id_write_regex.sub(content, '$1"%s"' % layout_data.layout_id)
+
 	var tags_str = "[]"
 	if not layout_data.tags.is_empty():
 		var quoted_tags = layout_data.tags.map(func(t): return '"%s"' % t)
 		tags_str = "[%s]" % ", ".join(quoted_tags)
-	
-	var tags_regex = RegEx.new()
-	tags_regex.compile('(metadata/tags\\s*=\\s*)\\[[^\\]]*\\]')
-	content = tags_regex.sub(content, '$1%s' % tags_str)
+
+	content = _tags_write_regex.sub(content, '$1%s' % tags_str)
 	
 	
 	var out_file = FileAccess.open(scene_path, FileAccess.WRITE)

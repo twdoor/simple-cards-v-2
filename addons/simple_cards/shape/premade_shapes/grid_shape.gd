@@ -21,28 +21,28 @@ func _init(cols: int = num_of_cols, rows: int = num_of_rows, col_spacing: float 
 	arrange_by_rows = by_rows
 
 
-func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
+func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 	var card_count = cards.size()
 	var positions: Array[Vector2] = []
 	var rotations: Array[float] = []
 
 	var actual_cols = num_of_cols
 	var actual_rows = num_of_rows
-	
+
 	if arrange_by_rows:
 		actual_rows = ceili(float(card_count) / float(num_of_cols))
 	else:
 		actual_cols = ceili(float(card_count) / float(num_of_rows))
-	
+
 	var total_width = (actual_cols - 1) * col_offset
 	var total_height = (actual_rows - 1) * row_offset
 	var start_x = -total_width / 2.0
 	var start_y = -total_height / 2.0
-	
+
 	for i in card_count:
 		var grid_x: int
 		var grid_y: int
-		
+
 		if arrange_by_rows:
 			grid_x = i % actual_cols
 			grid_y = i / actual_cols
@@ -52,7 +52,7 @@ func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
 
 		var x_offset = 0.0
 		var y_offset = 0.0
-		
+
 		if arrange_by_rows:
 			if grid_y == actual_rows - 1:
 				var cards_in_last_row = card_count - (grid_y * actual_cols)
@@ -63,10 +63,10 @@ func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
 				var cards_in_last_col = card_count - (grid_x * actual_rows)
 				if cards_in_last_col < actual_rows:
 					y_offset = (actual_rows - cards_in_last_col) * row_offset / 2.0
-		
+
 		var x_pos = start_x + grid_x * col_offset + x_offset
 		var y_pos = start_y + grid_y * row_offset + y_offset
 		positions.append(Vector2(x_pos, y_pos))
 		rotations.append(0.0)
-	
-	return { "positions": positions, "rotations": rotations }
+
+	return LayoutResult.new(positions, rotations)

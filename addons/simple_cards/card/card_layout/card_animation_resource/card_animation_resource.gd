@@ -3,4 +3,4 @@
 class_name CardAnimationResource extends Resource
 
 ##Plays the animation when triggered
-@abstract func play_animation(layout: CardLayout)
+@abstract func play_animation(layout: CardLayout) -> void

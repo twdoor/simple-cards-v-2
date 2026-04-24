@@ -10,15 +10,15 @@ var layout_panel: Control = null
 
 func _enter_tree():
 	add_autoload_singleton(CARD_GLOBAL, CARD_GLOBAL_FILE_PATH)
-	
+
 	layout_panel = LayoutPanel.new()
-	layout_panel.editor_interface = get_editor_interface()
+	layout_panel.editor_interface = EditorInterface
 	add_control_to_bottom_panel(layout_panel, "Card Layouts")
 
 
 func _exit_tree():
 	remove_autoload_singleton(CARD_GLOBAL)
-	
+
 	if layout_panel:
 		remove_control_from_bottom_panel(layout_panel)
 		layout_panel.queue_free()

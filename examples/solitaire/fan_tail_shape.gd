@@ -15,22 +15,22 @@ class_name FanTailShape extends ContainerShape
 @export var horizontal: bool = true
 
 
-func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
+func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 	var card_count = cards.size()
 	var positions: Array[Vector2] = []
 	var rotations: Array[float] = []
-	
+
 	var tail_start = max(0, card_count - visible_count)
 	var tail_count = card_count - tail_start
 	var fan_total = max(0, tail_count - 1) * fan_spacing
-	
+
 	var actual_stack_spacing = stack_spacing
 	if max_length > 0 and tail_start > 0:
 		var available_for_stack = max_length - fan_total
 		var needed_for_stack = tail_start * stack_spacing
 		if needed_for_stack > available_for_stack:
 			actual_stack_spacing = available_for_stack / tail_start
-	
+
 	for i in card_count:
 		var offset: float
 		if i < tail_start:
@@ -38,9 +38,9 @@ func _compute_raw_cards(cards: Array[Card]) -> Dictionary:
 		else:
 			var tail_index = i - tail_start
 			offset = tail_start * actual_stack_spacing + tail_index * fan_spacing
-		
+
 		var pos = Vector2(offset, 0.0) if horizontal else Vector2(0.0, offset)
 		positions.append(pos)
 		rotations.append(0.0)
-	
-	return { "positions": positions, "rotations": rotations }
+
+	return LayoutResult.new(positions, rotations)

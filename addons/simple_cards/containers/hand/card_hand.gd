@@ -36,6 +36,7 @@ var _last_reorder_index: int = -1
 var _original_drag_index: int = -1
 var _drag_followers: Array[Card] = []
 var _follower_shape_offsets: Array[Vector2] = []
+var _last_reorder_cursor: Vector2 = Vector2.INF
 
 
 #region Setup
@@ -100,6 +101,10 @@ func _update_card_reordering() -> void:
 		return
 
 	var cursor_pos = CG.get_cursor_position()
+	if cursor_pos.distance_squared_to(_last_reorder_cursor) < 4.0:
+		return
+	_last_reorder_cursor = cursor_pos
+
 	var new_index = _find_insertion_index(cursor_pos)
 
 	if new_index != -1 and new_index != _drag_start_index:
@@ -210,6 +215,7 @@ func _finish_card_drop() -> void:
 	_drag_start_index = -1
 	_last_reorder_index = -1
 	_original_drag_index = -1
+	_last_reorder_cursor = Vector2.INF
 	set_process(false)
 	arrange()
 

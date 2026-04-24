@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://dajkkw30vo3rp"]
+[gd_scene load_steps=23 format=3 uid="uid://dajkkw30vo3rp"]
 
 [ext_resource type="Script" uid="uid://dwquwtady16or" path="res://examples/solitaire/solitaire.gd" id="1_el2jo"]
 [ext_resource type="Script" uid="uid://bisyk4bowdvsf" path="res://addons/simple_cards/deck/manager/card_deck_manager.gd" id="2_f1iev"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://du1ike80fkx83" path="res://addons/simple_cards/mat/card_mat.gd" id="8_303tp"]
 [ext_resource type="Script" uid="uid://ddqdtbqqh2xxi" path="res://examples/solitaire/fan_tail_shape.gd" id="10_008rh"]
 [ext_resource type="Script" uid="uid://d2l8uaoel5whd" path="res://addons/simple_cards/containers/pile/card_pile.gd" id="10_x6rcj"]
+[ext_resource type="Script" uid="uid://d1of64dbex4mm" path="res://examples/solitaire/solitaire_undo.gd" id="11_undo"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qytrh"]
 bg_color = Color(0.1619519, 0.27889124, 0.20867068, 1)
@@ -70,11 +71,17 @@ fan_spacing = 35.0
 max_length = 90.0
 metadata/_custom_type_script = "uid://ddqdtbqqh2xxi"
 
-[node name="Solitare" type="CanvasLayer" node_paths=PackedStringArray("deal_hand", "foundations", "tableau_piles")]
+[node name="Solitare" type="CanvasLayer" node_paths=PackedStringArray("reset_button", "undo_button", "deal_hand", "foundations", "tableau_piles")]
 script = ExtResource("1_el2jo")
+reset_button = NodePath("MarginContainer/VBoxContainer/ResetButton")
+undo_button = NodePath("MarginContainer/VBoxContainer/UndoButton")
 deal_hand = NodePath("MarginContainer/HBoxContainer/DealHand")
+deal_hand_num = 3
 foundations = [NodePath("MarginContainer/Stacks/Stack"), NodePath("MarginContainer/Stacks/Stack2"), NodePath("MarginContainer/Stacks/Stack3"), NodePath("MarginContainer/Stacks/Stack4")]
 tableau_piles = [NodePath("MarginContainer/Piles/Pile"), NodePath("MarginContainer/Piles/Pile2"), NodePath("MarginContainer/Piles/Pile3"), NodePath("MarginContainer/Piles/Pile4"), NodePath("MarginContainer/Piles/Pile5"), NodePath("MarginContainer/Piles/Pile6"), NodePath("MarginContainer/Piles/Pile7")]
+
+[node name="SolitaireUndo" type="Node" parent="."]
+script = ExtResource("11_undo")
 
 [node name="CardDeckManager" type="Node" parent="." node_paths=PackedStringArray("starting_pile")]
 script = ExtResource("2_f1iev")
@@ -407,9 +414,22 @@ enable_reordering = false
 shape = SubResource("Resource_resxj")
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
-[node name="Button" type="Button" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+
+[node name="ResetButton" type="Button" parent="MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(128, 64)
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 8
 text = "RESET GAME"
+
+[node name="UndoButton" type="Button" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(128, 64)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+disabled = true
+text = "UNDO"

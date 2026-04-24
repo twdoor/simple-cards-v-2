@@ -22,7 +22,7 @@ const CACHE_PATH = "res://addons/simple_cards/editor/layout_cache.json"
 ##Default front layout ID used. [color=blue]Set[/color] this to the layout ID you want in your scene
 var def_front_layout: StringName = LayoutID.DEFAULT:
 	set(value):
-		if value.is_empty() or value in _layouts:
+		if value.is_empty() or value in _layout_paths:
 			def_front_layout = value
 		else:
 			push_warning("CardGlobal: Layout ID '%s' not found" % value)
@@ -30,15 +30,15 @@ var def_front_layout: StringName = LayoutID.DEFAULT:
 ##Default back layout ID used.
 var def_back_layout: StringName = LayoutID.DEFAULT_BACK:
 	set(value):
-		if value.is_empty() or value in _layouts:
+		if value.is_empty() or value in _layout_paths:
 			def_back_layout = value
 		else:
 			push_warning("CardGlobal: Layout ID '%s' not found" % value)
 
 ##Dictionary: {layout_id: path} - All enabled layouts
-var _layouts: Dictionary = {}
+var _layout_paths: Dictionary = {}
 ##Dictionary: {layout_id: tags} - Tags for each layout
-var _layouts_by_id: Dictionary = {}
+var _layout_tags: Dictionary = {}
 ##Dictionary: {tag: [layout_ids]} - Layouts grouped by tags
 var _layouts_by_tag: Dictionary = {}
 
@@ -70,27 +70,26 @@ func _init() -> void:
 
 ##Load layouts from the editor-generated cache file
 func _load_layouts_from_cache() -> void:
-	_layouts.clear()
-	_layouts_by_id.clear()
+	_layout_paths.clear()
+	_layout_tags.clear()
 	_layouts_by_tag.clear()
 	
 	if not FileAccess.file_exists(CACHE_PATH):
-		print("CardGlobal: No layout cache found, using defaults only")
 		_register_default_layouts()
 		layouts_loaded.emit()
 		return
-	
+
 	var file = FileAccess.open(CACHE_PATH, FileAccess.READ)
 	if not file:
-		print("CardGlobal: Failed to read layout cache, using defaults only")
+		push_warning("CardGlobal: Failed to read layout cache, using defaults only")
 		_register_default_layouts()
 		layouts_loaded.emit()
 		return
-	
+
 	var json = JSON.new()
 	var error = json.parse(file.get_as_text())
 	if error != OK:
-		print("CardGlobal: Failed to parse layout cache, using defaults only")
+		push_warning("CardGlobal: Failed to parse layout cache, using defaults only")
 		_register_default_layouts()
 		layouts_loaded.emit()
 		return
@@ -113,22 +112,21 @@ func _load_layouts_from_cache() -> void:
 	
 	_register_default_layouts()
 	
-	print("CardGlobal: Loaded %d layouts from cache" % _layouts.size())
 	layouts_loaded.emit()
 
 
 func _register_default_layouts() -> void:
-	if "default" not in _layouts and ResourceLoader.exists(DEFAULT_LAYOUT):
+	if "default" not in _layout_paths and ResourceLoader.exists(DEFAULT_LAYOUT):
 		_register_layout_entry("default", DEFAULT_LAYOUT, [])
-	
-	if "default_back" not in _layouts and ResourceLoader.exists(DEFAULT_BACK_LAYOUT):
+
+	if "default_back" not in _layout_paths and ResourceLoader.exists(DEFAULT_BACK_LAYOUT):
 		_register_layout_entry("default_back", DEFAULT_BACK_LAYOUT, [])
 
 
 ##Register a layout in internal dictionaries.
 func _register_layout_entry(layout_id: String, path: String, tags: Array) -> void:
-	_layouts[layout_id] = path
-	_layouts_by_id[layout_id] = tags
+	_layout_paths[layout_id] = path
+	_layout_tags[layout_id] = tags
 	layout_registered.emit(StringName(layout_id))
 	
 	for tag in tags:
@@ -140,7 +138,7 @@ func _register_layout_entry(layout_id: String, path: String, tags: Array) -> voi
 ##Returns all available layout IDs
 func get_available_layouts() -> Array[StringName]:
 	var result: Array[StringName] = []
-	for key in _layouts.keys():
+	for key in _layout_paths.keys():
 		result.append(StringName(key))
 	return result
 
@@ -164,7 +162,7 @@ func get_all_layout_tags() -> Array[String]:
 
 ##Get tags for a specific layout
 func get_layout_tags(layout_id: StringName) -> Array:
-	return _layouts_by_id.get(layout_id, [])
+	return _layout_tags.get(layout_id, [])
 
 
 ##Given a layout ID, instantiate and return the layout.
@@ -172,10 +170,10 @@ func get_layout_tags(layout_id: StringName) -> Array:
 func create_layout(layout_id: StringName = &"") -> CardLayout:
 	var path: String
 	
-	if layout_id.is_empty() or layout_id not in _layouts:
-		path = _layouts.get(def_front_layout, DEFAULT_LAYOUT)
+	if layout_id.is_empty() or layout_id not in _layout_paths:
+		path = _layout_paths.get(def_front_layout, DEFAULT_LAYOUT)
 	else:
-		path = _layouts[layout_id]
+		path = _layout_paths[layout_id]
 	
 	if not ResourceLoader.exists(path):
 		push_error("CardGlobal: Layout not found at " + path)

@@ -71,6 +71,10 @@ func _exit_tree() -> void:
 		CG.holding_card.disconnect(_on_holding_card)
 	if CG.dropped_card.is_connected(_on_card_dropped):
 		CG.dropped_card.disconnect(_on_card_dropped)
+	if mouse_entered.is_connected(_on_mouse_entered):
+		mouse_entered.disconnect(_on_mouse_entered)
+	if mouse_exited.is_connected(_on_mouse_exited):
+		mouse_exited.disconnect(_on_mouse_exited)
 
 #region Overridable Callbacks
 
