@@ -178,6 +178,7 @@ Run SolitaireExample.tscn to play.
 
 ### G.U.I
 Game made for the minijam 201. 
+
 You can give it a try here: https://twdoor.itch.io/gui
 
 ---
