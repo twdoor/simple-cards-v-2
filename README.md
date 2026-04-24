@@ -176,15 +176,9 @@ Run SolitaireExample.tscn to play.
 
 ![Solitaire Example Animation](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/solitaire_example.gif)
 
----
-
-## Support
-
-For feedback, suggestions, or issues:
-
-- **Twitter/X:** [@twdoortoo](https://twitter.com/twdoortoo)
-- **Mail:** twdoor@proton.me
-- **GitHub Issues:** [Create an issue](https://github.com/twdoor/simple-cards-v-2/issues)
+### G.U.I
+Game made for the minijam 201. 
+You can give it a try here: https://twdoor.itch.io/gui
 
 ---
 
