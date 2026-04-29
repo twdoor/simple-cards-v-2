@@ -1,12 +1,14 @@
-[gd_resource type="Resource" script_class="BalatroStyleResource" load_steps=3 format=3 uid="uid://c71st34fklp0s"]
+[gd_resource type="Resource" script_class="StandardCardResource" load_steps=3 format=3 uid="uid://c71st34fklp0s"]
 
 [ext_resource type="Script" uid="uid://dox8s17eu2u0u" path="res://examples/cards/standard_deck/standard_card_resource.gd" id="1_bnqnp"]
 [ext_resource type="Texture2D" uid="uid://ral2awpcmpdv" path="res://examples/cards/standard_deck/spade.png" id="2_3jfj0"]
 
 [resource]
 script = ExtResource("1_bnqnp")
-name = "Ace of Spades"
+name = "Eight of Spades"
 top_texture = ExtResource("2_3jfj0")
 card_suit = 3
 value = 8
+front_layout_name = &"standard_layout"
+back_layout_name = &"standard_back_layout"
 metadata/_custom_type_script = "uid://dox8s17eu2u0u"

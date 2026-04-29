@@ -21,7 +21,7 @@
 	},
 	"res://examples/cards/standard_deck/standard_layout.tscn": {
 		"enabled": true,
-		"last_modified": 1773332332.0,
+		"last_modified": 1777485411,
 		"layout_id": "standard_layout",
 		"tags": [
 			"front"

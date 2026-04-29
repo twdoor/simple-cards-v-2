@@ -54,7 +54,7 @@ func _ready() -> void:
 	sort_value_button.pressed.connect(_on_sort_value_pressed)
 	preview_draw.pressed.connect(_on_preview_draw_pressed)
 	preview_discard.pressed.connect(_on_preview_discard_pressed)
-	
+
 	card_deck_manager.setup()
 	deal()
 
@@ -89,35 +89,35 @@ func _on_none_pressed() -> void:
 func _on_discard_pressed() -> void:
 	if balatro_hand.selected.is_empty():
 		return
-	
+
 	var cards_to_discard := balatro_hand.selected.duplicate()
 	balatro_hand.clear_selected()
 	balatro_hand.move_cards_to(cards_to_discard, discard)
-	
+
 	deal()
 
 
 func _on_play_button() -> void:
 	if balatro_hand.selected.is_empty():
 		return
-	
+
 	_set_interaction_enabled(false)
-	
+
 	balatro_hand.sort_selected()
 	var cards_to_play := balatro_hand.selected.duplicate()
 	balatro_hand.clear_selected()
-	
+
 	if use_stagger_draw:
 		await balatro_hand.move_cards_to(cards_to_play, played_hand, -1, stagger_delay)
 	else:
 		balatro_hand.move_cards_to(cards_to_play, played_hand)
-	
+
 	combo_label.show()
 	await combo_label.tween_text(combo_label.handle_combos(played_hand.cards))
 	await get_tree().create_timer(1.5).timeout
 	await combo_label.tween_text("", .25)
 	combo_label.hide()
-	
+
 	played_hand.move_all_to(discard)
 	deal()
 	_set_interaction_enabled(true)
@@ -132,33 +132,33 @@ func _on_play_button() -> void:
 func deal() -> void:
 	var remaining_space := balatro_hand.get_remaining_space()
 	var to_deal: int = remaining_space if remaining_space >= 0 else balatro_hand.max_cards
-	
+
 	if to_deal <= 0:
 		return
-	
+
 	var pile_size: int = draw.get_card_count()
 	var stagger: float = stagger_delay if use_stagger_draw else 0.0
-	
+
 	if pile_size >= to_deal:
 		await draw.deal_to(balatro_hand, to_deal, -1, stagger)
 	else:
 		var overflow := to_deal - pile_size
 		if pile_size > 0:
 			await draw.deal_to(balatro_hand, pile_size, -1, stagger)
-	
+
 		await discard.move_all_to(draw, 0)
 		draw.shuffle()
-	
+
 		var new_pile_size := draw.get_card_count()
 		if new_pile_size > 0:
 			await draw.deal_to(balatro_hand, mini(overflow, new_pile_size), -1, stagger)
-	
+
 	for card in balatro_hand.cards:
 		if !card.is_front_face:
 			card.flip()
-	
+
 	draw_finished.emit()
-	
+
 	_apply_sort()
 
 #endregion
@@ -170,7 +170,7 @@ func _on_sort_suit_pressed() -> void:
 	sort_by_suit = true
 	balatro_hand.sort_by_suit()
 
-	
+
 func _on_sort_value_pressed() -> void:
 	sort_by_suit = false
 	balatro_hand.sort_by_value()
@@ -197,7 +197,7 @@ func _set_ui_enabled(enabled: bool) -> void:
 	gold_button.disabled = !enabled
 	silv_button.disabled = !enabled
 	none_button.disabled = !enabled
-	
+
 	balatro_hand.visible = enabled
 
 
@@ -209,7 +209,7 @@ func _set_interaction_enabled(enabled: bool) -> void:
 	gold_button.disabled = !enabled
 	silv_button.disabled = !enabled
 	none_button.disabled = !enabled
-	
+
 	for card in balatro_hand.cards:
 		card.disabled = !enabled
 
@@ -264,16 +264,16 @@ func show_pile_preview_hand(cards: Array[Card]) -> void:
 func _update_pile_preview_hand(cards: Array[Card]) -> void:
 	if cards.is_empty():
 		return
-	
+
 	preview_hand.clear_and_free()
-	
+
 	for child in cards:
 		if child is Card:
 			var card_proxy: Card = Card.new(child.card_data)
 			card_proxy.name = child.name + "_preview"
 			card_proxy.set_meta("source_card", child)
 			card_proxy.move_to(preview_hand, 0)
-	
+
 	_sort_preview(preview_hand)
 
 

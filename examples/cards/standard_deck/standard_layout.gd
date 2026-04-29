@@ -4,6 +4,7 @@
 ##
 ## Expects these unique-name nodes in the scene:
 ## %CardColor, %Texture1, %Texture2, %Texture, %Value1, %Value2
+@tool
 extends CardLayout
 
 @onready var card_color: PanelContainer = %CardColor

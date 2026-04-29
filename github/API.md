@@ -103,18 +103,19 @@ card.disabled = true
 
 ### <img src="assets/icon_card_resource.png"> CardResource
 
-Abstract base class for storing card data. **Extend this class** to add your own properties.
+Abstract base class for storing card data. **Extend this class** to add your own properties. `CardResource` is `@tool` so the layout name enum dropdown works in the inspector.
 
 #### Properties
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `front_layout_name` | `StringName` | Override the default front layout for this card |
-| `back_layout_name` | `StringName` | Override the default back layout for this card |
+| `front_layout_name` | `StringName` | Override the default front layout for this card (shown as enum dropdown) |
+| `back_layout_name` | `StringName` | Override the default back layout for this card (shown as enum dropdown) |
 
 #### Example
 
 ```gdscript
+@tool  # Required for layout name enum dropdown in inspector
 class_name PlayingCardResource extends CardResource
 
 enum Suit { HEARTS, DIAMONDS, CLUBS, SPADES }
@@ -123,6 +124,8 @@ enum Suit { HEARTS, DIAMONDS, CLUBS, SPADES }
 @export var value: int  # 1-13
 @export var face_image: Texture2D
 ```
+
+> **Note:** `@tool` is not inherited in GDScript. Subclasses need their own `@tool` annotation for the layout name enum to appear in the inspector. This is safe for pure data resources.
 
 ---
 
@@ -183,7 +186,7 @@ func _focus_out() -> void
 **IMPORTANT!!** Overriding any of the flip/focus/update functions will also will override the signals emission. In this case you will need to implement the stared and completed signals yourself.
 
 ```gdscript
-# Overrite example
+# Override example
 func _flip_in() -> void:
 	flip_in_started.emit()
 	# Add custom code here...
@@ -204,6 +207,7 @@ func _flip_in() -> void:
 #### Example Layout Script
 
 ```gdscript
+@tool  # Optional: enables live data preview in the editor
 extends CardLayout
 
 @onready var title: Label = %TitleLabel
@@ -238,6 +242,8 @@ func _focus_in() -> void:
         # Call the animation resource
         super._focus_in()
 ```
+
+> **Tip:** Without `@tool`, layouts still render their baked-in scene visuals (panels, borders, default textures) in the editor — you just won't see data-driven content (suit, value, etc.) until runtime. Add `@tool` to opt into full live preview.
 
 **Notes**:
 
@@ -333,12 +339,16 @@ func clear_and_free() -> void       # Frees all cards
 func _container_ready() -> void
 
 # Called when a card is added/removed
-func _on_card_added(card: Card, index: int) -> void
-func _on_card_removed(card: Card, index: int) -> void
+func _handle_card_added(card: Card, index: int) -> void
+func _handle_card_removed(card: Card, index: int) -> void
 
 ## Called if container becomes empty/full
-func _on_container_empty() -> void
-func _on_container_full() -> void
+func _handle_container_empty() -> void
+func _handle_container_full() -> void
+
+# Override to constrain max_cards (called by the setter)
+# CardSlot overrides this to always return 1
+func _clamp_max_cards(value: int) -> int
 
 # Override to apply/restore container-specific state
 func _apply_card_state(card: Card) -> void
@@ -512,7 +522,7 @@ func _get_companion_offsets(dragged_card: Card, companions: Array[Card]) -> Arra
 func get_drag_stack() -> Array[Card]
 ```
 
-*Inherits `_on_card_added`, `_on_card_removed`, `_apply_card_state`, `_restore_card_state`, `_check_conditions` from `CardContainer`.*
+*Inherits `_handle_card_added`, `_handle_card_removed`, `_apply_card_state`, `_restore_card_state`, `_check_conditions` from `CardContainer`.*
 
 #### Example
 
@@ -573,7 +583,7 @@ func _handle_shuffled_pile() -> void
 
 
 
-*Inherits `_on_card_added`, `_on_card_removed`, `_apply_card_state`, `_restore_card_state`, `_check_conditions` from `CardContainer`.*
+*Inherits `_handle_card_added`, `_handle_card_removed`, `_apply_card_state`, `_restore_card_state`, `_check_conditions` from `CardContainer`.*
 
 #### Example
 

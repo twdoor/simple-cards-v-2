@@ -5,8 +5,9 @@
 
 [resource]
 script = ExtResource("1_p1ye3")
-name = "Ace of Hearts"
+name = "Two of Hearts"
 top_texture = ExtResource("2_deovo")
 card_suit = 2
-value = 14
+front_layout_name = &"standard_layout"
+back_layout_name = &"standard_back_layout"
 metadata/_custom_type_script = "uid://dox8s17eu2u0u"

@@ -23,6 +23,7 @@ A flexible, UI-based card system plugin for **Godot 4.5.1+**. Build card games, 
 
 - **Drag & Drop Cards** - Built-in press and drag functionality with smooth animations
 - **Customizable Visuals** - Create unique card faces using the layout system
+- **Editor Preview** - Cards render their actual layout in the editor. `@tool` layout scripts get live data preview (suit, value, textures update in real time)
 - **Reusable Animations** - Plug-and-play animation resources for common card behaviors
 - **Data-Driven Design** - Separate card data (resources) from visuals (layouts)
 - **Hand Management** - Arrange cards in lines, arcs, grids, stacks, or custom shapes
@@ -40,14 +41,12 @@ A flexible, UI-based card system plugin for **Godot 4.5.1+**. Build card games, 
 1. Search for "SimpleCards" in the Godot Asset Library
 2. Install the addon
 3. Go to **Project → Project Settings → Plugins** and enable **SimpleCards**
-4. **Reload the project** (important!)
 
 ### Manual Installation
 
 1. Download or clone this repository
 2. Copy the `addons/simple_cards` folder into your project's `addons` directory
 3. Go to **Project → Project Settings → Plugins** and enable **SimpleCards**
-4. **Reload the project** (important!)
 
 ---
 
@@ -59,6 +58,7 @@ Card resources store your card data. Create a new script that extends `CardResou
 
 ```gdscript
 # my_card_resource.gd
+@tool  # Enables layout name enum dropdown in the inspector
 class_name MyCardResource extends CardResource
 
 @export var card_name: String = ""
@@ -77,10 +77,11 @@ Layouts define how cards look. Open the **Card Layouts** panel at the bottom of 
 
 ![Photo of default layout](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/default_layout.png)
 
-Extend the layout script to update visuals:
+Extend the layout script to update visuals. Add `@tool` if you want live data preview in the editor:
 
 ```gdscript
 # my_layout.gd
+@tool  # Optional: enables live data preview in the editor
 extends CardLayout
 
 @onready var name_label: Label = %NameLabel

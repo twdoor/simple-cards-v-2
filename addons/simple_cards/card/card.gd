@@ -73,13 +73,20 @@ var _pending_layout_switch: bool = false
 		if _layout:
 			_layout.card_resource = value
 		card_data_changed.emit(value)
-		if Engine.is_editor_hint():
-			notify_property_list_changed()
+		if Engine.is_editor_hint() and is_node_ready():
+			_editor_setup_layout()
 
 ## Front face layout ID. Resolved to [member CardGlobal.def_front_layout] if empty at runtime.
-@export var front_layout_name: StringName = &""
+@export var front_layout_name: StringName = &"":
+	set(value):
+		front_layout_name = value
+		if Engine.is_editor_hint() and is_node_ready():
+			_editor_setup_layout()
+
 ## Back face layout ID. Resolved to [member CardGlobal.def_back_layout] if empty at runtime.
-@export var back_layout_name: StringName = &""
+@export var back_layout_name: StringName = &"":
+	set(value):
+		back_layout_name = value
 
 var _layout: CardLayout
 ## Name of current layout. On setter, layout is updated.
@@ -143,11 +150,88 @@ func _ready() -> void:
 
 #region Editor
 
+## Editor-only: sets up the card with a static layout preview.
 func _editor_ready() -> void:
-	size = EDITOR_DEFAULT_SIZE
-	custom_minimum_size = EDITOR_DEFAULT_SIZE
-	pivot_offset = EDITOR_DEFAULT_SIZE / 2.0
 	set_process(false)
+	_editor_setup_layout()
+
+## Editor-only: (re)loads the layout scene and adds it as a child.
+## Called on ready, and when card_data or front_layout_name changes in inspector.
+func _editor_setup_layout() -> void:
+	if _layout:
+		_layout.queue_free()
+		_layout = null
+
+	var layout_id: StringName = front_layout_name
+	if card_data and !card_data.front_layout_name.is_empty():
+		layout_id = card_data.front_layout_name
+
+	_layout = _editor_create_layout(layout_id)
+	if not _layout:
+		size = EDITOR_DEFAULT_SIZE
+		custom_minimum_size = EDITOR_DEFAULT_SIZE
+		pivot_offset = EDITOR_DEFAULT_SIZE / 2.0
+		return
+
+	# Read card size from the SubViewport before adding to tree / setting anchors.
+	# SubViewport is a native node — its size is always accessible, even when the
+	# layout script is a placeholder (non-@tool).
+	var card_size := EDITOR_DEFAULT_SIZE
+	var sub_vp = _layout.get_node_or_null("SubViewport")
+	if sub_vp and sub_vp is SubViewport:
+		var vp_size := Vector2(sub_vp.size)
+		if vp_size != Vector2.ZERO:
+			card_size = vp_size
+
+	size = card_size
+	custom_minimum_size = card_size
+	pivot_offset = size / 2.0
+	self_modulate.a = 0
+
+	add_child(_layout)
+	_layout.anchors_preset = Control.PRESET_FULL_RECT
+	_layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# Only call setup() if the layout script is @tool — non-@tool scripts become
+	# placeholder instances in the editor and cannot receive method calls.
+	# Placeholder layouts still render their baked-in scene visuals (panels, borders, etc.).
+	var script = _layout.get_script()
+	if script and script.is_tool():
+		_layout.setup(self, card_data)
+
+
+## Editor-only: creates a CardLayout by reading layout_cache.json directly,
+## bypassing CG (which may not be available in editor context).
+## Reuses LayoutCache (already @tool) to avoid duplicating JSON logic.
+func _editor_create_layout(layout_id: StringName) -> CardLayout:
+	var cache := LayoutCache.new()
+	var path: String = ""
+
+	# Find the scene path for this layout ID
+	for p in cache.layouts.keys():
+		var data: Dictionary = cache.layouts[p]
+		if data.get("layout_id", "") == str(layout_id) and data.get("enabled", true):
+			path = p
+			break
+
+	# Fallback to default layout
+	if path.is_empty():
+		path = LayoutCache.DEFAULT_LAYOUT_PATH
+
+	if not ResourceLoader.exists(path):
+		push_warning("Card: Editor layout not found at " + path)
+		return null
+
+	var scene = load(path)
+	if not scene:
+		return null
+
+	var instance = scene.instantiate()
+	if not instance is CardLayout:
+		instance.queue_free()
+		return null
+
+	return instance
 
 #endregion
 
@@ -416,6 +500,7 @@ func set_layout(new_layout_name: String, is_front: bool = true) -> void:
 		front_layout_name = new_layout_name
 	else:
 		back_layout_name = new_layout_name
+	if Engine.is_editor_hint(): return
 	_setup_layout()
 
 func get_layout() -> CardLayout:
@@ -439,5 +524,9 @@ func _card_ready() -> void:
 
 
 func _exit_tree() -> void:
-	if Engine.is_editor_hint(): return
+	if Engine.is_editor_hint():
+		if _layout:
+			_layout.queue_free()
+			_layout = null
+		return
 	kill_all_tweens()

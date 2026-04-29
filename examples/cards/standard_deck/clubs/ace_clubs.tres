@@ -9,4 +9,6 @@ name = "Ace of Clubs"
 top_texture = ExtResource("2_63tes")
 card_suit = 0
 value = 14
+front_layout_name = &"standard_layout"
+back_layout_name = &"standard_back_layout"
 metadata/_custom_type_script = "uid://dox8s17eu2u0u"

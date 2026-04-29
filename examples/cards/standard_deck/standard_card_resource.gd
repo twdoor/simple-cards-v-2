@@ -1,5 +1,6 @@
 ## A standard playing card resource. Stores suit, value (1-13), a display texture,
 ## and an optional visual modifier. Used by both the Balatro and Solitaire examples.
+@tool
 class_name StandardCardResource extends CardResource
 
 @export var name: String

@@ -68,7 +68,6 @@ grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_m6hid")
 
 [node name="ComboLabel" type="Label" parent="."]
-visible = false
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -140,9 +139,9 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 8
-tooltip_text = "Panel shows the size of the node.
+tooltip_text = "Panel shows the size of the hand.
 It changes based on the cards and shape selected.
-Set it to EmptyStyleBox to remove."
+Set it to EmptyStyleBox in theme overrides to remove."
 script = ExtResource("2_grswf")
 shape = SubResource("Resource_oq12x")
 max_cards = 8

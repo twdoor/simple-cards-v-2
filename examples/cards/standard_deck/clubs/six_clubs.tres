@@ -1,12 +1,14 @@
-[gd_resource type="Resource" script_class="BalatroStyleResource" load_steps=3 format=3 uid="uid://d1c0sdm15a44e"]
+[gd_resource type="Resource" script_class="StandardCardResource" load_steps=3 format=3 uid="uid://d1c0sdm15a44e"]
 
 [ext_resource type="Script" uid="uid://dox8s17eu2u0u" path="res://examples/cards/standard_deck/standard_card_resource.gd" id="1_bm0i1"]
 [ext_resource type="Texture2D" uid="uid://d13a1tcqjxkas" path="res://examples/cards/standard_deck/club.png" id="2_xo81w"]
 
 [resource]
 script = ExtResource("1_bm0i1")
-name = "Ace of Clubs"
+name = "Six of Clubs"
 top_texture = ExtResource("2_xo81w")
 card_suit = 0
 value = 6
+front_layout_name = &"standard_layout"
+back_layout_name = &"standard_back_layout"
 metadata/_custom_type_script = "uid://dox8s17eu2u0u"

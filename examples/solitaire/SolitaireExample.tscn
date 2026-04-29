@@ -381,6 +381,7 @@ size_flags_vertical = 0
 theme_override_constants/separation = 32
 
 [node name="DrawCard" type="Button" parent="MarginContainer/HBoxContainer"]
+self_modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(80, 112)
 layout_mode = 2
 script = ExtResource("4_008rh")

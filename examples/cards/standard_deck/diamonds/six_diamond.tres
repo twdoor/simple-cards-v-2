@@ -1,12 +1,14 @@
-[gd_resource type="Resource" script_class="BalatroStyleResource" load_steps=3 format=3 uid="uid://e7t5ruxjsfts"]
+[gd_resource type="Resource" script_class="StandardCardResource" load_steps=3 format=3 uid="uid://e7t5ruxjsfts"]
 
 [ext_resource type="Script" uid="uid://dox8s17eu2u0u" path="res://examples/cards/standard_deck/standard_card_resource.gd" id="1_r65wd"]
 [ext_resource type="Texture2D" uid="uid://bfi67t37l1qlp" path="res://examples/cards/standard_deck/diamond.png" id="2_ad7qd"]
 
 [resource]
 script = ExtResource("1_r65wd")
-name = "Ace of Diamonds"
+name = "Six of Diamonds"
 top_texture = ExtResource("2_ad7qd")
 card_suit = 1
 value = 6
+front_layout_name = &"standard_layout"
+back_layout_name = &"standard_back_layout"
 metadata/_custom_type_script = "uid://dox8s17eu2u0u"
