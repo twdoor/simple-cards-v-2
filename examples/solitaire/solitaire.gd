@@ -20,7 +20,7 @@ extends CanvasLayer
 
 
 @export var deal_hand: SolitaireHand
-@export var deal_hand_num: int = 1 ## Cards drawn per click (1 = easy, 3 = hard)
+@export var deal_hand_num: int = 3 ## Cards drawn per click (1 = easy, 3 = hard)
 
 @export var foundations: Array[SolitaireHand] = []
 @export var tableau_piles: Array[SolitaireHand] = []

@@ -7,7 +7,7 @@
 class_name CardLayout extends SubViewportContainer
 
 
-signal layout_ready ##Emited at the end of the setup function.
+signal layout_ready ##Emitted at the end of the setup function.
 ##Emitted when layout is initialized
 signal layout_initialized(card: Card, resource: CardResource)
 ##Emitted after display is updated
@@ -30,7 +30,7 @@ signal focus_out_started()
 signal focus_out_completed()
 
 
-##Refrence to the [CardResource] used to initialize the layout. Use it to further customize the layout. 
+##Reference to the [CardResource] used to initialize the layout. Use it to further customize the layout.
 @export var card_resource: CardResource:
 	set(value):
 		card_resource = value
@@ -45,44 +45,44 @@ signal focus_out_completed()
 @export var flip_out_animation: CardAnimationResource
 
 
-##Refrence to the [Card] used to initialize the layout.
+##Reference to the [Card] used to initialize the layout.
 var card_instance: Card
 
-##Triggered on setup or on changing the [CardResource]. [color=red]Overwrite[/color] it to implement custom visuals.
+##Triggered on setup or on changing the [CardResource]. [color=red]Override[/color] it to implement custom visuals.
 func _update_display() -> void:
 	display_updated.emit()
 
 
-##Triggered on adding the layout to a [Card]. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement transition animations.
+##Triggered on adding the layout to a [Card]. Use a CardAnimationResource or [color=red]Override[/color] it to implement transition animations.
 func _flip_in() -> void:
 	flip_in_started.emit()
 	if flip_in_animation:
 		await flip_in_animation.play_animation(self)
 	flip_in_completed.emit()
 
-##Triggered on removing the layout from a [Card]. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement transition animations.
+##Triggered on removing the layout from a [Card]. Use a CardAnimationResource or [color=red]Override[/color] it to implement transition animations.
 func _flip_out() -> void:
 	flip_out_started.emit()
 	if flip_out_animation:
 		await flip_out_animation.play_animation(self)
 	flip_out_completed.emit()
 
-##Triggered on a [Card] entering focus. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement custom behaviour.
+##Triggered on a [Card] entering focus. Use a CardAnimationResource or [color=red]Override[/color] it to implement custom behaviour.
 func _focus_in() -> void:
 	focus_in_started.emit()
 	if focus_in_animation:
 		await focus_in_animation.play_animation(self)
 	focus_in_completed.emit()
 
-##Triggered on a [Card] leaving focus. Use a CardAnimationResource or [color=red]Overwrite[/color] it to implement custom behaviour.
+##Triggered on a [Card] leaving focus. Use a CardAnimationResource or [color=red]Override[/color] it to implement custom behaviour.
 func _focus_out() -> void:
 	focus_out_started.emit()
 	if focus_out_animation:
 		await focus_out_animation.play_animation(self)
 	focus_out_completed.emit()
-	
 
-##Used when a [Card] initializes a layout, set the refrence of the card its resource and emits [member CardLayout.layout_ready] at the end.
+
+##Used when a [Card] initializes a layout, set the reference of the card its resource and emits [member CardLayout.layout_ready] at the end.
 func setup(card: Card, resource: CardResource) -> void:
 	card_instance = card
 	card_resource = resource

@@ -17,10 +17,12 @@ var res: StandardCardResource
 
 func _update_display() -> void:
 	res = card_resource as StandardCardResource
+	if res == null: return
+
 	set_color()
 	set_texture(res.top_texture)
 	set_value()
-	
+
 
 ## Tints the card background based on the modifier.
 func set_color() -> void:

@@ -33,7 +33,9 @@ signal container_full()
 			arrange()
 
 ## Maximum number of cards allowed. [code]-1[/code] = unlimited.
-@export var max_cards: int = -1
+@export var max_cards: int = -1:
+	set(value):
+		max_cards = _clamp_max_cards(value)
 
 ## Default tween duration for cards settling into position.
 @export var card_move_duration: float = 0.3
@@ -41,7 +43,10 @@ signal container_full()
 #endregion
 
 
-## Internal card array. Use queries or [method Card.move_to] — do not modify directly.
+## Internal card array. [b]Read-only[/b] — use [method Card.move_to] to add cards,
+## [method get_cards] for a safe copy, or the query methods to inspect.
+## [br]Direct mutation (append, insert, erase) bypasses registration and will
+## cause layout, signal, and state tracking bugs.
 var cards: Array[Card] = []
 var _card_positions: Array[Vector2] = []
 var _card_rotations: Array[float] = []
@@ -136,11 +141,11 @@ func _register_card(card: Card, index: int = -1) -> void:
 			if c.holding: continue
 			_settle_card(c, card_move_duration)
 	
-	_on_card_added(card, index)
+	_handle_card_added(card, index)
 	card_added.emit(card, index)
 	if is_full():
 		container_full.emit()
-		_on_container_full()
+		_handle_container_full()
 
 
 ## Unregisters a card from internal state. Triggered by [signal child_exiting_tree].
@@ -157,11 +162,11 @@ func _unregister_card(card: Card) -> void:
 		if c.holding: continue
 		_settle_card(c, card_move_duration)
 	
-	_on_card_removed(card, index)
+	_handle_card_removed(card, index)
 	card_removed.emit(card, index)
 	if cards.is_empty(): 
 		container_empty.emit()
-		_on_container_empty()
+		_handle_container_empty()
 
 ## Registers a card without triggering layout or signals.
 ## Used for atomic multi-card operations like swaps.
@@ -340,7 +345,7 @@ func clear_and_free() -> void:
 	_suppress_auto_remove = false
 	update_minimum_size()
 	container_empty.emit()
-	_on_container_empty()
+	_handle_container_empty()
 
 #endregion
 
@@ -351,16 +356,20 @@ func clear_and_free() -> void:
 func _container_ready() -> void: pass
 
 ## Called after a card is registered. Override for custom behavior.
-func _on_card_added(card: Card, index: int) -> void: pass
+func _handle_card_added(card: Card, index: int) -> void: pass
 
 ## Called after a card is unregistered. Override for custom behavior.
-func _on_card_removed(card: Card, index: int) -> void: pass
+func _handle_card_removed(card: Card, index: int) -> void: pass
 
 ## Called if container becomes empty. Override for custom behavior.
-func _on_container_empty() -> void: pass
+func _handle_container_empty() -> void: pass
 
 ## Called if container becomes full. Override for custom behavior.
-func _on_container_full() -> void: pass
+func _handle_container_full() -> void: pass
+
+## Override to constrain [member max_cards]. Called by the [member max_cards] setter.
+## Return the value to actually store. Default: pass through unchanged.
+func _clamp_max_cards(value: int) -> int: return value
 
 ## Override to apply container-specific state when a card enters (e.g. face down, disabled).
 func _apply_card_state(card: Card) -> void: pass

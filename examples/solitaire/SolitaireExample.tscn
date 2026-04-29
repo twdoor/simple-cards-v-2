@@ -76,7 +76,6 @@ script = ExtResource("1_el2jo")
 reset_button = NodePath("MarginContainer/VBoxContainer/ResetButton")
 undo_button = NodePath("MarginContainer/VBoxContainer/UndoButton")
 deal_hand = NodePath("MarginContainer/HBoxContainer/DealHand")
-deal_hand_num = 3
 foundations = [NodePath("MarginContainer/Stacks/Stack"), NodePath("MarginContainer/Stacks/Stack2"), NodePath("MarginContainer/Stacks/Stack3"), NodePath("MarginContainer/Stacks/Stack4")]
 tableau_piles = [NodePath("MarginContainer/Piles/Pile"), NodePath("MarginContainer/Piles/Pile2"), NodePath("MarginContainer/Piles/Pile3"), NodePath("MarginContainer/Piles/Pile4"), NodePath("MarginContainer/Piles/Pile5"), NodePath("MarginContainer/Piles/Pile6"), NodePath("MarginContainer/Piles/Pile7")]
 

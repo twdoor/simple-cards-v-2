@@ -60,5 +60,5 @@ func clear_selected() -> void:
 	selected.clear()
 	arrange()
 
-func _on_card_added(card: Card, _index: int) -> void:
+func _handle_card_added(card: Card, _index: int) -> void:
 	card.is_front_face = true

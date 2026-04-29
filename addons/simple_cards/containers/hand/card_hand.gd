@@ -2,7 +2,7 @@
 ##
 ## Provides drag-based reordering, focus chain management, and z-index stacking.
 ## For game-specific behavior (selection, validation, multi-drag), extend this class
-## and override [method _on_card_added], [method _on_card_removed], or
+## and override [method _handle_card_added], [method _handle_card_removed], or
 ## [method _handle_clicked_card].
 @icon("uid://b5yeseh7avtmy")
 class_name CardHand extends CardContainer

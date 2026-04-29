@@ -1,4 +1,5 @@
 ## Simple card with basic drag and drop functionality.
+@tool
 @icon("res://addons/simple_cards/card/icon_card.png")
 class_name Card extends Button
 
@@ -25,7 +26,12 @@ signal card_data_changed(new_data: CardResource)
 ## Emitted when [method move_to] finishes (after tween completes or instant snap).
 signal move_completed(card: Card)
 
-## Coefficient used in lerp movement functions.
+## Default card size used for editor preview when no layout is loaded.
+const EDITOR_DEFAULT_SIZE := Vector2(80, 112)
+
+## Smoothing coefficient for drag movement. Uses exponential interpolation.
+## [br]Values closer to [code]0[/code] feel floatier, larger negative values feel snappier.
+## [br]Default [code]-30[/code] gives a responsive but smooth follow.
 @export var drag_coef: float = -30
 ## Max angle the card will swing when moving.
 @export var max_card_rotation_deg: float = 25
@@ -55,6 +61,7 @@ var _scale_tween: Tween
 var _rotation_tween: Tween
 var _pos_tween: Tween
 var _layout_switching: bool = false
+var _pending_layout_switch: bool = false
 
 ## If true, disables drag function.
 @export var undraggable: bool = false
@@ -66,16 +73,20 @@ var _layout_switching: bool = false
 		if _layout:
 			_layout.card_resource = value
 		card_data_changed.emit(value)
+		if Engine.is_editor_hint():
+			notify_property_list_changed()
 
-@export var front_layout_name: StringName = CG.def_front_layout
-@export var back_layout_name: StringName = CG.def_back_layout
+## Front face layout ID. Resolved to [member CardGlobal.def_front_layout] if empty at runtime.
+@export var front_layout_name: StringName = &""
+## Back face layout ID. Resolved to [member CardGlobal.def_back_layout] if empty at runtime.
+@export var back_layout_name: StringName = &""
 
 var _layout: CardLayout
 ## Name of current layout. On setter, layout is updated.
 var layout_name: String = "":
 	set(value):
 		layout_name = value
-		if is_node_ready():
+		if !Engine.is_editor_hint() and is_node_ready():
 			_setup_layout()
 
 ## If true uses front_layout else uses back_layout.
@@ -87,7 +98,14 @@ var is_front_face: bool = true:
 		else: layout_name = back_layout_name
 
 
+func _validate_property(property: Dictionary) -> void:
+	if property.name == "front_layout_name" or property.name == "back_layout_name":
+		var options: String = ",".join(LayoutID.get_all())
+		property.hint = PROPERTY_HINT_ENUM
+		property.hint_string = options
+
 func _init(card_resource: CardResource = null) -> void:
+	if Engine.is_editor_hint(): return
 	name = "card_" + str(CG.card_index)
 	CG.card_index += 1
 	if card_resource:
@@ -95,22 +113,43 @@ func _init(card_resource: CardResource = null) -> void:
 
 
 func _ready() -> void:
+	if Engine.is_editor_hint():
+		_editor_ready()
+		return
+
+	# Resolve empty layout names to CG defaults at runtime.
+	if front_layout_name.is_empty():
+		front_layout_name = CG.def_front_layout
+	if back_layout_name.is_empty():
+		back_layout_name = CG.def_back_layout
+
 	button_down.connect(_on_button_down)
 	button_up.connect(_on_button_up)
 	focus_entered.connect(_on_focus_entered)
 	focus_exited.connect(_on_focus_exited)
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
-	
+
 	if card_data and CG.get_available_layouts().has(card_data.front_layout_name):
 		front_layout_name = card_data.front_layout_name
 	if card_data and CG.get_available_layouts().has(card_data.back_layout_name):
 		back_layout_name = card_data.back_layout_name
-	
+
 	_setup_layout(true)
 	set_card_size()
 	set_process(false)
 	_card_ready()
+
+
+#region Editor
+
+func _editor_ready() -> void:
+	size = EDITOR_DEFAULT_SIZE
+	custom_minimum_size = EDITOR_DEFAULT_SIZE
+	pivot_offset = EDITOR_DEFAULT_SIZE / 2.0
+	set_process(false)
+
+#endregion
 
 
 func set_card_size():
@@ -125,16 +164,17 @@ func set_card_size():
 
 
 func _process(delta: float) -> void:
+	if Engine.is_editor_hint(): return
 	_drag(delta)
 	_check_for_hold()
 
 
 func _drag(delta: float) -> void:
 	if !holding: return
-	
+
 	global_position = lerp(
 		global_position,
-		CG.get_cursor_position() - _dragging_offset, 
+		CG.get_cursor_position() - _dragging_offset,
 		1 - exp(delta * drag_coef))
 	_set_movement_rotation(delta)
 
@@ -150,23 +190,23 @@ func _drag(delta: float) -> void:
 func move_to(target: CardContainer, duration: float = -1, index: int = -1) -> void:
 	if !target: return
 	if !target.can_accept_card(self): return
-	
+
 	var from_global = global_position
 
 	_reparent_to(target)
 	target._register_card(self, index)
 	kill_all_tweens()
 	global_position = from_global
-	
+
 	if target._batch_mode:
 		_move_origin = from_global
 		return
-	
+
 	var dur: float = duration if duration >= 0.0 else target.card_move_duration
-	
+
 	var target_pos = target.get_card_target_position(self)
 	var target_rot = target.get_card_target_rotation(self)
-	
+
 	if dur <= 0.0:
 		position = target_pos
 		rotation_degrees = target_rot
@@ -206,22 +246,22 @@ func _on_button_down() -> void:
 func _on_button_up() -> void:
 	_released = true
 	if holding:
-		holding = false 
+		holding = false
 		set_process(false)
 		CG.current_held_item = null
 		drag_ended.emit(self)
-		
+
 		if !_is_owned():
 			tween_rotation()
 			tween_scale()
-		
+
 		_on_mouse_exited()
 		_on_focus_exited()
 		if is_hovered():
 			_on_mouse_entered()
 		if has_focus():
 			_on_focus_entered()
-		
+
 	else:
 		card_clicked.emit(self)
 
@@ -240,7 +280,7 @@ func _check_for_hold() -> void:
 func _on_focus_entered() -> void:
 	if _layout:
 		await _layout._focus_in()
-	if !is_inside_tree(): return
+	if !is_instance_valid(self) or !is_inside_tree(): return
 	focused = true
 	card_focused.emit()
 	set_process(true)
@@ -248,7 +288,7 @@ func _on_focus_entered() -> void:
 func _on_focus_exited() -> void:
 	if _layout:
 		await _layout._focus_out()
-	if !is_inside_tree(): return
+	if !is_instance_valid(self) or !is_inside_tree(): return
 	focused = false
 	card_unfocused.emit()
 	if !holding: set_process(false)
@@ -297,12 +337,12 @@ func _set_movement_rotation(delta: float) -> void:
 		(global_position - _last_pos).x,
 		-max_card_rotation_deg,
 		max_card_rotation_deg)
-		
+
 	rotation_degrees = lerp(
 		rotation_degrees,
 		 desired_rotation,
 		 1 - exp(drag_coef * delta))
-	
+
 	_last_pos = global_position
 
 ## Kills all active tweens on this card.
@@ -322,12 +362,18 @@ func kill_all_tweens() -> void:
 #region Layout Functions
 
 func _setup_layout(no_animations: bool = false) -> void:
-	if _layout_switching: return
+	if _layout_switching:
+		_pending_layout_switch = true
+		return
 	_layout_switching = true
 
 	if _layout:
 		if !no_animations:
 			await _layout._flip_out()
+		if !is_inside_tree():
+			_layout_switching = false
+			_pending_layout_switch = false
+			return
 		_layout.queue_free()
 		_layout = null
 
@@ -339,12 +385,17 @@ func _setup_layout(no_animations: bool = false) -> void:
 	if not _layout:
 		push_error("Card: Failed to create layout")
 		_layout_switching = false
+		_pending_layout_switch = false
 		return
 
 	add_child(_layout)
 	_layout.setup(self, card_data)
 	if !no_animations:
 		await _layout._flip_in()
+	if !is_inside_tree():
+		_layout_switching = false
+		_pending_layout_switch = false
+		return
 
 	_layout.anchors_preset = Control.PRESET_FULL_RECT
 	_layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -353,6 +404,10 @@ func _setup_layout(no_animations: bool = false) -> void:
 
 	_layout_switching = false
 	layout_changed.emit(layout_name)
+
+	if _pending_layout_switch:
+		_pending_layout_switch = false
+		_setup_layout()
 
 
 ## Sets the layout of either the front or back face.
@@ -365,7 +420,7 @@ func set_layout(new_layout_name: String, is_front: bool = true) -> void:
 
 func get_layout() -> CardLayout:
 	return _layout
-	
+
 ## Refreshes layout display.
 func refresh_layout() -> void:
 	if _layout:
@@ -375,6 +430,7 @@ func refresh_layout() -> void:
 func flip() -> void:
 	is_front_face = !is_front_face
 	card_flipped.emit(is_front_face)
+
 #endregion
 
 ## Called at the end of [method _ready]. Override for subclass setup.
@@ -383,4 +439,5 @@ func _card_ready() -> void:
 
 
 func _exit_tree() -> void:
+	if Engine.is_editor_hint(): return
 	kill_all_tweens()

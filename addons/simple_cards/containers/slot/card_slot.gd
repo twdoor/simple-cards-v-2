@@ -63,6 +63,11 @@ func _validate_property(property: Dictionary) -> void:
 		property.usage = PROPERTY_USAGE_NO_EDITOR
 
 
+## CardSlot is fixed at 1 card. Any other value is ignored.
+func _clamp_max_cards(_value: int) -> int:
+	return 1
+
+
 func _container_ready() -> void:
 	max_cards = 1
 	card_move_duration = 0.15
@@ -335,9 +340,11 @@ func _swap_cards(incoming: Card, source: Node) -> void:
 	_settle_card(incoming, card_move_duration)
 	if source is CardContainer:
 		source._settle_card(old_card, source.card_move_duration)
-	
-	card_added.emit(incoming, 0)
+
+	_handle_card_removed(old_card, 0)
 	card_removed.emit(old_card, 0)
+	_handle_card_added(incoming, 0)
+	card_added.emit(incoming, 0)
 	slot_swapped.emit(old_card, incoming)
 	_handle_slot_swapped(old_card, incoming)
 

@@ -1,4 +1,4 @@
-##The basic data containers for the card class. 
+##The basic data containers for the card class.
 ##
 ##Extend this resource to fit your card needs.
 @abstract @icon("uid://cvwcyhqx6fvdk")
