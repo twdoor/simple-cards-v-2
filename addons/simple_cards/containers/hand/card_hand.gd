@@ -74,6 +74,7 @@ func _exit_tree() -> void:
 func _compute_layout() -> void:
 	super._compute_layout()
 	if !cards.is_empty():
+		_sync_card_child_order()
 		_update_z_indices()
 		_update_focus_chain()
 
@@ -309,6 +310,20 @@ func get_drag_stack() -> Array[Card]:
 
 
 #region Internal Helpers
+
+func _sync_card_child_order() -> void:
+	var children := get_children()
+	var desired_children: Array[Node] = children.duplicate()
+	var card_index := 0
+
+	for i in desired_children.size():
+		if desired_children[i] is Card:
+			desired_children[i] = cards[card_index]
+			card_index += 1
+
+	for i in desired_children.size():
+		if get_child(i) != desired_children[i]:
+			move_child(desired_children[i], i)
 
 func _update_z_indices() -> void:
 	for i in cards.size():

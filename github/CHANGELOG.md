@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 2.11
+
+- **CardHand Input Order Fix** — `CardHand` now syncs its child node order to the internal `cards` array during layout/reordering. This keeps hover, mouse enter/exit, and focus behavior aligned with the visible card stacking order when cards overlap.
+
 ## Version 2.10
 
 - **Editor Layout Preview** — `Card` is now `@tool`. Cards placed in the editor show their actual layout template (panels, borders, textures) at the correct size instead of a blank rectangle. Card size is read from the layout's SubViewport.
