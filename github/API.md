@@ -131,12 +131,13 @@ enum Suit { HEARTS, DIAMONDS, CLUBS, SPADES }
 
 ### <img src="assets/icon_card_layout.png"> CardLayout
 
-Base class for card visuals. A `SubViewportContainer` that renders the card face.
+Base class for card visuals. A `@tool` `SubViewportContainer` that renders the card face.
 
 #### Properties
 
 | Property | Type | Description |
 | --- | --- | --- |
+| `card_size` | `Vector2i` | Card size in pixels. Updates the SubViewport and notifies the parent Card reactively. Defaults to `Vector2i.ZERO` which auto-initializes from the SubViewport's size |
 | `card_resource` | `CardResource` | Reference to the card's data |
 | `card_instance` | `Card` | Reference to the parent Card node |
 | `focus_in_animation` | `CardAnimationResource` | Animation to play when card gains focus |
@@ -148,8 +149,10 @@ Base class for card visuals. A `SubViewportContainer` that renders the card face
 
 | Signal | Description |
 | --- | --- |
-| `layout_ready` | Emitted when setup is complete |
+| `card_size_changed` | Emitted when `card_size` changes. Connected by Card to reactively update its size |
+| `layout_ready` | Emitted from `_layout_ready()` after the layout finishes its own `_ready()`-time initialization |
 | `layout_initialized` | Emitted when layout is initialized |
+| `setup_completed` | Emitted at the end of `setup()` after the card/resource references and initial display are applied |
 | `display_updated` | Emitted after display is updated |
 | `flip_in_started` | Emitted when flip in animation starts |
 | `flip_in_completed` | Emitted when flip in animation completes |
@@ -181,9 +184,16 @@ func _focus_in() -> void
 # Called when card loses focus
 # Uses focus_out_animation if set, otherwise override for custom behavior
 func _focus_out() -> void
+
+# Called at the end of CardLayout._ready()
+# Override this instead of _ready() for layout-specific setup
+func _layout_ready() -> void
 ```
 
 **IMPORTANT!!** Overriding any of the flip/focus/update functions will also will override the signals emission. In this case you will need to implement the stared and completed signals yourself.
+
+`CardLayout` already uses `_ready()` internally to initialize `card_size`. If you need custom ready-time logic in a layout script, override `_layout_ready()` instead of `_ready()`.
+Use `setup_completed` if you need to react after `setup(card, resource)` has finished.
 
 ```gdscript
 # Override example
@@ -223,6 +233,10 @@ func _update_display() -> void:
     image.texture = data.card_image
     stats.text = "ATK: %d  DEF: %d" % [data.attack, data.defense]
 
+func _layout_ready() -> void:
+    # Safe place for layout-specific ready logic
+    pass
+
 # Option 1: Use CardAnimationResource (set in inspector)
 # Just assign a ScaleCardAnimation or FadeCardAnimation resource to
 # focus_in_animation, focus_out_animation, etc. in the inspector
@@ -247,7 +261,7 @@ func _focus_in() -> void:
 
 **Notes**:
 
-- The card will use the size of the Subviewport as the final size. If the layout does not seem right reset the custom minumum size of the CardLayout (CardLayout -> Control -> Layout -> Custom Minimum Size or Transform)
+- Set `card_size` to change the card dimensions at runtime — it updates the SubViewport, the Card, and re-arranges containers automatically. If left at `Vector2i.ZERO`, the size is read from the SubViewport on `_ready()` (backward compatible)
 - For using shaders, apply the shader material to the CardLayout for it be applied on the whole card
 
 ---

@@ -159,6 +159,8 @@ func _editor_ready() -> void:
 ## Called on ready, and when card_data or front_layout_name changes in inspector.
 func _editor_setup_layout() -> void:
 	if _layout:
+		if _layout.card_size_changed.is_connected(_on_layout_size_changed):
+			_layout.card_size_changed.disconnect(_on_layout_size_changed)
 		_layout.queue_free()
 		_layout = null
 
@@ -173,15 +175,16 @@ func _editor_setup_layout() -> void:
 		pivot_offset = EDITOR_DEFAULT_SIZE / 2.0
 		return
 
-	# Read card size from the SubViewport before adding to tree / setting anchors.
-	# SubViewport is a native node — its size is always accessible, even when the
-	# layout script is a placeholder (non-@tool).
+	# Read card size — prefer layout.card_size, fall back to SubViewport.size.
 	var card_size := EDITOR_DEFAULT_SIZE
-	var sub_vp = _layout.get_node_or_null("SubViewport")
-	if sub_vp and sub_vp is SubViewport:
-		var vp_size := Vector2(sub_vp.size)
-		if vp_size != Vector2.ZERO:
-			card_size = vp_size
+	if _layout.card_size != Vector2i.ZERO:
+		card_size = Vector2(_layout.card_size)
+	else:
+		var sub_vp = _layout.get_node_or_null("SubViewport")
+		if sub_vp and sub_vp is SubViewport:
+			var vp_size := Vector2(sub_vp.size)
+			if vp_size != Vector2.ZERO:
+				card_size = vp_size
 
 	size = card_size
 	custom_minimum_size = card_size
@@ -189,6 +192,7 @@ func _editor_setup_layout() -> void:
 	self_modulate.a = 0
 
 	add_child(_layout)
+	_layout.card_size_changed.connect(_on_layout_size_changed)
 	_layout.anchors_preset = Control.PRESET_FULL_RECT
 	_layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -238,12 +242,13 @@ func _editor_create_layout(layout_id: StringName) -> CardLayout:
 
 func set_card_size():
 	if !_layout: return
-	if size != _layout.size:
-		size = _layout.size
+	var new_size = Vector2(_layout.card_size) if _layout.card_size != Vector2i.ZERO else _layout.size
+	if size != new_size:
+		size = new_size
 		custom_minimum_size = size
 
 	self_modulate.a = 0
-	center_pos = Vector2(size.x / 2, size.y / 2)
+	center_pos = size / 2.0
 	pivot_offset = center_pos
 
 
@@ -378,6 +383,16 @@ func _on_focus_exited() -> void:
 	if !holding: set_process(false)
 
 
+func _on_layout_size_changed(new_size: Vector2i) -> void:
+	if new_size == Vector2i.ZERO: return
+	size = Vector2(new_size)
+	custom_minimum_size = size
+	center_pos = size / 2.0
+	pivot_offset = center_pos
+	var parent = get_parent()
+	if parent is CardContainer:
+		parent.arrange()
+
 func _on_mouse_entered() -> void:
 	card_hovered.emit()
 	if !CG.current_held_item:
@@ -452,6 +467,8 @@ func _setup_layout(no_animations: bool = false) -> void:
 	_layout_switching = true
 
 	if _layout:
+		if _layout.card_size_changed.is_connected(_on_layout_size_changed):
+			_layout.card_size_changed.disconnect(_on_layout_size_changed)
 		if !no_animations:
 			await _layout._flip_out()
 		if !is_inside_tree():
@@ -473,6 +490,7 @@ func _setup_layout(no_animations: bool = false) -> void:
 		return
 
 	add_child(_layout)
+	_layout.card_size_changed.connect(_on_layout_size_changed)
 	_layout.setup(self, card_data)
 	if !no_animations:
 		await _layout._flip_in()
@@ -524,6 +542,8 @@ func _card_ready() -> void:
 
 
 func _exit_tree() -> void:
+	if _layout and _layout.card_size_changed.is_connected(_on_layout_size_changed):
+		_layout.card_size_changed.disconnect(_on_layout_size_changed)
 	if Engine.is_editor_hint():
 		if _layout:
 			_layout.queue_free()

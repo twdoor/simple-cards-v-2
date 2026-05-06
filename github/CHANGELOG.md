@@ -2,6 +2,8 @@
 
 ## Version 2.11
 
+- **Dynamic Card Sizing** — `CardLayout` now exposes an `@export var card_size: Vector2i` property. Changing it at runtime updates the SubViewport, the parent Card's size, and triggers container re-layout automatically.
+- **CardLayout is `@tool`** — The base `CardLayout` class is now `@tool` so the `card_size` setter runs in the editor. Changing `card_size` in the inspector immediately updates the SubViewport and Card preview.
 - **CardHand Input Order Fix** — `CardHand` now syncs its child node order to the internal `cards` array during layout/reordering. This keeps hover, mouse enter/exit, and focus behavior aligned with the visible card stacking order when cards overlap.
 
 ## Version 2.10

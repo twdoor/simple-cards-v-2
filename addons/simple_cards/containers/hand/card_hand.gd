@@ -314,11 +314,18 @@ func get_drag_stack() -> Array[Card]:
 func _sync_card_child_order() -> void:
 	var children := get_children()
 	var desired_children: Array[Node] = children.duplicate()
+	var managed_cards: Array[Card] = []
+
+	for card in cards:
+		if card.get_parent() == self:
+			managed_cards.append(card)
+
 	var card_index := 0
 
 	for i in desired_children.size():
-		if desired_children[i] is Card:
-			desired_children[i] = cards[card_index]
+		var child = desired_children[i]
+		if child is Card and managed_cards.has(child):
+			desired_children[i] = managed_cards[card_index]
 			card_index += 1
 
 	for i in desired_children.size():

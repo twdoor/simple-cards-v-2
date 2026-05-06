@@ -92,7 +92,9 @@ func _update_display() -> void:
     if data:
         name_label.text = data.card_name
         image.texture = data.card_image
+    display_updated.emit()
 ```
+
 
 ### 3. Spawn Cards
 

@@ -35,6 +35,7 @@ corner_detail = 16
 offset_right = 80.0
 offset_bottom = 112.0
 script = ExtResource("1_2dmvv")
+card_size = Vector2i(80, 112)
 anim_group_checked = true
 focus_in_animation = SubResource("Resource_cho7o")
 focus_out_animation = SubResource("Resource_wmam2")
