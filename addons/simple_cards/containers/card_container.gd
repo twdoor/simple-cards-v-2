@@ -236,13 +236,22 @@ func arrange(duration: float = -1) -> void:
 
 
 ## Tweens a single card to its layout position. Rotation is set directly.
-## If the card has a stored [code]_move_origin[/code] (from a batch move), 
+## If the card has a stored [code]_move_origin[/code] (from a batch move),
 ## restores the card's global position to that origin before tweening.
 func _settle_card(card: Card, duration: float) -> void:
 	if card._move_origin != Vector2.INF:
 		card.global_position = card._move_origin
 		card._move_origin = Vector2.INF
-	card.tween_position(get_card_target_position(card), duration)
+
+	var target_pos = get_card_target_position(card)
+	var config: Card.MoveConfig = card._move_config
+	card._move_config = null
+
+	if config and config.position_callable.is_valid():
+		config.position_callable.call(card, target_pos, duration)
+	else:
+		card.tween_position(target_pos, duration)
+
 	card.rotation_degrees = get_card_target_rotation(card)
 
 #endregion
@@ -251,13 +260,13 @@ func _settle_card(card: Card, duration: float) -> void:
 #region Bulk Operations
 
 ## Moves the top [param count] cards to [param target].
-## Returns how many were moved. If [param stagger] > 0, awaits between each card.
+## Returns how many were moved.
 ## [br][br]
-## If [param batch] is [code]true[/code], layout computation is deferred until all
-## cards are placed, then a single [method arrange] is called at the end.
-## Automatically enabled when [param duration] is [code]0[/code].
-func deal_to(target: CardContainer, count: int, duration: float = -1, stagger: float = 0.0, batch: bool = false) -> int:
-	var use_batch = batch or duration == 0
+## If [member Card.MoveConfig.batch] is [code]true[/code] (or [member Card.MoveConfig.duration]
+## is [code]0[/code]), layout computation is deferred until all cards are placed.
+func deal_to(target: CardContainer, count: int, config: Card.MoveConfig = null) -> int:
+	if !config: config = Card.MoveConfig.new()
+	var use_batch = config.batch or config.duration == 0
 	if use_batch:
 		target._batch_mode = true
 
@@ -266,14 +275,14 @@ func deal_to(target: CardContainer, count: int, duration: float = -1, stagger: f
 		if cards.is_empty(): break
 		var card = cards.back()
 		if !target.can_accept_card(card): break
-		card.move_to(target, duration)
+		card.move_to(target, config)
 		dealt += 1
-		if stagger > 0.0 and i < count - 1:
-			await get_tree().create_timer(stagger).timeout
+		if config.stagger > 0.0 and i < count - 1:
+			await get_tree().create_timer(config.stagger).timeout
 
 	if use_batch and dealt > 0:
 		target._batch_mode = false
-		var settle_dur: float = duration if duration >= 0.0 else target.card_move_duration
+		var settle_dur: float = config.duration if config.duration >= 0.0 else target.card_move_duration
 		target.arrange(settle_dur)
 	elif use_batch:
 		target._batch_mode = false
@@ -282,13 +291,13 @@ func deal_to(target: CardContainer, count: int, duration: float = -1, stagger: f
 
 
 ## Moves specific cards to [param target].
-## Returns how many were moved. If [param stagger] > 0, awaits between each card.
+## Returns how many were moved.
 ## [br][br]
-## If [param batch] is [code]true[/code], layout computation is deferred until all
-## cards are placed, then a single [method arrange] is called at the end.
-## Automatically enabled when [param duration] is [code]0[/code].
-func move_cards_to(card_array: Array[Card], target: CardContainer, duration: float = -1, stagger: float = 0.0, batch: bool = false) -> int:
-	var use_batch = batch or duration == 0
+## If [member Card.MoveConfig.batch] is [code]true[/code] (or [member Card.MoveConfig.duration]
+## is [code]0[/code]), layout computation is deferred until all cards are placed.
+func move_cards_to(card_array: Array[Card], target: CardContainer, config: Card.MoveConfig = null) -> int:
+	if !config: config = Card.MoveConfig.new()
+	var use_batch = config.batch or config.duration == 0
 	if use_batch:
 		target._batch_mode = true
 
@@ -298,14 +307,14 @@ func move_cards_to(card_array: Array[Card], target: CardContainer, duration: flo
 		var card = to_move[i]
 		if !cards.has(card): continue
 		if !target.can_accept_card(card): continue
-		card.move_to(target, duration)
+		card.move_to(target, config)
 		moved += 1
-		if stagger > 0.0 and i < to_move.size() - 1:
-			await get_tree().create_timer(stagger).timeout
+		if config.stagger > 0.0 and i < to_move.size() - 1:
+			await get_tree().create_timer(config.stagger).timeout
 
 	if use_batch and moved > 0:
 		target._batch_mode = false
-		var settle_dur: float = duration if duration >= 0.0 else target.card_move_duration
+		var settle_dur: float = config.duration if config.duration >= 0.0 else target.card_move_duration
 		target.arrange(settle_dur)
 	elif use_batch:
 		target._batch_mode = false
@@ -314,13 +323,9 @@ func move_cards_to(card_array: Array[Card], target: CardContainer, duration: flo
 
 
 ## Moves all cards to [param target].
-## Returns how many were moved. If [param stagger] > 0, awaits between each card.
-## [br][br]
-## If [param batch] is [code]true[/code], layout computation is deferred until all
-## cards are placed, then a single [method arrange] is called at the end.
-## Automatically enabled when [param duration] is [code]0[/code].
-func move_all_to(target: CardContainer, duration: float = -1, stagger: float = 0.0, batch: bool = false) -> int:
-	return await move_cards_to(cards.duplicate(), target, duration, stagger, batch)
+## Returns how many were moved.
+func move_all_to(target: CardContainer, config: Card.MoveConfig = null) -> int:
+	return await move_cards_to(cards.duplicate(), target, config)
 
 
 ## Sorts cards using a custom comparison and re-arranges.

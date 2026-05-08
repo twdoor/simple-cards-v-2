@@ -108,7 +108,7 @@ func _on_play_button() -> void:
 	balatro_hand.clear_selected()
 
 	if use_stagger_draw:
-		await balatro_hand.move_cards_to(cards_to_play, played_hand, -1, stagger_delay)
+		await balatro_hand.move_cards_to(cards_to_play, played_hand, Card.MoveConfig.new(-1, -1, stagger_delay))
 	else:
 		balatro_hand.move_cards_to(cards_to_play, played_hand)
 
@@ -140,18 +140,18 @@ func deal() -> void:
 	var stagger: float = stagger_delay if use_stagger_draw else 0.0
 
 	if pile_size >= to_deal:
-		await draw.deal_to(balatro_hand, to_deal, -1, stagger)
+		await draw.deal_to(balatro_hand, to_deal, Card.MoveConfig.new(-1, -1, stagger))
 	else:
 		var overflow := to_deal - pile_size
 		if pile_size > 0:
-			await draw.deal_to(balatro_hand, pile_size, -1, stagger)
+			await draw.deal_to(balatro_hand, pile_size, Card.MoveConfig.new(-1, -1, stagger))
 
-		await discard.move_all_to(draw, 0)
+		await discard.move_all_to(draw, Card.MoveConfig.new(0))
 		draw.shuffle()
 
 		var new_pile_size := draw.get_card_count()
 		if new_pile_size > 0:
-			await draw.deal_to(balatro_hand, mini(overflow, new_pile_size), -1, stagger)
+			await draw.deal_to(balatro_hand, mini(overflow, new_pile_size), Card.MoveConfig.new(-1, -1, stagger))
 
 	for card in balatro_hand.cards:
 		if !card.is_front_face:
@@ -272,7 +272,7 @@ func _update_pile_preview_hand(cards: Array[Card]) -> void:
 			var card_proxy: Card = Card.new(child.card_data)
 			card_proxy.name = child.name + "_preview"
 			card_proxy.set_meta("source_card", child)
-			card_proxy.move_to(preview_hand, 0)
+			card_proxy.move_to(preview_hand, Card.MoveConfig.new(0))
 
 	_sort_preview(preview_hand)
 

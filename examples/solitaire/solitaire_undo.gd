@@ -134,7 +134,7 @@ func _undo_card_move(record: MoveRecord) -> void:
 
 	for i in record.cards.size():
 		var card: Card = record.cards[i]
-		card.move_to(source, UNDO_MOVE_DURATION, record.source_index + i)
+		card.move_to(source, Card.MoveConfig.new(UNDO_MOVE_DURATION, record.source_index + i))
 
 	if not record.cards.is_empty():
 		await record.cards.back().move_completed
@@ -151,7 +151,7 @@ func _undo_card_move(record: MoveRecord) -> void:
 func _undo_draw(record: MoveRecord) -> void:
 	for i in range(record.drawn_cards.size() - 1, -1, -1):
 		var card: Card = record.drawn_cards[i]
-		card.move_to(starting_pile, UNDO_MOVE_DURATION * 0.8)
+		card.move_to(starting_pile, Card.MoveConfig.new(UNDO_MOVE_DURATION * 0.8))
 
 	if not record.drawn_cards.is_empty():
 		await record.drawn_cards[0].move_completed
@@ -163,7 +163,7 @@ func _undo_recycle(record: MoveRecord) -> void:
 	var had_auto := _set_auto_update(deal_hand, false)
 
 	for card in record.recycled_cards:
-		card.move_to(deal_hand, UNDO_MOVE_DURATION * 0.6)
+		card.move_to(deal_hand, Card.MoveConfig.new(UNDO_MOVE_DURATION * 0.6))
 
 	if not record.recycled_cards.is_empty():
 		await record.recycled_cards.back().move_completed

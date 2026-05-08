@@ -57,7 +57,7 @@ func _on_draw_clicked(_card: Card) -> void:
 		draw_card.disabled = true
 		var hand_cards: Array[Card] = deal_hand.cards.duplicate()
 		hand_cards.reverse()
-		deal_hand.move_cards_to(hand_cards, deck_manager.starting_pile, .1, .02)
+		deal_hand.move_cards_to(hand_cards, deck_manager.starting_pile, Card.MoveConfig.new(.1, -1, .02))
 		await deal_hand.container_empty
 		draw_card.disabled = false
 		undo_manager.record_recycle(original_order)
@@ -96,7 +96,7 @@ func handle_card_transport(origin_hand: SolitaireHand, card: Card) -> void:
 
 		var src_idx: int = origin_hand.cards.find(card)
 		var flip_card: Card = _get_flip_candidate(origin_hand, src_idx)
-		await origin_hand.move_cards_to(cards_to_move, hand, -1, 0.1)
+		await origin_hand.move_cards_to(cards_to_move, hand, Card.MoveConfig.new(-1, -1, 0.1))
 		undo_manager.record_card_move(cards_to_move, origin_hand, src_idx, hand, flip_card)
 
 		if check_for_win():
@@ -131,7 +131,7 @@ func set_match() -> void:
 
 	for i in tableau_piles.size():
 		tableau_piles[i].auto_update = false
-		await deck_manager.starting_pile.deal_to(tableau_piles[i], i + 1, 0.5, 0.05)
+		await deck_manager.starting_pile.deal_to(tableau_piles[i], i + 1, Card.MoveConfig.new(0.5, -1, 0.05))
 		tableau_piles[i].auto_update = true
 		tableau_piles[i].apply_rules()
 
@@ -158,9 +158,36 @@ func finish_game() -> void:
 	_animate_card_collection()
 
 
+var sine_conf := Card.MoveConfig.new()
+var sine_call := func(card: Card, target_pos: Vector2, dur: float):
+		var start_pos := card.position
+		var travel := target_pos - start_pos
+		var normal := travel.orthogonal()
+		if normal.length_squared() > 0.0:
+			normal = normal.normalized()
+
+		var dist := travel.length()
+		var distance_factor := clampf(dist / 720, 0.2, 1.0)
+		var new_dur := dur * distance_factor
+
+		var tween := card.create_tween()
+		tween.tween_method(func(t: float):
+			var base_pos := start_pos.lerp(target_pos, t)
+			var wave_offset := normal * sin(t * TAU * 2.0) * 32.0
+			card.position = base_pos + wave_offset
+		, 0.0, 1.0, new_dur)
+		tween.finished.connect(func():
+			card.position = target_pos
+			card.move_completed.emit(card)
+		, CONNECT_ONE_SHOT)
+
 ## Recursively moves face-up cards into their matching foundations, one at a time.
 ## Tries tableau first, then the deal hand. Stops when nothing can move.
 func _animate_card_collection() -> void:
+
+	sine_conf.duration = 0.3
+	sine_conf.position_callable = sine_call
+
 	for pile in tableau_piles:
 		if pile.cards.is_empty() or not pile.cards.back().is_front_face:
 			continue
@@ -168,7 +195,7 @@ func _animate_card_collection() -> void:
 		var card = pile.cards.back()
 		for foundation in foundations:
 			if foundation.can_accept_card(card):
-				card.move_to(foundation, .1)
+				card.move_to(foundation, sine_conf)
 				await card.move_completed
 				_animate_card_collection()
 				return
@@ -177,7 +204,7 @@ func _animate_card_collection() -> void:
 		var card = deal_hand.cards.back()
 		for foundation in foundations:
 			if foundation.can_accept_card(card):
-				card.move_to(foundation, .1)
+				card.move_to(foundation, sine_conf)
 				await card.move_completed
 				_animate_card_collection()
 				return

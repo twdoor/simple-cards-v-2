@@ -56,6 +56,8 @@ var position_offset: Vector2 = Vector2.ZERO
 var rotation_offset: float = 0
 ## Stored origin global position for batch moves. Reset after tween starts.
 var _move_origin: Vector2 = Vector2.INF
+## Stored MoveConfig for batch moves. Reset after settle.
+var _move_config: MoveConfig
 
 var _scale_tween: Tween
 var _rotation_tween: Tween
@@ -270,28 +272,51 @@ func _drag(delta: float) -> void:
 
 #region Movement
 
+## Configuration object for [method move_to] and bulk move operations.
+## Bundles movement parameters into a single reusable object.
+## [br][br]
+## [b]position_callable[/b]: Override the default tween-based movement.
+## Signature: [code](card: Card, target_pos: Vector2, duration: float) -> void[/code].
+class MoveConfig:
+	## Tween duration. [code]-1[/code] uses the target container's default.
+	## [code]0[/code] snaps instantly.
+	var duration: float = -1
+	## Insertion index. [code]-1[/code] appends to end.
+	var index: int = -1
+	## Delay between each card in bulk operations.
+	var stagger: float = 0.0
+	## If [code]true[/code], defers layout computation until all cards are placed.
+	var batch: bool = false
+	## Custom movement callable. Signature: [code](card: Card, target_pos: Vector2, duration: float) -> void[/code].
+	var position_callable: Callable
+
+	func _init(p_duration: float = -1, p_index: int = -1, p_stagger: float = 0.0, p_batch: bool = false) -> void:
+		duration = p_duration
+		index = p_index
+		stagger = p_stagger
+		batch = p_batch
+
+
 ## Moves this card into a [CardContainer]. Handles reparenting, registration,
 ## and animation in one call.
-## [br][br]
-## [param duration]: Tween duration. [code]-1[/code] uses the target's default.
-## [code]0[/code] snaps instantly.
-## [br][param index]: Insertion index. [code]-1[/code] appends to end.
-func move_to(target: CardContainer, duration: float = -1, index: int = -1) -> void:
+func move_to(target: CardContainer, config: MoveConfig = null) -> void:
 	if !target: return
 	if !target.can_accept_card(self): return
+	if !config: config = MoveConfig.new()
 
 	var from_global = global_position
 
 	_reparent_to(target)
-	target._register_card(self, index)
+	target._register_card(self, config.index)
 	kill_all_tweens()
 	global_position = from_global
 
 	if target._batch_mode:
 		_move_origin = from_global
+		_move_config = config
 		return
 
-	var dur: float = duration if duration >= 0.0 else target.card_move_duration
+	var dur: float = config.duration if config.duration >= 0.0 else target.card_move_duration
 
 	var target_pos = target.get_card_target_position(self)
 	var target_rot = target.get_card_target_rotation(self)
@@ -301,8 +326,17 @@ func move_to(target: CardContainer, duration: float = -1, index: int = -1) -> vo
 		rotation_degrees = target_rot
 		move_completed.emit(self)
 	else:
-		tween_position(target_pos, dur)
+		_apply_move(target_pos, dur, config)
 		rotation_degrees = target_rot
+
+
+## Applies movement using the config's position_callable or the default tween.
+## Custom callables are responsible for emitting [signal move_completed] when done.
+func _apply_move(target_pos: Vector2, dur: float, config: MoveConfig) -> void:
+	if config.position_callable.is_valid():
+		config.position_callable.call(self, target_pos, dur)
+	else:
+		tween_position(target_pos, dur)
 		if _pos_tween:
 			_pos_tween.finished.connect(func(): move_completed.emit(self), CONNECT_ONE_SHOT)
 

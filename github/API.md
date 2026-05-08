@@ -42,8 +42,7 @@ A draggable button that represents a single card.
 ```gdscript
 # Move this card to a CardContainer (hand, pile, or slot)
 # Handles reparenting, registration, and animation in one call.
-# duration: -1 uses target default, 0 snaps instantly
-func move_to(target: CardContainer, duration: float = -1, index: int = -1) -> void
+func move_to(target: CardContainer, config: Card.MoveConfig = null) -> void
 
 # Flip the card between front and back
 func flip() -> void
@@ -84,7 +83,26 @@ var card = Card.new(my_resource)
 card.move_to(hand)
 
 # Move instantly (setup/dealing)
-card.move_to(pile, 0)
+card.move_to(pile, Card.MoveConfig.new(0))
+
+# Using MoveConfig for more control
+var config = Card.MoveConfig.new()
+config.duration = 0.5
+config.index = 0
+card.move_to(hand, config)
+
+# Custom movement (e.g. arc, bezier)
+var arc_config = Card.MoveConfig.new()
+arc_config.position_callable = func(card: Card, target_pos: Vector2, dur: float):
+    var tween = card.create_tween()
+    var mid = card.position.lerp(target_pos, 0.5) + Vector2(0, -100)
+    tween.tween_method(func(t):
+        var a = card.position.lerp(mid, t)
+        var b = mid.lerp(target_pos, t)
+        card.position = a.lerp(b, t)
+    , 0.0, 1.0, dur)
+    tween.finished.connect(func(): card.move_completed.emit(card))
+card.move_to(hand, arc_config)
 
 # Listen for clicks
 card.card_clicked.connect(func(c): print("Clicked: ", c.card_data))
@@ -97,6 +115,28 @@ card.undraggable = true
 
 # To disable clicking just use the buttons disable feature
 card.disabled = true
+```
+
+---
+
+### Card.MoveConfig
+
+Inner class of `Card`. Bundles movement parameters into a reusable configuration object for `move_to()` and bulk operations.
+
+#### Properties
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `duration` | `float` | `-1` | Tween duration. `-1` uses target container's default. `0` snaps instantly. |
+| `index` | `int` | `-1` | Insertion index. `-1` appends to end. |
+| `stagger` | `float` | `0.0` | Delay between cards in bulk operations. |
+| `batch` | `bool` | `false` | Defer layout computation until all cards are placed. |
+| `position_callable` | `Callable` | empty | Custom movement function. Signature: `(card: Card, target_pos: Vector2, duration: float) -> void`. When set, responsible for emitting `move_completed`. |
+
+#### Constructor
+
+```gdscript
+Card.MoveConfig.new(duration: float = -1, index: int = -1, stagger: float = 0.0, batch: bool = false)
 ```
 
 ---
@@ -336,10 +376,10 @@ func get_card_target_position(card: Card) -> Vector2
 func get_card_target_rotation(card: Card) -> float
 func arrange(duration: float = -1) -> void
 
-# Bulk operations (batch defers layout to one arrange() call at the end — auto-enabled when duration = 0)
-func deal_to(target: CardContainer, count: int, duration: float = -1, stagger: float = 0.0, batch: bool = false) -> int
-func move_cards_to(card_array: Array[Card], target: CardContainer, duration: float = -1, stagger: float = 0.0, batch: bool = false) -> int
-func move_all_to(target: CardContainer, duration: float = -1, stagger: float = 0.0, batch: bool = false) -> int
+# Bulk operations — batch defers layout to one arrange() call at the end (auto-enabled when duration = 0)
+func deal_to(target: CardContainer, count: int, config: Card.MoveConfig = null) -> int
+func move_cards_to(card_array: Array[Card], target: CardContainer, config: Card.MoveConfig = null) -> int
+func move_all_to(target: CardContainer, config: Card.MoveConfig = null) -> int
 func sort_cards(compare_func: Callable) -> void
 
 # Clear
@@ -384,7 +424,7 @@ func _disconnect_card_signals(card: Card) -> void
 
 func deal():
     # Deal 5 cards from pile to hand with stagger animation
-    await pile.deal_to(hand, 5, 0.3, 0.1)
+    await pile.deal_to(hand, 5, Card.MoveConfig.new(0.3, -1, 0.1))
 
 func discard(card: Card):
     # Move a single card
@@ -396,7 +436,7 @@ func discard_selected(selected: Array[Card]):
 
 func reshuffle():
     # Instant bulk move + shuffle
-    await discard.move_all_to(pile, 0)
+    await discard.move_all_to(pile, Card.MoveConfig.new(0))
     pile.shuffle()
 ```
 
@@ -607,13 +647,13 @@ func _handle_shuffled_pile() -> void
 @onready var hand: CardHand = $Hand
 
 func deal():
-    await draw_pile.deal_to(hand, 5, 0.3, 0.1)
+    await draw_pile.deal_to(hand, 5, Card.MoveConfig.new(0.3, -1, 0.1))
 
 func discard(card: Card):
     card.move_to(discard_pile)
 
 func reshuffle():
-    await discard_pile.move_all_to(draw_pile, 0)
+    await discard_pile.move_all_to(draw_pile, Card.MoveConfig.new(0))
     draw_pile.shuffle()
 ```
 
@@ -819,13 +859,13 @@ func _ready():
     draw_starting_hand()
 
 func draw_starting_hand():
-    await draw_pile.deal_to(hand, 5, 0.3, 0.1)
+    await draw_pile.deal_to(hand, 5, Card.MoveConfig.new(0.3, -1, 0.1))
 
 func discard_card(card: Card):
     card.move_to(discard_pile)
 
 func reshuffle():
-    await discard_pile.move_all_to(draw_pile, 0)
+    await discard_pile.move_all_to(draw_pile, Card.MoveConfig.new(0))
     draw_pile.shuffle()
 ```
 

@@ -2,6 +2,13 @@
 
 ## Version 2.11
 
+- **`Card.MoveConfig`** — New inner class that bundles movement parameters (`duration`, `index`, `stagger`, `batch`, `position_callable`) into a reusable object. Pass to `move_to()`, `deal_to()`, `move_cards_to()`, and `move_all_to()`.
+- **Custom Movement via `position_callable`** — `MoveConfig.position_callable` allows overriding the default tween-based movement with custom logic (arcs, bezier curves, physics-based motion, etc.). Signature: `(card: Card, target_pos: Vector2, duration: float) -> void`.
+
+### Breaking Changes
+
+- `Card.move_to(target, duration, index)` → `Card.move_to(target, config)` — positional parameters replaced by `Card.MoveConfig`. Use `Card.MoveConfig.new(duration, index)` for the same behavior.
+- `deal_to(target, count, duration, stagger, batch)` → `deal_to(target, count, config)` — same for `move_cards_to()` and `move_all_to()`. Use `Card.MoveConfig.new(duration, -1, stagger, batch)`.
 - **Dynamic Card Sizing** — `CardLayout` now exposes an `@export var card_size: Vector2i` property. Changing it at runtime updates the SubViewport, the parent Card's size, and triggers container re-layout automatically.
 - **CardLayout is `@tool`** — The base `CardLayout` class is now `@tool` so the `card_size` setter runs in the editor. Changing `card_size` in the inspector immediately updates the SubViewport and Card preview.
 - **CardHand Input Order Fix** — `CardHand` now syncs its child node order to the internal `cards` array during layout/reordering. This keeps hover, mouse enter/exit, and focus behavior aligned with the visible card stacking order when cards overlap.

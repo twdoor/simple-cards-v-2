@@ -67,7 +67,7 @@ func setup(source_deck: CardDeck = deck, target_pile: CardPile = starting_pile) 
 
 	for card_resource in deck.cards:
 		var card = _create_card(card_resource)
-		card.move_to(starting_pile, 0)
+		card.move_to(starting_pile, Card.MoveConfig.new(0))
 		card_created.emit(card, card_resource)
 
 	if shuffle_on_setup:
