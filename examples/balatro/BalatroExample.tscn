@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://brvun6l03k0hu"]
+[gd_scene load_steps=27 format=3 uid="uid://brvun6l03k0hu"]
 
 [ext_resource type="Script" uid="uid://bmc1k8rf2430l" path="res://examples/balatro/balatro_example.gd" id="1_ieake"]
 [ext_resource type="Script" uid="uid://f3ybsxom5cmo" path="res://examples/balatro/balatro_card_hand.gd" id="2_grswf"]
@@ -8,8 +8,13 @@
 [ext_resource type="Script" uid="uid://d2l8uaoel5whd" path="res://addons/simple_cards/containers/pile/card_pile.gd" id="4_oq12x"]
 [ext_resource type="Script" uid="uid://cllotwm1jb3ta" path="res://examples/balatro/combo_label.gd" id="5_eqskn"]
 [ext_resource type="Script" uid="uid://bbi8i6vef3f6y" path="res://addons/simple_cards/containers/hand/card_hand.gd" id="5_gjekf"]
+[ext_resource type="Texture2D" uid="uid://d13a1tcqjxkas" path="res://examples/cards/standard_deck/club.png" id="6_rmqmx"]
 [ext_resource type="Script" uid="uid://cgtxv1fnflwfu" path="res://addons/simple_cards/shape/premade_shapes/arc_shape.gd" id="7_oq12x"]
+[ext_resource type="Texture2D" uid="uid://bfi67t37l1qlp" path="res://examples/cards/standard_deck/diamond.png" id="7_tsvty"]
+[ext_resource type="Script" uid="uid://bgmqt21bcemq6" path="res://addons/simple_cards/card/card_layout/card_animation_resource/prebuild_animations/bob_animation.gd" id="8_eqskn"]
+[ext_resource type="Texture2D" uid="uid://clwd04qm16woo" path="res://examples/cards/standard_deck/heart.png" id="8_p010p"]
 [ext_resource type="Script" uid="uid://cle02hultetj5" path="res://addons/simple_cards/shape/premade_shapes/stack_shape.gd" id="9_gmp31"]
+[ext_resource type="Texture2D" uid="uid://ral2awpcmpdv" path="res://examples/cards/standard_deck/spade.png" id="9_tijkg"]
 [ext_resource type="Script" uid="uid://b1s6x4iyt2pps" path="res://addons/simple_cards/shape/premade_shapes/line_shape.gd" id="10_asqof"]
 [ext_resource type="Script" uid="uid://qd3kangeiqg" path="res://addons/simple_cards/shape/premade_shapes/grid_shape.gd" id="11_gmp31"]
 
@@ -27,6 +32,14 @@ arc_radius = 600.0
 card_spacing = 70.0
 metadata/_custom_type_script = "uid://cgtxv1fnflwfu"
 
+[sub_resource type="Resource" id="Resource_47qkh"]
+script = ExtResource("8_eqskn")
+amplitude = 3.0
+frequency = 1.0
+phase_variance = 0.785
+looping = true
+metadata/_custom_type_script = "uid://bgmqt21bcemq6"
+
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_gmp31"]
 
 [sub_resource type="Resource" id="Resource_eqskn"]
@@ -40,9 +53,16 @@ metadata/_custom_type_script = "uid://b1s6x4iyt2pps"
 script = ExtResource("11_gmp31")
 num_of_cols = 14
 num_of_rows = 4
-col_offset = 81.0
-row_offset = 113.0
+col_offset = 82.0
+row_offset = 114.0
 metadata/_custom_type_script = "uid://qd3kangeiqg"
+
+[sub_resource type="Resource" id="Resource_4n1tn"]
+script = ExtResource("8_eqskn")
+amplitude = 1.0
+phase_variance = 0.449
+looping = true
+metadata/_custom_type_script = "uid://bgmqt21bcemq6"
 
 [sub_resource type="Resource" id="Resource_gmp31"]
 script = ExtResource("9_gmp31")
@@ -97,31 +117,73 @@ theme_override_constants/margin_top = 32
 theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 32
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 4
 
-[node name="GoldButton" type="Button" parent="MarginContainer/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 4
+
+[node name="GoldButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 tooltip_text = "Select at least a card to turn to Gold"
 text = "Gold"
 
-[node name="SilvButton" type="Button" parent="MarginContainer/VBoxContainer"]
+[node name="SilvButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 tooltip_text = "Select at least a card to turn to Glass"
 text = "Glass"
 
-[node name="NoneButton" type="Button" parent="MarginContainer/VBoxContainer"]
+[node name="NoneButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 tooltip_text = "Select at least a card to remove effects"
 text = "None"
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 4
+
+[node name="ClubButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+tooltip_text = "Select at least a card to turn to color"
+icon = ExtResource("6_rmqmx")
+icon_alignment = 1
+
+[node name="DiamButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+tooltip_text = "Select at least a card to turn to color"
+icon = ExtResource("7_tsvty")
+icon_alignment = 1
+
+[node name="HeartButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+tooltip_text = "Select at least a card to turn to color"
+icon = ExtResource("8_p010p")
+icon_alignment = 1
+
+[node name="SpadeButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+tooltip_text = "Select at least a card to turn to color"
+icon = ExtResource("9_tijkg")
+icon_alignment = 1
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
@@ -145,6 +207,7 @@ Set it to EmptyStyleBox in theme overrides to remove."
 script = ExtResource("2_grswf")
 shape = SubResource("Resource_oq12x")
 max_cards = 8
+idle_animation = SubResource("Resource_47qkh")
 metadata/_custom_type_script = "uid://f3ybsxom5cmo"
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer"]
@@ -210,7 +273,9 @@ size_flags_horizontal = 4
 size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxEmpty_eqskn")
 script = ExtResource("5_gjekf")
+enable_reordering = false
 shape = SubResource("Resource_a01fu")
+idle_animation = SubResource("Resource_4n1tn")
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
 [node name="Draw" type="Panel" parent="MarginContainer"]

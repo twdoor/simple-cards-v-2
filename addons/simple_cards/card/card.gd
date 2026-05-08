@@ -121,6 +121,10 @@ func _init(card_resource: CardResource = null) -> void:
 		card_data = card_resource
 
 
+func _enter_tree() -> void:
+	if Engine.is_editor_hint() and is_node_ready() and not _layout:
+		_editor_setup_layout()
+
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		_editor_ready()

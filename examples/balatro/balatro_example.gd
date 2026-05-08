@@ -28,6 +28,11 @@ extends CanvasLayer
 @onready var silv_button: Button = %SilvButton
 @onready var none_button: Button = %NoneButton
 
+@onready var club_button: Button = %ClubButton
+@onready var diamond_button: Button = %DiamButton
+@onready var heart_button: Button = %HeartButton
+@onready var spade_button: Button = %SpadeButton
+
 @onready var discard_button: Button = %DiscardButton
 @onready var play_button: Button = %PlayButton
 
@@ -48,6 +53,11 @@ func _ready() -> void:
 	gold_button.pressed.connect(_on_gold_pressed)
 	silv_button.pressed.connect(_on_silv_pressed)
 	none_button.pressed.connect(_on_none_pressed)
+	club_button.pressed.connect(_on_club_pressed)
+	diamond_button.pressed.connect(_on_diamond_pressed)
+	heart_button.pressed.connect(_on_heart_pressed)
+	spade_button.pressed.connect(_on_spade_pressed)
+
 	discard_button.pressed.connect(_on_discard_pressed)
 	play_button.pressed.connect(_on_play_button)
 	sort_suit_button.pressed.connect(_on_sort_suit_pressed)
@@ -78,6 +88,34 @@ func _on_silv_pressed() -> void:
 func _on_none_pressed() -> void:
 	for card: Card in balatro_hand.selected:
 		card.card_data.current_modifier = StandardCardResource.Modifier.NONE
+		card.refresh_layout()
+	balatro_hand.clear_selected()
+
+#endregion
+
+#region Suit Buttons
+
+func _on_club_pressed() -> void:
+	for card: Card in balatro_hand.selected:
+		card.card_data.card_suit = StandardCardResource.Suit.CLUBS
+		card.refresh_layout()
+	balatro_hand.clear_selected()
+
+func _on_diamond_pressed() -> void:
+	for card: Card in balatro_hand.selected:
+		card.card_data.card_suit = StandardCardResource.Suit.DIAMOND
+		card.refresh_layout()
+	balatro_hand.clear_selected()
+
+func _on_heart_pressed() -> void:
+	for card: Card in balatro_hand.selected:
+		card.card_data.card_suit = StandardCardResource.Suit.HEART
+		card.refresh_layout()
+	balatro_hand.clear_selected()
+
+func _on_spade_pressed() -> void:
+	for card: Card in balatro_hand.selected:
+		card.card_data.card_suit = StandardCardResource.Suit.SPADE
 		card.refresh_layout()
 	balatro_hand.clear_selected()
 
@@ -197,7 +235,10 @@ func _set_ui_enabled(enabled: bool) -> void:
 	gold_button.disabled = !enabled
 	silv_button.disabled = !enabled
 	none_button.disabled = !enabled
-
+	club_button.disabled = !enabled
+	diamond_button.disabled = !enabled
+	heart_button.disabled = !enabled
+	spade_button.disabled = !enabled
 	balatro_hand.visible = enabled
 
 
@@ -209,6 +250,10 @@ func _set_interaction_enabled(enabled: bool) -> void:
 	gold_button.disabled = !enabled
 	silv_button.disabled = !enabled
 	none_button.disabled = !enabled
+	club_button.disabled = !enabled
+	diamond_button.disabled = !enabled
+	heart_button.disabled = !enabled
+	spade_button.disabled = !enabled
 
 	for card in balatro_hand.cards:
 		card.disabled = !enabled

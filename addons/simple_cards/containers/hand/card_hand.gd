@@ -219,6 +219,11 @@ func _finish_card_drop() -> void:
 	_last_reorder_cursor = Vector2.INF
 	set_process(false)
 	arrange()
+	if lead_card and cards.has(lead_card):
+		_start_card_idle(lead_card, card_move_duration)
+	for follower in followers_copy:
+		if cards.has(follower):
+			_start_card_idle(follower, card_move_duration)
 
 	if had_followers and lead_card and lead_card.get_parent() != self:
 		var target = lead_card.get_parent()
@@ -231,6 +236,7 @@ func _on_holding_card(card: Card) -> void:
 	_drag_followers.clear()
 
 	if cards.has(card):
+		_stop_card_idle(card)
 		_dragged_card = card
 		_drag_start_index = get_card_index(card)
 		_last_reorder_index = _drag_start_index
@@ -252,6 +258,9 @@ func _on_holding_card(card: Card) -> void:
 		return
 
 	_follower_shape_offsets = _get_companion_offsets(card, _drag_followers)
+
+	for follower in _drag_followers:
+		_stop_card_idle(follower)
 
 	var drag_hand_idx = cards.find(card)
 	for i in _drag_followers.size():

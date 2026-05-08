@@ -4,9 +4,8 @@
 class_name StandardCardResource extends CardResource
 
 @export var name: String
-@export var top_texture: Texture2D
 @export var current_modifier: Modifier = Modifier.NONE
-@export var card_suit: Suit = Suit.ALL
+@export var card_suit: Suit = Suit.CLUBS
 @export_range(2,14) var value: int = 2 ## 14 = Ace, 11 = Jack, 12 = Queen, 13 = King
 
 ## Changes the card's background color in the layout.
@@ -21,7 +20,6 @@ enum Suit {
 	DIAMOND,
 	HEART,
 	SPADE,
-	ALL, # Wildcard
 }
 
 

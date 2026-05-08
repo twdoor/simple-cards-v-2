@@ -16,12 +16,20 @@ extends CardLayout
 
 var res: StandardCardResource
 
+var textures: Dictionary[StandardCardResource.Suit, String] = {
+	StandardCardResource.Suit.CLUBS: "uid://d13a1tcqjxkas",
+	StandardCardResource.Suit.DIAMOND: "uid://bfi67t37l1qlp",
+	StandardCardResource.Suit.HEART: "uid://clwd04qm16woo",
+	StandardCardResource.Suit.SPADE: "uid://ral2awpcmpdv",
+}
+
+
 func _update_display() -> void:
 	res = card_resource as StandardCardResource
 	if res == null: return
 
 	set_color()
-	set_texture(res.top_texture)
+	set_texture(res.card_suit)
 	set_value()
 
 
@@ -57,7 +65,8 @@ func set_value() -> void:
 
 
 ## Sets the suit icon on all three texture nodes (center + corners).
-func set_texture(suit_texture: Texture2D) -> void:
+func set_texture(suit: StandardCardResource.Suit) -> void:
+	var suit_texture: Texture2D = load(textures[suit])
 	texture.texture = suit_texture
 	texture_1.texture = suit_texture
 	texture_2.texture = suit_texture

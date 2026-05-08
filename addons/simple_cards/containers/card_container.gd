@@ -40,6 +40,9 @@ signal container_full()
 ## Default tween duration for cards settling into position.
 @export var card_move_duration: float = 0.3
 
+## Idle animation looped on all cards while in this container (e.g. bobbing).
+@export var idle_animation: CardAnimationResource
+
 #endregion
 
 
@@ -55,12 +58,15 @@ var _suppress_auto_remove: bool = false
 ## When [code]true[/code], [method _register_card] skips layout computation.
 ## Used by bulk operations to defer layout to one call at the end.
 var _batch_mode: bool = false
+var _idle_restart_gen: int = 0
 
 
 func _ready() -> void:
 	if Engine.is_editor_hint(): return
 	child_exiting_tree.connect(_on_child_exiting)
 	_container_ready()
+	if idle_animation and not cards.is_empty():
+		_start_idle()
 
 
 #region Queries
@@ -135,11 +141,13 @@ func _register_card(card: Card, index: int = -1) -> void:
 	
 	if not _batch_mode:
 		_compute_layout()
-		
+
 		for c in cards:
 			if c == card: continue
 			if c.holding: continue
 			_settle_card(c, card_move_duration)
+
+		_start_card_idle(card, card_move_duration)
 	
 	_handle_card_added(card, index)
 	card_added.emit(card, index)
@@ -153,18 +161,20 @@ func _unregister_card(card: Card) -> void:
 	var index = cards.find(card)
 	if index == -1: return
 	
+	_stop_card_idle(card)
+
 	cards.remove_at(index)
 	_disconnect_card_signals(card)
 	_restore_card_state(card)
 	_compute_layout()
-	
+
 	for c in cards:
 		if c.holding: continue
 		_settle_card(c, card_move_duration)
-	
+
 	_handle_card_removed(card, index)
 	card_removed.emit(card, index)
-	if cards.is_empty(): 
+	if cards.is_empty():
 		container_empty.emit()
 		_handle_container_empty()
 
@@ -257,6 +267,63 @@ func _settle_card(card: Card, duration: float) -> void:
 #endregion
 
 
+#region Idle Animation
+
+## Plays the [member idle_animation] on every card in this container.
+func _start_idle() -> void:
+	if not idle_animation: return
+	for card in cards:
+		if card.holding: continue
+		var layout = card.get_layout()
+		if layout:
+			idle_animation.play_animation(layout)
+
+
+## Stops a looping [member idle_animation] on every card.
+## Also cancels any pending restart scheduled by [method _schedule_idle_restart].
+func _stop_idle() -> void:
+	_idle_restart_gen += 1
+	if not idle_animation or not idle_animation.looping: return
+	for card in cards:
+		var layout = card.get_layout()
+		if layout:
+			idle_animation.stop_animation(layout)
+
+
+## Stops a looping [member idle_animation] on a single card.
+func _stop_card_idle(card: Card) -> void:
+	if not idle_animation or not idle_animation.looping: return
+	var layout = card.get_layout()
+	if layout:
+		idle_animation.stop_animation(layout)
+
+
+## Starts idle animation on a single card after a delay.
+func _start_card_idle(card: Card, delay: float) -> void:
+	if not idle_animation: return
+	await get_tree().create_timer(maxf(delay, 0.001)).timeout
+	if not is_inside_tree(): return
+	if not cards.has(card): return
+	if card.holding: return
+	var layout = card.get_layout()
+	if layout:
+		idle_animation.play_animation(layout)
+
+
+## Starts idle on all cards after [param duration] seconds. Used after batch operations.
+## Subsequent calls cancel the previous timer via generation counter.
+func _schedule_idle_restart(duration: float) -> void:
+	if not idle_animation: return
+	_idle_restart_gen += 1
+	var gen = _idle_restart_gen
+	await get_tree().create_timer(maxf(duration, 0.001)).timeout
+	if not is_inside_tree(): return
+	if gen != _idle_restart_gen: return
+	_start_idle()
+
+#endregion
+
+
 #region Bulk Operations
 
 ## Moves the top [param count] cards to [param target].
@@ -284,6 +351,7 @@ func deal_to(target: CardContainer, count: int, config: Card.MoveConfig = null) 
 		target._batch_mode = false
 		var settle_dur: float = config.duration if config.duration >= 0.0 else target.card_move_duration
 		target.arrange(settle_dur)
+		target._schedule_idle_restart(settle_dur)
 	elif use_batch:
 		target._batch_mode = false
 
@@ -316,6 +384,7 @@ func move_cards_to(card_array: Array[Card], target: CardContainer, config: Card.
 		target._batch_mode = false
 		var settle_dur: float = config.duration if config.duration >= 0.0 else target.card_move_duration
 		target.arrange(settle_dur)
+		target._schedule_idle_restart(settle_dur)
 	elif use_batch:
 		target._batch_mode = false
 
@@ -340,6 +409,7 @@ func sort_cards(compare_func: Callable) -> void:
 
 ## Removes all cards and frees them.
 func clear_and_free() -> void:
+	_stop_idle()
 	_suppress_auto_remove = true
 	for card in cards:
 		_disconnect_card_signals(card)

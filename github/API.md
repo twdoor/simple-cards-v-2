@@ -308,7 +308,13 @@ func _focus_in() -> void:
 
 ### <img src="assets/icon_card_animation.png"> CardAnimationResource
 
-Abstract base class for creating reusable card animations. Assign these to CardLayout properties for plug-and-play animations.
+Abstract base class for creating reusable card animations. Assign these to CardLayout properties or to `CardContainer.idle_animation` for plug-and-play animations.
+
+#### Properties
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `looping` | `bool` | `false` | If `true`, the animation loops until `stop_animation()` is called. Required for idle animations |
 
 #### Methods
 
@@ -316,9 +322,21 @@ Abstract base class for creating reusable card animations. Assign these to CardL
 # Override this method to define animation behavior
 func play_animation(layout: CardLayout) -> void:
     pass
+
+# Override to stop a looping animation. Called by the container when needed (e.g. drag start, clear)
+func stop_animation(layout: CardLayout) -> void:
+    pass
 ```
 
 #### Built-In Animations
+
+##### BobCardAnimation
+
+A looping idle animation that makes cards bob up and down. Uses `CardLayout` offset properties so it never interferes with card positioning or dragging. Phase variance creates a wave effect across the hand.
+
+- `amplitude: float` - Max vertical offset in pixels (default: 5.0)
+- `frequency: float` - Bobs per second in Hz (default: 1.5)
+- `phase_variance: float` - Per-card phase spread; `TAU / N` = full wave across N cards (default: `TAU / 7.0`)
 
 ##### ScaleCardAnimation
 
@@ -344,6 +362,7 @@ Base class for all card containers (`CardHand`, `CardPile`, `CardSlot`). Extends
 | `shape` | `ContainerShape` | Layout shape. If `null`, cards stack at the origin |
 | `max_cards` | `int` | Maximum cards allowed (`-1` for unlimited) |
 | `card_move_duration` | `float` | Default tween duration for cards settling into position |
+| `idle_animation` | `CardAnimationResource` | Looping animation played on all cards while in this container (e.g. bobbing). Stopped per-card during drag |
 | `cards` | `Array[Card]` | Internal card array |
 
 #### Signals
