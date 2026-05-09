@@ -74,6 +74,8 @@ func _exit_tree() -> void:
 func _compute_layout() -> void:
 	super._compute_layout()
 	if !cards.is_empty():
+		if not _dragged_card:
+			_sync_card_child_order()
 		_update_z_indices()
 		_update_focus_chain()
 
