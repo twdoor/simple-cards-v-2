@@ -74,7 +74,6 @@ func _exit_tree() -> void:
 func _compute_layout() -> void:
 	super._compute_layout()
 	if !cards.is_empty():
-		_sync_card_child_order()
 		_update_z_indices()
 		_update_focus_chain()
 
@@ -204,6 +203,7 @@ func _finish_card_drop() -> void:
 	var lead_card = _dragged_card
 
 	if lead_card and cards.has(lead_card) and _last_reorder_index != _original_drag_index:
+		_sync_card_child_order()
 		cards_reordered.emit(cards)
 		_handle_reordered_cards(cards)
 
