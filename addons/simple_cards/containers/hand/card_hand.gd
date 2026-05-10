@@ -228,6 +228,7 @@ func _finish_card_drop() -> void:
 
 
 func _on_holding_card(card: Card) -> void:
+	_handle_dragged_card(card)
 	_drag_followers.clear()
 
 	if cards.has(card):
@@ -271,6 +272,9 @@ func _on_holding_card(card: Card) -> void:
 
 ## Called when a card in the hand is clicked. Override to custom behavior.
 func _handle_clicked_card(card: Card) -> void: pass
+
+## Called when a card in the hand is dragged. Override to custom behavior.
+func _handle_dragged_card(card: Card) -> void: pass
 
 ## Called while a cards are reordered. Override to custom behavior.
 func _handle_reordered_cards(cards: Array[Card]) -> void: pass
