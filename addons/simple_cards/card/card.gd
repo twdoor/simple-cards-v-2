@@ -330,13 +330,14 @@ func move_to(target: CardContainer, config: MoveConfig = null) -> void:
 		rotation_degrees = target_rot
 		move_completed.emit(self)
 	else:
-		_apply_move(target_pos, dur, config)
+		_apply_move(target, dur, config)
 		rotation_degrees = target_rot
 
 
 ## Applies movement using the config's position_callable or the default tween.
 ## Custom callables are responsible for emitting [signal move_completed] when done.
-func _apply_move(target_pos: Vector2, dur: float, config: MoveConfig) -> void:
+func _apply_move(target: CardContainer, dur: float, config: MoveConfig) -> void:
+	var target_pos := target.get_card_target_position(self)
 	if config.position_callable.is_valid():
 		config.position_callable.call(self, target_pos, dur)
 	else:
