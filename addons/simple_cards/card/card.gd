@@ -300,6 +300,7 @@ func move_to(target: CardContainer, duration: float = -1, index: int = -1) -> vo
 		rotation_degrees = target_rot
 		if _pos_tween:
 			_pos_tween.finished.connect(func(): move_completed.emit(self), CONNECT_ONE_SHOT)
+	target._update_card_layer_order()
 
 
 ## Reparents this card to [param new_parent], preserving global position.

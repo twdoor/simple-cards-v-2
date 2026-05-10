@@ -233,6 +233,7 @@ func arrange(duration: float = -1) -> void:
 	for card in cards:
 		if card.holding: continue
 		_settle_card(card, duration)
+	_update_card_layer_order()
 
 
 ## Tweens a single card to its layout position. Rotation is set directly.
@@ -420,5 +421,10 @@ func _get_minimum_size() -> Vector2:
 		max_y = max(max_y, card_bottom_right.y)
 
 	return Vector2(max_x - min_x, max_y - min_y)
+
+func _update_card_layer_order() -> void:
+	for i in range(cards.size()):
+		var card = cards[i]
+		card.z_index = i
 
 #endregion
