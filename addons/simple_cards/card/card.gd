@@ -343,6 +343,7 @@ func _apply_move(target_pos: Vector2, dur: float, config: MoveConfig) -> void:
 		tween_position(target_pos, dur)
 		if _pos_tween:
 			_pos_tween.finished.connect(func(): move_completed.emit(self), CONNECT_ONE_SHOT)
+	target._update_card_layer_order()
 
 
 ## Reparents this card to [param new_parent], preserving global position.
