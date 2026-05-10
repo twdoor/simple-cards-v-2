@@ -287,7 +287,7 @@ func deal_to(target: CardContainer, count: int, duration: float = -1, stagger: f
 ## If [param batch] is [code]true[/code], layout computation is deferred until all
 ## cards are placed, then a single [method arrange] is called at the end.
 ## Automatically enabled when [param duration] is [code]0[/code].
-func move_cards_to(card_array: Array[Card], target: CardContainer, duration: float = -1, stagger: float = 0.0, batch: bool = false) -> int:
+func move_cards_to(card_array: Array[Card], target: CardContainer, duration: float = -1, stagger: float = 0.0, batch: bool = false, index: int = -1) -> int:
 	var use_batch = batch or duration == 0
 	if use_batch:
 		target._batch_mode = true
@@ -298,7 +298,7 @@ func move_cards_to(card_array: Array[Card], target: CardContainer, duration: flo
 		var card = to_move[i]
 		if !cards.has(card): continue
 		if !target.can_accept_card(card): continue
-		card.move_to(target, duration)
+		card.move_to(target, duration, index)
 		moved += 1
 		if stagger > 0.0 and i < to_move.size() - 1:
 			await get_tree().create_timer(stagger).timeout
@@ -319,8 +319,8 @@ func move_cards_to(card_array: Array[Card], target: CardContainer, duration: flo
 ## If [param batch] is [code]true[/code], layout computation is deferred until all
 ## cards are placed, then a single [method arrange] is called at the end.
 ## Automatically enabled when [param duration] is [code]0[/code].
-func move_all_to(target: CardContainer, duration: float = -1, stagger: float = 0.0, batch: bool = false) -> int:
-	return await move_cards_to(cards.duplicate(), target, duration, stagger, batch)
+func move_all_to(target: CardContainer, duration: float = -1, stagger: float = 0.0, batch: bool = false, index: int = -1) -> int:
+	return await move_cards_to(cards.duplicate(), target, duration, stagger, batch, index)
 
 
 ## Sorts cards using a custom comparison and re-arranges.
