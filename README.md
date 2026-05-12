@@ -15,7 +15,6 @@ A flexible, UI-based card system plugin for **Godot 4.5.1+**. Build card games, 
 - [API Reference](github/API.md)
 - [Examples](#examples)
 - [Changelog](github/CHANGELOG.md)
-- [Support](#support)
 
 ------
 
