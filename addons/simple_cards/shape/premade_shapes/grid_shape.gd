@@ -70,3 +70,45 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 		rotations.append(0.0)
 
 	return LayoutResult.new(positions, rotations)
+
+
+func get_focus_neighbor(index: int, direction: String, card_count: int) -> int:
+	if index < 0 or index >= card_count:
+		return -1
+
+	var actual_cols = num_of_cols
+	var actual_rows = num_of_rows
+	if arrange_by_rows:
+		actual_rows = ceili(float(card_count) / float(num_of_cols))
+	else:
+		actual_cols = ceili(float(card_count) / float(num_of_rows))
+
+	var grid_x: int
+	var grid_y: int
+	if arrange_by_rows:
+		grid_x = index % actual_cols
+		grid_y = index / actual_cols
+	else:
+		grid_x = index / actual_rows
+		grid_y = index % actual_rows
+
+	var target_x = grid_x
+	var target_y = grid_y
+	match direction:
+		"left":  target_x -= 1
+		"right": target_x += 1
+		"up":    target_y -= 1
+		"down":  target_y += 1
+		_: return -1
+
+	if target_x < 0 or target_x >= actual_cols: return -1
+	if target_y < 0 or target_y >= actual_rows: return -1
+
+	var target_index: int
+	if arrange_by_rows:
+		target_index = target_y * actual_cols + target_x
+	else:
+		target_index = target_x * actual_rows + target_y
+
+	if target_index < 0 or target_index >= card_count: return -1
+	return target_index

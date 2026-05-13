@@ -211,14 +211,50 @@ func _compute_layout() -> void:
 		var result: ContainerShape.LayoutResult = shape.compute_layout(cards)
 		_card_positions = result.positions
 		_card_rotations = result.rotations
+		_update_focus_chain()
 	else:
 		_card_positions.clear()
 		_card_rotations.clear()
 		for card in cards:
 			_card_positions.append(card.pivot_offset)
 			_card_rotations.append(0.0)
-	
+
 	update_minimum_size()
+
+
+## Applies focus state and directional neighbors to all cards based on the shape.
+func _update_focus_chain() -> void:
+	var card_count = cards.size()
+	if card_count == 0: return
+
+	if not shape.cards_focusable():
+		for card in cards:
+			card.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_DISABLED
+			card.focus_neighbor_left = ^""
+			card.focus_neighbor_right = ^""
+			card.focus_neighbor_top = ^""
+			card.focus_neighbor_bottom = ^""
+			card.focus_previous = ^""
+			card.focus_next = ^""
+		return
+
+	for i in card_count:
+		var card = cards[i]
+		card.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_INHERITED
+
+		card.focus_neighbor_left = _neighbor_path(card, i, "left", card_count)
+		card.focus_neighbor_right = _neighbor_path(card, i, "right", card_count)
+		card.focus_neighbor_top = _neighbor_path(card, i, "up", card_count)
+		card.focus_neighbor_bottom = _neighbor_path(card, i, "down", card_count)
+
+		card.focus_previous = card.get_path_to(cards[i - 1]) if i > 0 else ^""
+		card.focus_next = card.get_path_to(cards[i + 1]) if i < card_count - 1 else ^""
+
+
+func _neighbor_path(card: Card, index: int, direction: String, card_count: int) -> NodePath:
+	var target = shape.get_focus_neighbor(index, direction, card_count)
+	if target == -1: return ^""
+	return card.get_path_to(cards[target])
 
 
 ## Returns the local position a card should occupy after layout.

@@ -12,3 +12,11 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 		rotations.append(0.0)
 
 	return LayoutResult.new(positions, rotations)
+
+
+func get_focus_neighbor(_index: int, _direction: String, _card_count: int) -> int:
+	return -1
+
+
+func cards_focusable() -> bool:
+	return false

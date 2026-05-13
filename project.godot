@@ -33,13 +33,6 @@ enabled=PackedStringArray("res://addons/simple_cards/plugin.cfg")
 
 version_hint="4.5+"
 
-[input]
-
-yes={
-"deadzone": 0.2,
-"events": []
-}
-
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0

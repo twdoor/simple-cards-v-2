@@ -77,7 +77,6 @@ func _compute_layout() -> void:
 		if not _dragged_card:
 			_sync_card_child_order()
 		_update_z_indices()
-		_update_focus_chain()
 
 
 func _settle_card(card: Card, duration: float) -> void:
@@ -355,20 +354,5 @@ func _update_z_indices() -> void:
 			continue
 		cards[i].z_index = i
 
-
-func _update_focus_chain() -> void:
-	var card_count = cards.size()
-	if card_count == 0: return
-
-	for i in card_count:
-		var card = cards[i]
-
-		var prev_index = (i - 1 + card_count) % card_count
-		card.focus_neighbor_left = card.get_path_to(cards[prev_index])
-		card.focus_previous = card.get_path_to(cards[prev_index])
-
-		var next_index = (i + 1) % card_count
-		card.focus_neighbor_right = card.get_path_to(cards[next_index])
-		card.focus_next = card.get_path_to(cards[next_index])
 
 #endregion

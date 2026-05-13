@@ -43,3 +43,25 @@ func compute_layout(cards: Array[Card]) -> LayoutResult:
 ## Computes raw card center positions and rotations before bounding box adjustment.
 ## [br]Override this method to define custom layout shapes.
 @abstract func _compute_raw_cards(cards: Array[Card]) -> LayoutResult
+
+
+## Returns the focus neighbor index for [param index] in the given direction.
+## [br]Direction is one of [code]"left"[/code], [code]"right"[/code], [code]"up"[/code], [code]"down"[/code].
+## Returns [code]-1[/code] if there is no neighbor in that direction.
+## [br]Default: 1D sequence (left = previous, right = next, up/down = none).
+## Override for 2D layouts like grids.
+func get_focus_neighbor(index: int, direction: String, card_count: int) -> int:
+	match direction:
+		"left":
+			return index - 1 if index > 0 else -1
+		"right":
+			return index + 1 if index < card_count - 1 else -1
+		_:
+			return -1
+
+
+## Whether cards arranged by this shape should be focusable.
+## [br]Default: [code]true[/code]. Override and return [code]false[/code] for shapes
+## where focus makes no sense (e.g. stacked cards that overlap).
+func cards_focusable() -> bool:
+	return true

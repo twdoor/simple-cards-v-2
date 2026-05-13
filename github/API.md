@@ -481,11 +481,25 @@ class LayoutResult:
 ```gdscript
 # Computes final card positions and rotations (does NOT move cards)
 func compute_layout(cards: Array[Card]) -> LayoutResult
+
+# Returns the index of the focus neighbor for [index] in [direction]
+# ("left", "right", "up", "down"), or -1 if there is no neighbor.
+# Default implementation: 1D sequence — left = previous, right = next.
+# Override for 2D or rotated layouts.
+func get_focus_neighbor(index: int, direction: String, card_count: int) -> int
+
+# Whether cards arranged by this shape should be focusable.
+# Default true. Override and return false for shapes where focus makes no
+# sense (e.g. overlapping stacks). CardContainer disables focus on all
+# cards while such a shape is active.
+func cards_focusable() -> bool
 ```
 
 #### Creating Custom Shapes
 
 Override `_compute_raw_cards()` to return a `LayoutResult` with raw center positions and rotations. The base class automatically adjusts the bounding box so cards fit inside the container rect.
+
+Optionally override `get_focus_neighbor()` if your shape is 2D or has a non-default orientation, so controller/keyboard navigation matches the visible layout.
 
 ```gdscript
 class_name MyCustomShape extends ContainerShape
@@ -514,6 +528,8 @@ line.alignment = Alignment.CENTER # BEGIN, CENTER, or END alignment
 line.card_rotation_angle = 0.0    # Rotation of individual cards in degrees
 ```
 
+Focus navigation follows `line_rotation`: a horizontal line uses left/right, a vertical line (90°) uses up/down.
+
 **ArcShape**
 
 ```gdscript
@@ -523,6 +539,8 @@ arc.arc_angle = 60.0          # Total arc angle (degrees)
 arc.arc_orientation = 270.0   # Where the arc points (270 = up)
 arc.card_spacing = 50.0       # Space between cards
 ```
+
+Focus navigation follows the tangent at `arc_orientation`: a bottom arc (270°) uses left/right, a side arc (0° or 180°) uses up/down.
 
 **GridShape**
 
@@ -535,6 +553,8 @@ grid.row_offset = 150.0       # Vertical spacing
 grid.arrange_by_rows = true   # Fill rows first (true) or columns first (false)
 ```
 
+Focus navigation is 2D — all four directions move within the grid, respecting `arrange_by_rows`.
+
 **StackShape**
 
 Places all cards at the same position (stacked on top of each other). Useful for draw/discard piles via `CardPile`.
@@ -542,6 +562,8 @@ Places all cards at the same position (stacked on top of each other). Useful for
 ```gdscript
 var stack = StackShape.new()
 ```
+
+Cards arranged by `StackShape` are not focusable in any container — controller/keyboard input passes through to surrounding Controls. This makes it safe to place buttons (e.g. a "Draw" or "Discard" button) directly over a stack pile.
 
 Features:
 

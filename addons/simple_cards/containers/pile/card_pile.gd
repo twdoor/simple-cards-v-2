@@ -42,6 +42,7 @@ func _restore_card_state(card: Card) -> void:
 	card.visible = true
 	card.disabled = false
 
+
 #endregion
 
 
@@ -65,7 +66,7 @@ func peek_top() -> Card:
 
 
 ## Returns [param count] cards without removing them, starting from [param index].
-## [br]Positive [param index] (default [code]1[/code]): counts from the top. 
+## [br]Positive [param index] (default [code]1[/code]): counts from the top.
 ## Collects downward (toward bottom).
 ## [br]Negative [param index]: counts from the bottom. Collects upward (toward top).
 ## [br][br]Examples (pile bottom→top: A B C D E F G):
@@ -76,7 +77,7 @@ func peek_top() -> Card:
 func peek_cards(count: int, index: int = 1) -> Array[Card]:
 	var result: Array[Card] = []
 	if cards.is_empty() or count <= 0 or index == 0: return result
-	
+
 	if index > 0:
 		var start = cards.size() - index
 		if start < 0: return result
@@ -89,7 +90,7 @@ func peek_cards(count: int, index: int = 1) -> Array[Card]:
 		var n = mini(count, cards.size() - start)
 		for i in n:
 			result.append(cards[start + i])
-	
+
 	return result
 
 #endregion

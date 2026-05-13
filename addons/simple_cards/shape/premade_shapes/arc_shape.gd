@@ -41,3 +41,23 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 		rotations.append(angle_rad + deg_to_rad(90))
 
 	return LayoutResult.new(positions, rotations)
+
+
+func get_focus_neighbor(index: int, direction: String, card_count: int) -> int:
+	var o = deg_to_rad(arc_orientation)
+	var forward = Vector2(-sin(o), cos(o))
+	var step: int
+	if absf(forward.x) >= absf(forward.y):
+		match direction:
+			"right": step = 1 if forward.x >= 0 else -1
+			"left":  step = -1 if forward.x >= 0 else 1
+			_: return -1
+	else:
+		match direction:
+			"down": step = 1 if forward.y >= 0 else -1
+			"up":   step = -1 if forward.y >= 0 else 1
+			_: return -1
+
+	var target = index + step
+	if target < 0 or target >= card_count: return -1
+	return target

@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 2.12
+
+- **Layout-Aware Focus Navigation** — `ContainerShape` now exposes `get_focus_neighbor(index, direction, card_count) -> int` so each shape defines its own controller/keyboard navigation topology. Default returns 1D sequence (left/right). `CardContainer._update_focus_chain()` queries the shape, so every container (Hand, Pile, Slot, custom) gets consistent directional input that matches the visible layout — no more hardcoded left/right.
+- **LineShape Rotation Awareness** — `LineShape.get_focus_neighbor()` derives the forward direction from `line_rotation`. A vertical hand (90°) navigates with up/down; a reversed line (180°) flips left/right.
+- **ArcShape Orientation Awareness** — `ArcShape.get_focus_neighbor()` uses the tangent at `arc_orientation` to pick the dominant axis. An arc on the right edge of the screen (orientation 0°) navigates with up/down; the default bottom arc (270°) navigates with left/right.
+- **GridShape 2D Navigation** — `GridShape.get_focus_neighbor()` returns proper row/column neighbors in all four directions, respecting `arrange_by_rows` and partial last rows.
+- **StackShape Disables Focus** — `ContainerShape.cards_focusable()` is a new virtual that returns `true` by default. `StackShape` overrides it to return `false`. `CardContainer._compute_layout()` now applies `focus_behavior_recursive = FOCUS_BEHAVIOR_DISABLED` to all cards when the shape is non-focusable, so stack-shaped piles, slots, and hands all pass controller/keyboard input through to surrounding Controls (e.g. buttons placed on top of a discard pile).
+- **No Focus Wraparound in CardHand** — Pressing left on the first card or right on the last card no longer loops back to the opposite end. Empty neighbors let Godot's automatic neighbor detection hand focus off to action buttons outside the hand.
+
 ## Version 2.11
 
 - **`Card.MoveConfig`** — New inner class that bundles movement parameters (`duration`, `index`, `stagger`, `batch`, `position_callable`) into a reusable object. Pass to `move_to()`, `deal_to()`, `move_cards_to()`, and `move_all_to()`.
