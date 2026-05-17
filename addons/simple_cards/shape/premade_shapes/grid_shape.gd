@@ -26,13 +26,13 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 	var positions: Array[Vector2] = []
 	var rotations: Array[float] = []
 
-	var actual_cols = num_of_cols
-	var actual_rows = num_of_rows
+	var actual_cols = maxi(1, num_of_cols)
+	var actual_rows = maxi(1, num_of_rows)
 
 	if arrange_by_rows:
-		actual_rows = ceili(float(card_count) / float(num_of_cols))
+		actual_rows = ceili(float(card_count) / float(actual_cols))
 	else:
-		actual_cols = ceili(float(card_count) / float(num_of_rows))
+		actual_cols = ceili(float(card_count) / float(actual_rows))
 
 	var total_width = (actual_cols - 1) * col_offset
 	var total_height = (actual_rows - 1) * row_offset
@@ -76,12 +76,12 @@ func get_focus_neighbor(index: int, direction: String, card_count: int) -> int:
 	if index < 0 or index >= card_count:
 		return -1
 
-	var actual_cols = num_of_cols
-	var actual_rows = num_of_rows
+	var actual_cols = maxi(1, num_of_cols)
+	var actual_rows = maxi(1, num_of_rows)
 	if arrange_by_rows:
-		actual_rows = ceili(float(card_count) / float(num_of_cols))
+		actual_rows = ceili(float(card_count) / float(actual_cols))
 	else:
-		actual_cols = ceili(float(card_count) / float(num_of_rows))
+		actual_cols = ceili(float(card_count) / float(actual_rows))
 
 	var grid_x: int
 	var grid_y: int

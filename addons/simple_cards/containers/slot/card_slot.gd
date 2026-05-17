@@ -71,26 +71,27 @@ func _clamp_max_cards(_value: int) -> int:
 func _container_ready() -> void:
 	max_cards = 1
 	card_move_duration = 0.15
-	
+
 	CG.holding_card.connect(_on_card_held)
 	CG.dropped_card.connect(_on_card_dropped)
-	
+
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
-	
+
 	for child in get_children():
 		if child is Card and !cards.has(child):
 			cards.append(child)
 			_connect_card_signals(child)
-	
+
 	if !cards.is_empty():
 		arrange(0)
-	
+
 	set_process(false)
 
 
 func _exit_tree() -> void:
 	if Engine.is_editor_hint(): return
+	_stop_idle()
 	if CG.holding_card.is_connected(_on_card_held):
 		CG.holding_card.disconnect(_on_card_held)
 	if CG.dropped_card.is_connected(_on_card_dropped):
@@ -123,37 +124,37 @@ func get_card() -> Card:
 func swap_with(other_slot: CardSlot) -> bool:
 	if slot_locked or other_slot.slot_locked: return false
 	if is_empty() or other_slot.is_empty(): return false
-	
+
 	var this_card = cards[0]
 	var other_card = other_slot.cards[0]
 	var this_global = this_card.global_position
 	var other_global = other_card.global_position
-	
+
 	_suppress_auto_remove = true
 	other_slot._suppress_auto_remove = true
-	
+
 	_raw_unregister(this_card)
 	other_slot._raw_unregister(other_card)
-	
+
 	this_card._reparent_to(other_slot)
 	other_card._reparent_to(self)
-	
+
 	_raw_register(other_card)
 	_compute_layout()
 	other_slot._raw_register(this_card)
 	other_slot._compute_layout()
-	
+
 	_suppress_auto_remove = false
 	other_slot._suppress_auto_remove = false
-	
+
 	other_card.kill_all_tweens()
 	other_card.global_position = other_global
 	_settle_card(other_card, card_move_duration)
-	
+
 	this_card.kill_all_tweens()
 	this_card.global_position = this_global
 	other_slot._settle_card(this_card, other_slot.card_move_duration)
-	
+
 	slot_swapped.emit(this_card, other_card)
 	_handle_slot_swapped(this_card, other_card)
 	other_slot.slot_swapped.emit(other_card, this_card)
@@ -168,29 +169,26 @@ func swap_with(other_slot: CardSlot) -> bool:
 func can_accept_card(card: Card) -> bool:
 	if cards.has(card): return false
 	var reason: String = ""
-	
-	
+
+
 	if slot_locked:
 		reason = "slot_locked"
 		card_rejected.emit(card, reason)
 		_handle_card_rejected(card, reason)
 		return false
-	
+
 	if !_check_conditions(card):
 		reason = "failed_conditions"
 		card_rejected.emit(card, reason)
 		_handle_card_rejected(card, reason)
 		return false
-	
-	if is_full() and allow_swap:
-		return true
-	
+
 	if is_full():
 		reason = "slot_full"
 		card_rejected.emit(card, reason)
 		_handle_card_rejected(card, reason)
 		return false
-	
+
 	return true
 
 
@@ -227,13 +225,13 @@ func _settle_card(card: Card, duration: float) -> void:
 func _process(_delta: float) -> void:
 	var cursor_pos = CG.get_cursor_position()
 	var is_over = get_global_rect().has_point(cursor_pos)
-	
+
 	if is_over and not _card_over:
 		_card_over = true
 		_card_currently_over = CG.current_held_item
 		card_entered.emit(_card_currently_over)
 		_handle_card_entered(_card_currently_over)
-	
+
 	elif not is_over and _card_over:
 		_card_over = false
 		if _card_currently_over:
@@ -246,7 +244,7 @@ func _on_card_held(card: Card) -> void:
 	if slot_locked and cards.has(card):
 		_force_return_card.call_deferred(card)
 		return
-	
+
 	_card_originated_from_this_slot = cards.has(card)
 	_card_over = false
 	set_process(true)
@@ -262,7 +260,7 @@ func _on_card_dropped() -> void:
 				_abandon_card(card)
 			else:
 				_settle_card(card, card_move_duration)
-	
+
 	_card_over = false
 	_card_currently_over = null
 	_card_originated_from_this_slot = false
@@ -274,30 +272,37 @@ func _on_card_dropped() -> void:
 #region Drop Handling
 
 func _handle_drop(incoming: Card) -> void:
-	if !can_accept_card(incoming):
-		_return_to_source(incoming)
-		return
-	
 	var source = incoming.get_parent()
-	
+
 	if source == self and cards.has(incoming):
 		_settle_card(incoming, card_move_duration)
 		card_dropped_on.emit(incoming)
 		_handle_card_dropped_on(incoming)
 		return
-	
+
+	if slot_locked:
+		_reject_card(incoming, "slot_locked")
+		_return_to_source(incoming)
+		return
+
+	if !_check_conditions(incoming):
+		_reject_card(incoming, "failed_conditions")
+		_return_to_source(incoming)
+		return
+
 	if cards.is_empty():
 		incoming.move_to(self)
 		card_dropped_on.emit(incoming)
 		_handle_card_dropped_on(incoming)
 		return
-	
+
 	if allow_swap:
 		_swap_cards(incoming, source)
 		card_dropped_on.emit(incoming)
 		_handle_card_dropped_on(incoming)
 		return
-	
+
+	_reject_card(incoming, "slot_full")
 	_return_to_source(incoming)
 
 
@@ -307,36 +312,39 @@ func _swap_cards(incoming: Card, source: Node) -> void:
 	var old_card = cards[0]
 	var old_global = old_card.global_position
 	var incoming_global = incoming.global_position
-	
+	var source_index := -1
+	if source is CardContainer:
+		source_index = source.get_card_index(incoming)
+
 	_suppress_auto_remove = true
 	if source is CardContainer:
 		source._suppress_auto_remove = true
-	
+
 	_raw_unregister(old_card)
 	if source is CardContainer:
 		source._raw_unregister(incoming)
-	
+
 	incoming._reparent_to(self)
 	old_card._reparent_to(source)
-	
+
 	_raw_register(incoming)
 	_compute_layout()
-	
+
 	if source is CardContainer:
-		source._raw_register(old_card)
+		source._raw_register(old_card, source_index)
 		source._compute_layout()
 		source._suppress_auto_remove = false
 		for c in source.cards:
 			if c.holding: continue
 			source._settle_card(c, source.card_move_duration)
-	
+
 	_suppress_auto_remove = false
-	
+
 	old_card.kill_all_tweens()
 	old_card.global_position = old_global
 	incoming.kill_all_tweens()
 	incoming.global_position = incoming_global
-	
+
 	_settle_card(incoming, card_move_duration)
 	if source is CardContainer:
 		source._settle_card(old_card, source.card_move_duration)
@@ -345,8 +353,18 @@ func _swap_cards(incoming: Card, source: Node) -> void:
 	card_removed.emit(old_card, 0)
 	_handle_card_added(incoming, 0)
 	card_added.emit(incoming, 0)
+	if source is CardContainer:
+		source._handle_card_removed(incoming, source_index)
+		source.card_removed.emit(incoming, source_index)
+		source._handle_card_added(old_card, source_index)
+		source.card_added.emit(old_card, source_index)
 	slot_swapped.emit(old_card, incoming)
 	_handle_slot_swapped(old_card, incoming)
+
+
+func _reject_card(card: Card, reason: String) -> void:
+	card_rejected.emit(card, reason)
+	_handle_card_rejected(card, reason)
 
 ## Returns a card to its source container for re-settling.
 func _return_to_source(card: Card) -> void:
@@ -403,7 +421,7 @@ func _on_mouse_entered() -> void:
 func _on_mouse_exited() -> void:
 	slot_unhovered.emit()
 	_handle_slot_unhovered()
-	
+
 #endregion
 
 #region Overridable Callbacks

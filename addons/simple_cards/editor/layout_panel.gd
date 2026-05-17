@@ -389,6 +389,12 @@ func _request_preview(path: String) -> void:
 	if not scene: return
 
 	var instance = scene.instantiate()
+	if not instance:
+		return
+	add_child(instance)
+	if instance is Control:
+		instance.position = Vector2(-100000, -100000)
+		instance.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Find the SubViewport inside the layout
 	var sub_vp: SubViewport = null
@@ -401,12 +407,7 @@ func _request_preview(path: String) -> void:
 		instance.queue_free()
 		return
 
-	# Pull the SubViewport out of the placeholder SubViewportContainer
-	# and add it directly to the tree as a standalone render target.
-	instance.remove_child(sub_vp)
-	sub_vp.set_owner(null)
 	sub_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	add_child(sub_vp)
 
 	await RenderingServer.frame_post_draw
 
@@ -424,7 +425,6 @@ func _request_preview(path: String) -> void:
 			if preview_texture and selected_path == path:
 				preview_texture.texture = tex
 
-	sub_vp.queue_free()
 	instance.queue_free()
 
 
@@ -514,7 +514,7 @@ func _on_tags_submitted(new_tags_str: String) -> void:
 		if not cleaned.is_empty():
 			new_tags.append(cleaned)
 
-	cache.set_layout_tags(selected_path, new_tags)
+	cache.set_layout_tags(selected_path, cache._normalize_tags(new_tags))
 
 
 func _on_delete_pressed() -> void:
@@ -560,6 +560,10 @@ func _validate_create_dialog() -> void:
 
 	if error_msg.is_empty() and path.is_empty():
 		error_msg = "Please select a save location"
+	elif error_msg.is_empty() and not path.begins_with("res://"):
+		error_msg = "Path must be inside the project (res://)"
+	elif error_msg.is_empty() and not path.ends_with(".tscn"):
+		error_msg = "Layout scene must be a .tscn file"
 	elif error_msg.is_empty() and FileAccess.file_exists(path):
 		error_msg = "File already exists: %s" % path.get_file()
 
@@ -609,6 +613,7 @@ func _on_create_confirmed() -> void:
 			var cleaned = tag.strip_edges()
 			if not cleaned.is_empty():
 				tags.append(cleaned)
+	tags = cache._normalize_tags(tags)
 
 	var err = DirAccess.copy_absolute(LayoutCache.DEFAULT_LAYOUT_PATH, path)
 	if err != OK:
@@ -655,13 +660,12 @@ func _prepare_new_scene(scene_path: String, layout_id: String, tags: Array[Strin
 	if node_line_idx != -1:
 		var metadata_lines: Array[String] = []
 		metadata_lines.append('metadata/is_layout = true')
-		metadata_lines.append('metadata/layout_id = "%s"' % layout_id)
+		metadata_lines.append('metadata/layout_id = %s' % JSON.stringify(layout_id))
 
-		var tags_str = "[]"
+		var layout_tags_str = "[]"
 		if not tags.is_empty():
-			var quoted = tags.map(func(t): return '"%s"' % t)
-			tags_str = "[%s]" % ", ".join(quoted)
-		metadata_lines.append('metadata/tags = %s' % tags_str)
+			layout_tags_str = JSON.stringify(tags)
+		metadata_lines.append('metadata/tags = %s' % layout_tags_str)
 
 		for i in range(metadata_lines.size()):
 			lines.insert(node_line_idx + 1 + i, metadata_lines[i])

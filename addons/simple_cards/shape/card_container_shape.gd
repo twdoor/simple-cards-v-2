@@ -26,10 +26,21 @@ func compute_layout(cards: Array[Card]) -> LayoutResult:
 	var min_bounds = Vector2(INF, INF)
 
 	for i in card_count:
-		var half_size = cards[i].size / 2.0
+		if i >= raw.positions.size():
+			continue
+		var half_size := cards[i].size / 2.0
 		var pos = raw.positions[i]
-		min_bounds.x = min(min_bounds.x, pos.x - half_size.x)
-		min_bounds.y = min(min_bounds.y, pos.y - half_size.y)
+		var rot := raw.rotations[i] if i < raw.rotations.size() else 0.0
+		var corners := [
+			Vector2(-half_size.x, -half_size.y),
+			Vector2(half_size.x, -half_size.y),
+			Vector2(half_size.x, half_size.y),
+			Vector2(-half_size.x, half_size.y)
+		]
+		for corner in corners:
+			var rotated_corner: Vector2 = pos + corner.rotated(rot)
+			min_bounds.x = min(min_bounds.x, rotated_corner.x)
+			min_bounds.y = min(min_bounds.y, rotated_corner.y)
 
 	var offset = -min_bounds
 
@@ -58,10 +69,3 @@ func get_focus_neighbor(index: int, direction: String, card_count: int) -> int:
 			return index + 1 if index < card_count - 1 else -1
 		_:
 			return -1
-
-
-## Whether cards arranged by this shape should be focusable.
-## [br]Default: [code]true[/code]. Override and return [code]false[/code] for shapes
-## where focus makes no sense (e.g. stacked cards that overlap).
-func cards_focusable() -> bool:
-	return true

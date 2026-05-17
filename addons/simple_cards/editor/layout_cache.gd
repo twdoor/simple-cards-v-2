@@ -18,6 +18,7 @@ var _tags_regex: RegEx
 var _tag_regex: RegEx
 var _id_write_regex: RegEx
 var _tags_write_regex: RegEx
+var _is_layout_write_regex: RegEx
 
 
 func _init() -> void:
@@ -31,6 +32,8 @@ func _init() -> void:
 	_id_write_regex.compile('(metadata/layout_id\\s*=\\s*)"[^"]*"')
 	_tags_write_regex = RegEx.new()
 	_tags_write_regex.compile('(metadata/tags\\s*=\\s*)\\[[^\\]]*\\]')
+	_is_layout_write_regex = RegEx.new()
+	_is_layout_write_regex.compile('metadata/is_layout\\s*=\\s*true')
 	load_cache()
 
 
@@ -57,7 +60,7 @@ func load_cache() -> void:
 func save_cache() -> void:
 	var file = FileAccess.open(CACHE_PATH, FileAccess.WRITE)
 	if file:
-		file.store_string(JSON.stringify(layouts, "\t"))
+		file.store_string(JSON.stringify(_sorted_layouts(), "\t"))
 	
 	_generate_layout_ids_file()
 
@@ -84,9 +87,17 @@ func _generate_layout_ids_file() -> void:
 				ids.append(layout_id)
 	
 	ids.sort()
+
+	var const_names: Dictionary = {}
+	var emitted_const_names: Array[String] = []
 	
 	for id in ids:
-		var const_name = id.to_upper()
+		var const_name = _layout_id_to_const_name(id)
+		if const_name in const_names:
+			push_error("LayoutCache: Layout IDs '%s' and '%s' both generate constant '%s'" % [const_names[const_name], id, const_name])
+			continue
+		const_names[const_name] = id
+		emitted_const_names.append(const_name)
 		lines.append('const %s: StringName = &"%s"' % [const_name, id])
 	
 	lines.append("")
@@ -94,9 +105,9 @@ func _generate_layout_ids_file() -> void:
 	lines.append("## Returns all available layout IDs")
 	lines.append("static func get_all() -> Array[StringName]:")
 	lines.append("\treturn [")
-	for i in range(ids.size()):
-		var comma = "," if i < ids.size() - 1 else ""
-		lines.append("\t\t%s%s" % [ids[i].to_upper(), comma])
+	for i in range(emitted_const_names.size()):
+		var comma = "," if i < emitted_const_names.size() - 1 else ""
+		lines.append("\t\t%s%s" % [emitted_const_names[i], comma])
 	lines.append("\t]")
 	
 	lines.append("")
@@ -235,16 +246,16 @@ func _update_layout_entry(path: String, info: Dictionary) -> void:
 	if path in layouts:
 		var was_enabled = layouts[path].get("enabled", true)
 		layouts[path] = {
-			"layout_id": info.layout_id,
-			"tags": info.tags,
+			"layout_id": _normalize_layout_id(info.layout_id),
+			"tags": _normalize_tags(info.tags),
 			"enabled": was_enabled,
 			"last_modified": info.last_modified
 		}
 	else:
 		# New layout
 		layouts[path] = {
-			"layout_id": info.layout_id,
-			"tags": info.tags,
+			"layout_id": _normalize_layout_id(info.layout_id),
+			"tags": _normalize_tags(info.tags),
 			"enabled": true,
 			"last_modified": info.last_modified
 		}
@@ -278,7 +289,7 @@ func _is_default_layout(path: String) -> bool:
 
 func get_all_layouts() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	for path in layouts.keys():
+	for path in _get_sorted_paths():
 		var info = layouts[path].duplicate()
 		info["path"] = path
 		result.append(info)
@@ -287,12 +298,56 @@ func get_all_layouts() -> Array[Dictionary]:
 
 func get_enabled_layouts() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	for path in layouts.keys():
+	for path in _get_sorted_paths():
 		if layouts[path].get("enabled", true):
 			var info = layouts[path].duplicate()
 			info["path"] = path
 			result.append(info)
 	return result
+
+
+func get_enabled_layout_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for layout in get_enabled_layouts():
+		var layout_id := String(layout.get("layout_id", ""))
+		if not layout_id.is_empty():
+			result.append(StringName(layout_id))
+	return result
+
+
+func has_layout(layout_id: StringName, include_disabled: bool = false) -> bool:
+	if layout_id.is_empty():
+		return false
+	return not _find_layout_path(str(layout_id), include_disabled).is_empty()
+
+
+func get_layout_path(layout_id: StringName, fallback_id: StringName = &"", include_disabled: bool = false) -> String:
+	var requested := str(layout_id)
+	if not requested.is_empty():
+		var path := _find_layout_path(requested, include_disabled)
+		if not path.is_empty():
+			return path
+
+	var fallback := str(fallback_id)
+	if not fallback.is_empty():
+		var fallback_path := _find_layout_path(fallback, include_disabled)
+		if not fallback_path.is_empty():
+			return fallback_path
+		if fallback == str(LayoutID.DEFAULT_BACK) and ResourceLoader.exists(DEFAULT_BACK_LAYOUT_PATH):
+			return DEFAULT_BACK_LAYOUT_PATH
+
+	if ResourceLoader.exists(DEFAULT_LAYOUT_PATH):
+		return DEFAULT_LAYOUT_PATH
+	return ""
+
+
+func get_layout_info(layout_id: StringName, include_disabled: bool = false) -> Dictionary:
+	var path := _find_layout_path(str(layout_id), include_disabled)
+	if path.is_empty() or path not in layouts:
+		return {}
+	var info: Dictionary = layouts[path].duplicate()
+	info["path"] = path
+	return info
 
 
 func set_layout_enabled(path: String, enabled: bool) -> void:
@@ -304,6 +359,14 @@ func set_layout_enabled(path: String, enabled: bool) -> void:
 
 func set_layout_id(path: String, new_id: String) -> bool:
 	if path not in layouts:
+		return false
+
+	new_id = _normalize_layout_id(new_id)
+	if new_id.is_empty():
+		push_error("LayoutCache: Layout ID cannot be empty")
+		return false
+	if not new_id.is_valid_identifier():
+		push_error("LayoutCache: Layout ID '%s' must be a valid identifier" % new_id)
 		return false
 	
 	for other_path in layouts.keys():
@@ -322,7 +385,7 @@ func set_layout_tags(path: String, new_tags: Array) -> void:
 	if path not in layouts:
 		return
 	
-	layouts[path].tags = new_tags
+	layouts[path].tags = _normalize_tags(new_tags)
 	_write_metadata_to_scene(path)
 	save_cache()
 	cache_updated.emit()
@@ -363,21 +426,113 @@ func _write_metadata_to_scene(scene_path: String) -> void:
 	var layout_data = layouts[scene_path]
 	
 	
-	content = _id_write_regex.sub(content, '$1"%s"' % layout_data.layout_id)
+	var metadata: Dictionary = {
+		"is_layout": true,
+		"layout_id": _normalize_layout_id(layout_data.layout_id),
+		"tags": _normalize_tags(layout_data.tags)
+	}
+	layout_data.layout_id = metadata.layout_id
+	layout_data.tags = metadata.tags
+	content = _upsert_layout_metadata(content, metadata)
 
-	var tags_str = "[]"
-	if not layout_data.tags.is_empty():
-		var quoted_tags = layout_data.tags.map(func(t): return '"%s"' % t)
-		tags_str = "[%s]" % ", ".join(quoted_tags)
-
-	content = _tags_write_regex.sub(content, '$1%s' % tags_str)
-	
-	
 	var out_file = FileAccess.open(scene_path, FileAccess.WRITE)
 	if out_file:
 		out_file.store_string(content)
+		layouts[scene_path].last_modified = FileAccess.get_modified_time(scene_path)
 	else:
 		push_error("LayoutCache: Cannot write scene file: %s" % scene_path)
+
+
+func _upsert_layout_metadata(content: String, metadata: Dictionary) -> String:
+	var layout_id_text := JSON.stringify(String(metadata.layout_id))
+	var tags_text := JSON.stringify(metadata.tags)
+
+	if _id_write_regex.search(content):
+		content = _id_write_regex.sub(content, "$1%s" % layout_id_text)
+	else:
+		content = _insert_root_metadata_line(content, "metadata/layout_id = %s" % layout_id_text)
+
+	if _tags_write_regex.search(content):
+		content = _tags_write_regex.sub(content, "$1%s" % tags_text)
+	else:
+		content = _insert_root_metadata_line(content, "metadata/tags = %s" % tags_text)
+
+	if not _is_layout_write_regex.search(content):
+		content = _insert_root_metadata_line(content, "metadata/is_layout = true")
+
+	return content
+
+
+func _insert_root_metadata_line(content: String, line: String) -> String:
+	var lines := content.split("\n")
+	for i in range(lines.size()):
+		if lines[i].strip_edges().begins_with("[node"):
+			lines.insert(i + 1, line)
+			return "\n".join(lines)
+	return content + "\n" + line
+
+
+func _normalize_layout_id(layout_id: String) -> String:
+	return layout_id.strip_edges()
+
+
+func _normalize_tags(tags: Array) -> Array[String]:
+	var result: Array[String] = []
+	for tag in tags:
+		var cleaned := String(tag).strip_edges()
+		if cleaned.is_empty(): continue
+		if cleaned in result: continue
+		result.append(cleaned)
+	result.sort()
+	return result
+
+
+func _layout_id_to_const_name(layout_id: String) -> String:
+	var const_name := layout_id.to_upper()
+	var sanitized := ""
+	for i in const_name.length():
+		var c := const_name.substr(i, 1)
+		var code := c.unicode_at(0)
+		var valid := (code >= 65 and code <= 90) or (code >= 48 and code <= 57) or c == "_"
+		sanitized += c if valid else "_"
+	if sanitized.is_empty():
+		sanitized = "LAYOUT"
+	var first_code := sanitized.substr(0, 1).unicode_at(0)
+	if first_code >= 48 and first_code <= 57:
+		sanitized = "LAYOUT_" + sanitized
+	return sanitized
+
+
+func _find_layout_path(layout_id: String, include_disabled: bool = false) -> String:
+	for path in _get_sorted_paths():
+		var data: Dictionary = layouts[path]
+		if data.get("layout_id", "") != layout_id:
+			continue
+		if not include_disabled and not data.get("enabled", true):
+			continue
+		return path
+	return ""
+
+
+func _get_sorted_paths() -> Array[String]:
+	var paths: Array[String] = []
+	for path in layouts.keys():
+		paths.append(path)
+	paths.sort_custom(func(a: String, b: String) -> bool:
+		var a_id := String(layouts[a].get("layout_id", ""))
+		var b_id := String(layouts[b].get("layout_id", ""))
+		if a_id == b_id:
+			return a < b
+		return a_id < b_id
+	)
+	return paths
+
+
+func _sorted_layouts() -> Dictionary:
+	var result := {}
+	for path in _get_sorted_paths():
+		result[path] = layouts[path]
+	return result
 
 
 func layout_id_exists(layout_id: String, exclude_path: String = "") -> bool:

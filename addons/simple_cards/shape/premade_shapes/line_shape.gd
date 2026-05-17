@@ -31,7 +31,7 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 	var total_width = (card_count - 1) * card_spacing + card_size.x
 	var actual_spacing = card_spacing
 	if total_width > max_width:
-		actual_spacing = (max_width - card_size.x) / max(1, card_count - 1)
+		actual_spacing = maxf(0.0, (max_width - card_size.x) / max(1, card_count - 1))
 
 	var start_x: float
 	match alignment:

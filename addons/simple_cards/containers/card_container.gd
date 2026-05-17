@@ -40,6 +40,15 @@ signal container_full()
 ## Default tween duration for cards settling into position.
 @export var card_move_duration: float = 0.3
 
+## If [code]false[/code], all cards in this container have keyboard/controller focus disabled
+## (via [constant Control.FOCUS_BEHAVIOR_DISABLED]). Mouse interaction and dragging are
+## unaffected. Useful for piles or stacked containers where directional focus makes no sense.
+@export var cards_focusable: bool = true:
+	set(value):
+		cards_focusable = value
+		if !cards.is_empty():
+			_update_focus_chain()
+
 ## Idle animation looped on all cards while in this container (e.g. bobbing).
 @export var idle_animation: CardAnimationResource
 
@@ -67,6 +76,15 @@ func _ready() -> void:
 	_container_ready()
 	if idle_animation and not cards.is_empty():
 		_start_idle()
+
+
+func _exit_tree() -> void:
+	_stop_idle()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		_stop_idle()
 
 
 #region Queries
@@ -180,8 +198,11 @@ func _unregister_card(card: Card) -> void:
 
 ## Registers a card without triggering layout or signals.
 ## Used for atomic multi-card operations like swaps.
-func _raw_register(card: Card) -> void:
-	cards.append(card)
+func _raw_register(card: Card, index: int = -1) -> void:
+	if index < 0 or index > cards.size():
+		cards.append(card)
+	else:
+		cards.insert(index, card)
 	_connect_card_signals(card)
 	_apply_card_state(card)
 
@@ -218,6 +239,7 @@ func _compute_layout() -> void:
 		for card in cards:
 			_card_positions.append(card.pivot_offset)
 			_card_rotations.append(0.0)
+		_update_focus_chain()
 
 	update_minimum_size()
 
@@ -227,7 +249,7 @@ func _update_focus_chain() -> void:
 	var card_count = cards.size()
 	if card_count == 0: return
 
-	if not shape.cards_focusable():
+	if not cards_focusable:
 		for card in cards:
 			card.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_DISABLED
 			card.focus_neighbor_left = ^""
@@ -252,6 +274,17 @@ func _update_focus_chain() -> void:
 
 
 func _neighbor_path(card: Card, index: int, direction: String, card_count: int) -> NodePath:
+	if not shape:
+		match direction:
+			"left":
+				var left_index = index - 1
+				return card.get_path_to(cards[left_index]) if left_index >= 0 else ^""
+			"right":
+				var right_index = index + 1
+				return card.get_path_to(cards[right_index]) if right_index < card_count else ^""
+			_:
+				return ^""
+
 	var target = shape.get_focus_neighbor(index, direction, card_count)
 	if target == -1: return ^""
 	return card.get_path_to(cards[target])
@@ -522,14 +555,20 @@ func _get_minimum_size() -> Vector2:
 	for i in cards.size():
 		if i >= _card_positions.size(): break
 		var card_position = _card_positions[i]
-		var card_size = cards[i].size
-		var card_top_left = card_position - card_size / 2
-		var card_bottom_right = card_position + card_size / 2
-
-		min_x = min(min_x, card_top_left.x)
-		min_y = min(min_y, card_top_left.y)
-		max_x = max(max_x, card_bottom_right.x)
-		max_y = max(max_y, card_bottom_right.y)
+		var half_size: Vector2 = cards[i].size / 2.0
+		var rot: float = _card_rotations[i] if i < _card_rotations.size() else 0.0
+		var corners := [
+			Vector2(-half_size.x, -half_size.y),
+			Vector2(half_size.x, -half_size.y),
+			Vector2(half_size.x, half_size.y),
+			Vector2(-half_size.x, half_size.y)
+		]
+		for corner in corners:
+			var rotated_corner: Vector2 = card_position + corner.rotated(rot)
+			min_x = min(min_x, rotated_corner.x)
+			max_x = max(max_x, rotated_corner.x)
+			min_y = min(min_y, rotated_corner.y)
+			max_y = max(max_y, rotated_corner.y)
 
 	return Vector2(max_x - min_x, max_y - min_y)
 

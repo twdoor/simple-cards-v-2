@@ -16,7 +16,3 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 
 func get_focus_neighbor(_index: int, _direction: String, _card_count: int) -> int:
 	return -1
-
-
-func cards_focusable() -> bool:
-	return false

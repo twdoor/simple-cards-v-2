@@ -15,6 +15,7 @@ A draggable button that represents a single card.
 | `is_front_face` | `bool` | `true` shows front layout, `false` shows back |
 | `front_layout_name` | `StringName` | ID of the front layout |
 | `back_layout_name` | `StringName` | ID of the back layout |
+| `current_layout_name` | `StringName` | Resolved layout ID currently displayed after fallback rules are applied |
 | `position_offset` | `Vector2` | Custom offset used by CardHand |
 | `rotation_offset` | `float` | Custom rotation offset used by CardHand |
 | `drag_coef` | `float` | Coefficient used for the drag function |
@@ -362,6 +363,7 @@ Base class for all card containers (`CardHand`, `CardPile`, `CardSlot`). Extends
 | `shape` | `ContainerShape` | Layout shape. If `null`, cards stack at the origin |
 | `max_cards` | `int` | Maximum cards allowed (`-1` for unlimited) |
 | `card_move_duration` | `float` | Default tween duration for cards settling into position |
+| `cards_focusable` | `bool` | If `false`, all cards in this container have keyboard/controller focus disabled. Default `true` |
 | `idle_animation` | `CardAnimationResource` | Looping animation played on all cards while in this container (e.g. bobbing). Stopped per-card during drag |
 | `cards` | `Array[Card]` | Internal card array |
 
@@ -487,12 +489,6 @@ func compute_layout(cards: Array[Card]) -> LayoutResult
 # Default implementation: 1D sequence — left = previous, right = next.
 # Override for 2D or rotated layouts.
 func get_focus_neighbor(index: int, direction: String, card_count: int) -> int
-
-# Whether cards arranged by this shape should be focusable.
-# Default true. Override and return false for shapes where focus makes no
-# sense (e.g. overlapping stacks). CardContainer disables focus on all
-# cards while such a shape is active.
-func cards_focusable() -> bool
 ```
 
 #### Creating Custom Shapes
@@ -947,10 +943,13 @@ func get_local_cursor_position(node: Node) -> Vector2
 
 # Layout management
 func get_available_layouts() -> Array[StringName]
+func has_layout(layout_id: StringName) -> bool
 func get_layouts_by_tag(tag: String) -> Array[StringName]
 func get_all_layout_tags() -> Array[String]
 func get_layout_tags(layout_id: StringName) -> Array
-func create_layout(layout_id: StringName = &"") -> CardLayout
+func get_layout_path(layout_id: StringName = &"", fallback_id: StringName = &"") -> String
+func resolve_layout_id(layout_id: StringName = &"", fallback_id: StringName = &"") -> StringName
+func create_layout(layout_id: StringName = &"", fallback_id: StringName = &"") -> CardLayout
 func refresh_layouts() -> void
 ```
 
@@ -982,6 +981,8 @@ func _on_card_drop():
 ### LayoutID
 
 Auto-generated class containing constants for all enabled layout IDs. This file is regenerated whenever you modify layouts in the Card Layouts panel.
+
+Layout IDs must be valid GDScript identifiers. The generated constants are normalized from those IDs, sorted for stable output, and should not be edited manually.
 
 #### Usage
 

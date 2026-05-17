@@ -57,8 +57,7 @@ func _on_draw_clicked(_card: Card) -> void:
 		draw_card.disabled = true
 		var hand_cards: Array[Card] = deal_hand.cards.duplicate()
 		hand_cards.reverse()
-		deal_hand.move_cards_to(hand_cards, deck_manager.starting_pile, Card.MoveConfig.new(.1, -1, .02))
-		await deal_hand.container_empty
+		await deal_hand.move_cards_to(hand_cards, deck_manager.starting_pile, Card.MoveConfig.new(.1, -1, .02))
 		draw_card.disabled = false
 		undo_manager.record_recycle(original_order)
 		return

@@ -31,6 +31,17 @@ signal pile_shuffled()
 
 #region State Overrides
 
+func _container_ready() -> void:
+	for child in get_children():
+		if child is Card and !cards.has(child):
+			cards.append(child)
+			_connect_card_signals(child)
+			_apply_card_state(child)
+
+	if !cards.is_empty():
+		arrange(0)
+
+
 func _apply_card_state(card: Card) -> void:
 	card.is_front_face = face_up
 	card.visible = show_cards

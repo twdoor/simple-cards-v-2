@@ -286,6 +286,7 @@ size_flags_vertical = 8
 script = ExtResource("4_oq12x")
 show_cards = true
 shape = SubResource("Resource_gmp31")
+cards_focusable = false
 metadata/_custom_type_script = "uid://d2l8uaoel5whd"
 
 [node name="Discard" type="Panel" parent="MarginContainer"]
@@ -297,6 +298,7 @@ script = ExtResource("4_oq12x")
 show_cards = true
 face_up = true
 shape = SubResource("Resource_gmp31")
+cards_focusable = false
 metadata/_custom_type_script = "uid://d2l8uaoel5whd"
 
 [node name="PreviewDraw" type="Button" parent="MarginContainer"]

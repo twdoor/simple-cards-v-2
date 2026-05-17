@@ -18,6 +18,8 @@ func play_animation(layout: CardLayout) -> void:
 
 	var tween = layout.create_tween()
 	_tweens[layout] = tween
+	if not layout.tree_exiting.is_connected(_clear_layout.bind(layout)):
+		layout.tree_exiting.connect(_clear_layout.bind(layout), CONNECT_ONE_SHOT)
 
 	if looping:
 		tween.set_loops()
@@ -50,3 +52,9 @@ func stop_animation(layout: CardLayout) -> void:
 	tween.tween_property(layout, "offset_top", 0.0, 0.15)
 	tween.parallel().tween_property(layout, "offset_bottom", 0.0, 0.15)
 	tween.finished.connect(func(): _tweens.erase(layout))
+
+
+func _clear_layout(layout: CardLayout) -> void:
+	if layout in _tweens:
+		_tweens[layout].kill()
+		_tweens.erase(layout)

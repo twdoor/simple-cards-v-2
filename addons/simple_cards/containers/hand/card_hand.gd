@@ -37,6 +37,8 @@ var _original_drag_index: int = -1
 var _drag_followers: Array[Card] = []
 var _follower_shape_offsets: Array[Vector2] = []
 var _last_reorder_cursor: Vector2 = Vector2.INF
+var _focus_entered_callables: Dictionary = {}
+var _focus_exited_callables: Dictionary = {}
 
 
 #region Setup
@@ -61,6 +63,7 @@ func _container_ready() -> void:
 
 
 func _exit_tree() -> void:
+	_stop_idle()
 	if CG.dropped_card.is_connected(_on_card_dropped):
 		CG.dropped_card.disconnect(_on_card_dropped)
 	if CG.holding_card.is_connected(_on_holding_card):
@@ -167,19 +170,29 @@ func _update_drag_followers(delta: float) -> void:
 #region Signal Management
 
 func _connect_card_signals(card: Card) -> void:
-	if not card.focus_entered.is_connected(_on_card_focused):
-		card.focus_entered.connect(_on_card_focused.bind(card))
-	if not card.focus_exited.is_connected(_on_card_unfocused):
-		card.focus_exited.connect(_on_card_unfocused.bind(card))
+	if card not in _focus_entered_callables:
+		_focus_entered_callables[card] = _on_card_focused.bind(card)
+	if not card.focus_entered.is_connected(_focus_entered_callables[card]):
+		card.focus_entered.connect(_focus_entered_callables[card])
+	if card not in _focus_exited_callables:
+		_focus_exited_callables[card] = _on_card_unfocused.bind(card)
+	if not card.focus_exited.is_connected(_focus_exited_callables[card]):
+		card.focus_exited.connect(_focus_exited_callables[card])
 	if not card.card_clicked.is_connected(_handle_clicked_card):
 		card.card_clicked.connect(_handle_clicked_card)
 
 
 func _disconnect_card_signals(card: Card) -> void:
-	if card.focus_entered.is_connected(_on_card_focused):
-		card.focus_entered.disconnect(_on_card_focused)
-	if card.focus_exited.is_connected(_on_card_unfocused):
-		card.focus_exited.disconnect(_on_card_unfocused)
+	if card in _focus_entered_callables:
+		var focus_entered_callable: Callable = _focus_entered_callables[card]
+		if card.focus_entered.is_connected(focus_entered_callable):
+			card.focus_entered.disconnect(focus_entered_callable)
+		_focus_entered_callables.erase(card)
+	if card in _focus_exited_callables:
+		var focus_exited_callable: Callable = _focus_exited_callables[card]
+		if card.focus_exited.is_connected(focus_exited_callable):
+			card.focus_exited.disconnect(focus_exited_callable)
+		_focus_exited_callables.erase(card)
 	if card.card_clicked.is_connected(_handle_clicked_card):
 		card.card_clicked.disconnect(_handle_clicked_card)
 

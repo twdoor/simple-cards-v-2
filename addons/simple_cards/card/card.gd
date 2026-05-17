@@ -91,12 +91,15 @@ var _pending_layout_switch: bool = false
 		back_layout_name = value
 
 var _layout: CardLayout
-## Name of current layout. On setter, layout is updated.
-var layout_name: String = "":
+## Requested layout ID for the active face. On setter, layout is updated.
+var layout_name: StringName = &"":
 	set(value):
 		layout_name = value
 		if !Engine.is_editor_hint() and is_node_ready():
 			_setup_layout()
+
+## Resolved layout ID currently displayed after fallback rules are applied.
+var current_layout_name: StringName = &""
 
 ## If true uses front_layout else uses back_layout.
 var is_front_face: bool = true:
@@ -215,18 +218,7 @@ func _editor_setup_layout() -> void:
 ## Reuses LayoutCache (already @tool) to avoid duplicating JSON logic.
 func _editor_create_layout(layout_id: StringName) -> CardLayout:
 	var cache := LayoutCache.new()
-	var path: String = ""
-
-	# Find the scene path for this layout ID
-	for p in cache.layouts.keys():
-		var data: Dictionary = cache.layouts[p]
-		if data.get("layout_id", "") == str(layout_id) and data.get("enabled", true):
-			path = p
-			break
-
-	# Fallback to default layout
-	if path.is_empty():
-		path = LayoutCache.DEFAULT_LAYOUT_PATH
+	var path := cache.get_layout_path(layout_id, LayoutID.DEFAULT)
 
 	if not ResourceLoader.exists(path):
 		push_warning("Card: Editor layout not found at " + path)
@@ -332,6 +324,7 @@ func move_to(target: CardContainer, config: MoveConfig = null) -> void:
 	else:
 		_apply_move(target, dur, config)
 		rotation_degrees = target_rot
+	target._update_card_layer_order()
 
 
 ## Applies movement using the config's position_callable or the default tween.
@@ -344,7 +337,6 @@ func _apply_move(target: CardContainer, dur: float, config: MoveConfig) -> void:
 		tween_position(target_pos, dur)
 		if _pos_tween:
 			_pos_tween.finished.connect(func(): move_completed.emit(self), CONNECT_ONE_SHOT)
-	target._update_card_layer_order()
 
 
 ## Reparents this card to [param new_parent], preserving global position.
@@ -435,7 +427,7 @@ func _on_layout_size_changed(new_size: Vector2i) -> void:
 
 func _on_mouse_entered() -> void:
 	card_hovered.emit()
-	if !CG.current_held_item:
+	if !CG.current_held_item and focus_mode != Control.FOCUS_NONE:
 		grab_focus()
 
 func _on_mouse_exited() -> void:
@@ -518,10 +510,10 @@ func _setup_layout(no_animations: bool = false) -> void:
 		_layout.queue_free()
 		_layout = null
 
-	if is_front_face:
-		_layout = CG.create_layout(front_layout_name)
-	else:
-		_layout = CG.create_layout(back_layout_name)
+	var requested_layout := _get_requested_layout_id()
+	var fallback_layout := CG.def_front_layout if is_front_face else CG.def_back_layout
+	current_layout_name = CG.resolve_layout_id(requested_layout, fallback_layout)
+	_layout = CG.create_layout(requested_layout, fallback_layout)
 
 	if not _layout:
 		push_error("Card: Failed to create layout")
@@ -545,7 +537,7 @@ func _setup_layout(no_animations: bool = false) -> void:
 	_layout.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 
 	_layout_switching = false
-	layout_changed.emit(layout_name)
+	layout_changed.emit(current_layout_name)
 
 	if _pending_layout_switch:
 		_pending_layout_switch = false
@@ -555,11 +547,13 @@ func _setup_layout(no_animations: bool = false) -> void:
 ## Sets the layout of either the front or back face.
 func set_layout(new_layout_name: String, is_front: bool = true) -> void:
 	if is_front:
-		front_layout_name = new_layout_name
+		front_layout_name = StringName(new_layout_name)
 	else:
-		back_layout_name = new_layout_name
+		back_layout_name = StringName(new_layout_name)
 	if Engine.is_editor_hint(): return
-	_setup_layout()
+	if is_front == is_front_face:
+		layout_name = StringName(new_layout_name)
+		return
 
 func get_layout() -> CardLayout:
 	return _layout
@@ -575,6 +569,12 @@ func flip() -> void:
 	card_flipped.emit(is_front_face)
 
 #endregion
+
+
+func _get_requested_layout_id() -> StringName:
+	if is_front_face:
+		return front_layout_name
+	return back_layout_name
 
 ## Called at the end of [method _ready]. Override for subclass setup.
 func _card_ready() -> void:

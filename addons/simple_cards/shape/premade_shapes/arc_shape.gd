@@ -26,17 +26,19 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 	var angle_between = 0.0
 	if card_count > 1:
 		var arc_length = (card_count - 1) * card_spacing
-		var max_angle = min(arc_angle, rad_to_deg(arc_length / arc_radius))
+		var safe_radius = maxf(absf(arc_radius), 0.001)
+		var max_angle = min(arc_angle, rad_to_deg(arc_length / safe_radius))
 		angle_between = max_angle / max(1, card_count - 1)
 
 	var start_angle = arc_orientation - (angle_between * (card_count - 1)) / 2.0
 	var orientation_rad = deg_to_rad(arc_orientation)
-	var circle_center = Vector2(-arc_radius * cos(orientation_rad), -arc_radius * sin(orientation_rad))
+	var safe_radius = maxf(absf(arc_radius), 0.001)
+	var circle_center = Vector2(-safe_radius * cos(orientation_rad), -safe_radius * sin(orientation_rad))
 
 	for i in card_count:
 		var current_angle = start_angle + i * angle_between
 		var angle_rad = deg_to_rad(current_angle)
-		var pos = circle_center + Vector2(arc_radius * cos(angle_rad), arc_radius * sin(angle_rad))
+		var pos = circle_center + Vector2(safe_radius * cos(angle_rad), safe_radius * sin(angle_rad))
 		positions.append(pos)
 		rotations.append(angle_rad + deg_to_rad(90))
 

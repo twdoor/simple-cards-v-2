@@ -402,6 +402,7 @@ mouse_filter = 2
 mouse_behavior_recursive = 1
 theme_override_styles/panel = SubResource("StyleBoxEmpty_x6rcj")
 script = ExtResource("10_x6rcj")
+cards_focusable = false
 metadata/_custom_type_script = "uid://d2l8uaoel5whd"
 
 [node name="DealHand" type="Panel" parent="MarginContainer/HBoxContainer"]

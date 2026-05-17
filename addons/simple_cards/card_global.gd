@@ -22,7 +22,7 @@ const CACHE_PATH = "res://addons/simple_cards/editor/layout_cache.json"
 ##Default front layout ID used. [color=blue]Set[/color] this to the layout ID you want in your scene
 var def_front_layout: StringName = LayoutID.DEFAULT:
 	set(value):
-		if value.is_empty() or value in _layout_paths:
+		if value.is_empty() or has_layout(value):
 			def_front_layout = value
 		else:
 			push_warning("CardGlobal: Layout ID '%s' not found" % value)
@@ -30,7 +30,7 @@ var def_front_layout: StringName = LayoutID.DEFAULT:
 ##Default back layout ID used.
 var def_back_layout: StringName = LayoutID.DEFAULT_BACK:
 	set(value):
-		if value.is_empty() or value in _layout_paths:
+		if value.is_empty() or has_layout(value):
 			def_back_layout = value
 		else:
 			push_warning("CardGlobal: Layout ID '%s' not found" % value)
@@ -125,6 +125,9 @@ func _register_default_layouts() -> void:
 
 ##Register a layout in internal dictionaries.
 func _register_layout_entry(layout_id: String, path: String, tags: Array) -> void:
+	if not ResourceLoader.exists(path):
+		push_warning("CardGlobal: Layout path for '%s' does not exist: %s" % [layout_id, path])
+		return
 	_layout_paths[layout_id] = path
 	_layout_tags[layout_id] = tags
 	layout_registered.emit(StringName(layout_id))
@@ -140,7 +143,13 @@ func get_available_layouts() -> Array[StringName]:
 	var result: Array[StringName] = []
 	for key in _layout_paths.keys():
 		result.append(StringName(key))
+	result.sort()
 	return result
+
+
+##Returns true if a layout ID is currently registered and enabled.
+func has_layout(layout_id: StringName) -> bool:
+	return str(layout_id) in _layout_paths
 
 
 ##Get layouts by tag.
@@ -157,6 +166,7 @@ func get_all_layout_tags() -> Array[String]:
 	var result: Array[String] = []
 	for tag in _layouts_by_tag.keys():
 		result.append(String(tag))
+	result.sort()
 	return result
 
 
@@ -165,17 +175,45 @@ func get_layout_tags(layout_id: StringName) -> Array:
 	return _layout_tags.get(layout_id, [])
 
 
+##Returns the registered path for a layout ID, with fallback to a face default.
+func get_layout_path(layout_id: StringName = &"", fallback_id: StringName = &"") -> String:
+	if not layout_id.is_empty() and has_layout(layout_id):
+		return _layout_paths[str(layout_id)]
+
+	if not fallback_id.is_empty() and has_layout(fallback_id):
+		return _layout_paths[str(fallback_id)]
+
+	if has_layout(def_front_layout):
+		return _layout_paths[str(def_front_layout)]
+
+	if fallback_id == LayoutID.DEFAULT_BACK and ResourceLoader.exists(DEFAULT_BACK_LAYOUT):
+		return DEFAULT_BACK_LAYOUT
+
+	if ResourceLoader.exists(DEFAULT_LAYOUT):
+		return DEFAULT_LAYOUT
+
+	return ""
+
+
+##Returns the ID that will be used for a requested layout/fallback pair.
+func resolve_layout_id(layout_id: StringName = &"", fallback_id: StringName = &"") -> StringName:
+	if not layout_id.is_empty() and has_layout(layout_id):
+		return layout_id
+	if not fallback_id.is_empty() and has_layout(fallback_id):
+		return fallback_id
+	if has_layout(def_front_layout):
+		return def_front_layout
+	if fallback_id == LayoutID.DEFAULT_BACK:
+		return LayoutID.DEFAULT_BACK
+	return LayoutID.DEFAULT
+
+
 ##Given a layout ID, instantiate and return the layout.
-##If empty or invalid, returns the default front layout.
-func create_layout(layout_id: StringName = &"") -> CardLayout:
-	var path: String
+##If empty or invalid, returns the configured fallback layout.
+func create_layout(layout_id: StringName = &"", fallback_id: StringName = &"") -> CardLayout:
+	var path := get_layout_path(layout_id, fallback_id)
 	
-	if layout_id.is_empty() or layout_id not in _layout_paths:
-		path = _layout_paths.get(def_front_layout, DEFAULT_LAYOUT)
-	else:
-		path = _layout_paths[layout_id]
-	
-	if not ResourceLoader.exists(path):
+	if path.is_empty() or not ResourceLoader.exists(path):
 		push_error("CardGlobal: Layout not found at " + path)
 		return null
 	
