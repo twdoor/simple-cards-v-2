@@ -1,3 +1,4 @@
+@tool
 ## Arc arrangement shape for card containers.
 class_name ArcShape extends ContainerShape
 
@@ -41,6 +42,10 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 		var pos = circle_center + Vector2(safe_radius * cos(angle_rad), safe_radius * sin(angle_rad))
 		positions.append(pos)
 		rotations.append(angle_rad + deg_to_rad(90))
+
+	var origin_offset = _get_bounds_offset(cards, positions, rotations)
+	for i in positions.size():
+		positions[i] += origin_offset
 
 	return LayoutResult.new(positions, rotations)
 

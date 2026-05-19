@@ -44,14 +44,14 @@ metadata/_custom_type_script = "uid://bgmqt21bcemq6"
 
 [sub_resource type="Resource" id="Resource_eqskn"]
 script = ExtResource("10_asqof")
-card_spacing = 85.0
+card_spacing = 90.0
 metadata/_custom_type_script = "uid://b1s6x4iyt2pps"
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_eqskn"]
 
 [sub_resource type="Resource" id="Resource_a01fu"]
 script = ExtResource("11_gmp31")
-num_of_cols = 14
+num_of_cols = 13
 num_of_rows = 4
 col_offset = 82.0
 row_offset = 114.0
@@ -199,8 +199,6 @@ theme_override_constants/margin_bottom = 80
 [node name="BalatroHand" type="Panel" parent="MarginContainer/MarginContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 8
 tooltip_text = "Panel shows the size of the hand.
 It changes based on the cards and shape selected.
 Set it to EmptyStyleBox in theme overrides to remove."
@@ -208,6 +206,9 @@ script = ExtResource("2_grswf")
 shape = SubResource("Resource_oq12x")
 max_cards = 8
 idle_animation = SubResource("Resource_47qkh")
+preview_group_checked = true
+preview_enabled = true
+preview_layout_name = &"standard_layout"
 metadata/_custom_type_script = "uid://f3ybsxom5cmo"
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer"]
@@ -264,6 +265,9 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxEmpty_gmp31")
 script = ExtResource("5_gjekf")
 shape = SubResource("Resource_eqskn")
+preview_enabled = true
+preview_layout_name = &"standard_layout"
+preview_card_count = 6
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
 [node name="PreviewHand" type="Panel" parent="MarginContainer"]
@@ -276,6 +280,8 @@ script = ExtResource("5_gjekf")
 enable_reordering = false
 shape = SubResource("Resource_a01fu")
 idle_animation = SubResource("Resource_4n1tn")
+preview_layout_name = &"standard_back_layout"
+preview_card_count = 52
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
 [node name="Draw" type="Panel" parent="MarginContainer"]

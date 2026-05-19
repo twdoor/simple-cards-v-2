@@ -2,8 +2,7 @@
 ##
 ## Supports locking, swap-on-drop, abandon-on-empty-space, and custom placement rules.
 ## Override [method check_conditions] to add game-specific validation.
-@tool
-@icon("uid://campsjrxwba25")
+@tool @icon("uid://campsjrxwba25")
 class_name CardSlot extends CardContainer
 
 
@@ -59,6 +58,7 @@ var _card_originated_from_this_slot: bool = false
 #region Setup
 
 func _validate_property(property: Dictionary) -> void:
+	super._validate_property(property)
 	if property.name in ["max_cards", "shape"]:
 		property.usage = PROPERTY_USAGE_NO_EDITOR
 

@@ -1,3 +1,4 @@
+@tool
 ## Line arrangement shape for card containers.
 class_name LineShape extends ContainerShape
 
@@ -44,14 +45,42 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 
 	var rot_rad = deg_to_rad(line_rotation)
 	var card_rot = deg_to_rad(card_rotation_angle)
+	var bounds_positions: Array[Vector2] = [
+		Vector2(-max_width / 2.0 + card_size.x / 2.0, 0.0).rotated(rot_rad),
+		Vector2(max_width / 2.0 - card_size.x / 2.0, 0.0).rotated(rot_rad)
+	]
+	var bounds_rotations: Array[float] = [card_rot, card_rot]
+	var bounds_cards: Array[Card] = [cards[0], cards[0]]
+	var origin_offset = _get_bounds_offset(bounds_cards, bounds_positions, bounds_rotations)
 
 	for i in card_count:
 		var x_pos = start_x + i * actual_spacing
-		var rotated_pos = Vector2(x_pos, 0.0).rotated(rot_rad)
+		var rotated_pos = Vector2(x_pos, 0.0).rotated(rot_rad) + origin_offset
 		positions.append(rotated_pos)
 		rotations.append(card_rot)
 
 	return LayoutResult.new(positions, rotations)
+
+
+func get_layout_bounds(cards: Array[Card], _result: LayoutResult) -> Rect2:
+	if cards.is_empty():
+		return Rect2()
+
+	var card_size = cards[0].size
+	var rot_rad = deg_to_rad(line_rotation)
+	var card_rot = deg_to_rad(card_rotation_angle)
+	var bounds_positions: Array[Vector2] = [
+		Vector2(-max_width / 2.0 + card_size.x / 2.0, 0.0).rotated(rot_rad),
+		Vector2(max_width / 2.0 - card_size.x / 2.0, 0.0).rotated(rot_rad)
+	]
+	var bounds_rotations: Array[float] = [card_rot, card_rot]
+	var bounds_cards: Array[Card] = [cards[0], cards[0]]
+	var origin_offset = _get_bounds_offset(bounds_cards, bounds_positions, bounds_rotations)
+
+	for i in bounds_positions.size():
+		bounds_positions[i] += origin_offset
+
+	return _get_cards_bounds(bounds_cards, bounds_positions, bounds_rotations)
 
 
 func get_focus_neighbor(index: int, direction: String, card_count: int) -> int:

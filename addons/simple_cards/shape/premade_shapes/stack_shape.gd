@@ -1,3 +1,4 @@
+@tool
 ## Stack arrangement shape — all cards at the same position.
 class_name StackShape extends ContainerShape
 
@@ -8,7 +9,7 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 	var rotations: Array[float] = []
 
 	for i in card_count:
-		positions.append(Vector2.ZERO)
+		positions.append(cards[i].pivot_offset)
 		rotations.append(0.0)
 
 	return LayoutResult.new(positions, rotations)

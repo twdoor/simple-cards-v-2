@@ -3,7 +3,7 @@
 ## CardPile is the building block for deck systems. It manages [Card] nodes and
 ## provides shuffle, peek, and visibility controls.
 ## Cards in a pile are disabled and optionally hidden.
-@icon("uid://1g0jb8x0i516")
+@tool @icon("uid://1g0jb8x0i516")
 class_name CardPile extends CardContainer
 
 

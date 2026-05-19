@@ -5,8 +5,15 @@
 ## [br][br]
 ## Subclass [CardHand], [CardPile], or [CardSlot] for specific behavior.
 ## For custom containers, extend this class and override the virtual callbacks.
-@abstract @icon("uid://bhxu665rvmfng")
+@tool @abstract @icon("uid://bhxu665rvmfng")
 class_name CardContainer extends Panel
+
+
+const PREVIEW_DEFAULT_CARD_COUNT := 7
+const PREVIEW_CONTAINER_BOUNDS_COLOR := Color(0.35, 0.65, 1.0, 0.45)
+const PREVIEW_SHAPE_BOUNDS_COLOR := Color(1.0, 0.75, 0.25, 0.75)
+const PREVIEW_CARD_FILL_COLOR := Color(1.0, 1.0, 1.0, 0.12)
+const PREVIEW_CARD_OUTLINE_COLOR := Color(1.0, 1.0, 1.0, 0.55)
 
 
 #region Signals
@@ -28,14 +35,22 @@ signal container_full()
 ## Layout shape. If [code]null[/code], cards stack at the origin.
 @export var shape: ContainerShape:
 	set(value):
+		if shape and shape.changed.is_connected(_on_shape_changed):
+			shape.changed.disconnect(_on_shape_changed)
 		shape = value
+		if shape and !shape.changed.is_connected(_on_shape_changed):
+			shape.changed.connect(_on_shape_changed)
 		if !cards.is_empty():
 			arrange()
+		if Engine.is_editor_hint():
+			_queue_preview_layout_update()
 
 ## Maximum number of cards allowed. [code]-1[/code] = unlimited.
 @export var max_cards: int = -1:
 	set(value):
 		max_cards = _clamp_max_cards(value)
+		if Engine.is_editor_hint():
+			_queue_preview_layout_update()
 
 ## Default tween duration for cards settling into position.
 @export var card_move_duration: float = 0.3
@@ -51,6 +66,41 @@ signal container_full()
 
 ## Idle animation looped on all cards while in this container (e.g. bobbing).
 @export var idle_animation: CardAnimationResource
+
+@export_group("Preview")
+@export_custom(PROPERTY_HINT_GROUP_ENABLE, "Preview") var preview_group_checked:= false
+## Editor-only shape preview toggle.
+@export var preview_enabled: bool = false:
+	set(value):
+		preview_enabled = value
+		_queue_preview_layout_update()
+## If true, instantiates editor-only preview cards using [member preview_layout_name].
+@export var preview_use_layout_cards: bool = true:
+	set(value):
+		preview_use_layout_cards = value
+		_queue_preview_layout_update()
+## Layout ID used to determine ghost card size in the editor preview.
+@export var preview_layout_name: StringName = LayoutID.DEFAULT:
+	set(value):
+		preview_layout_name = value
+		if Engine.is_editor_hint():
+			_preview_card_size = _editor_get_layout_card_size(preview_layout_name)
+		_queue_preview_layout_update()
+## Editor preview count. [code]0[/code] auto-uses [member max_cards] or a default count.
+@export_range(0, 100, 1) var preview_card_count: int = 0:
+	set(value):
+		preview_card_count = value
+		_queue_preview_layout_update()
+## If true, draws the panel/container rect in the editor preview.
+@export var preview_draw_container_bounds: bool = true:
+	set(value):
+		preview_draw_container_bounds = value
+		queue_redraw()
+## If true, draws the computed shape bounds in the editor preview.
+@export var preview_draw_shape_bounds: bool = true:
+	set(value):
+		preview_draw_shape_bounds = value
+		queue_redraw()
 
 #endregion
 
@@ -68,10 +118,15 @@ var _suppress_auto_remove: bool = false
 ## Used by bulk operations to defer layout to one call at the end.
 var _batch_mode: bool = false
 var _idle_restart_gen: int = 0
+var _preview_card_size: Vector2 = Card.EDITOR_DEFAULT_SIZE
+var _preview_visual_cards: Array[Card] = []
 
 
 func _ready() -> void:
-	if Engine.is_editor_hint(): return
+	if Engine.is_editor_hint():
+		_preview_card_size = _editor_get_layout_card_size(preview_layout_name)
+		_queue_preview_layout_update()
+		return
 	child_exiting_tree.connect(_on_child_exiting)
 	_container_ready()
 	if idle_animation and not cards.is_empty():
@@ -79,12 +134,55 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	_clear_preview_visual_cards()
+	if Engine.is_editor_hint(): return
 	_stop_idle()
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		_stop_idle()
+
+
+func _validate_property(property: Dictionary) -> void:
+	if property.name == "preview_layout_name":
+		var options: String = ",".join(LayoutID.get_all())
+		property.hint = PROPERTY_HINT_ENUM
+		property.hint_string = options
+
+
+func _draw() -> void:
+	if !Engine.is_editor_hint(): return
+	if !preview_enabled: return
+
+	if preview_draw_container_bounds:
+		draw_rect(Rect2(Vector2.ZERO, size), PREVIEW_CONTAINER_BOUNDS_COLOR, false, 2.0)
+
+	var preview_cards := _build_preview_cards()
+	var layout := _compute_preview_layout(preview_cards)
+	if layout == null:
+		layout = _compute_stacked_preview_layout(preview_cards)
+	var bounds := _get_layout_bounds(preview_cards, layout.positions, layout.rotations)
+	var should_draw_ghosts := _preview_visual_cards.is_empty()
+
+	if should_draw_ghosts:
+		for i in preview_cards.size():
+			if i >= layout.positions.size(): break
+			var card := preview_cards[i]
+			var rot := layout.rotations[i] if i < layout.rotations.size() else 0.0
+			draw_set_transform(layout.positions[i], rot, Vector2.ONE)
+			var rect := Rect2(-card.pivot_offset, card.size)
+			draw_rect(rect, PREVIEW_CARD_FILL_COLOR, true)
+			draw_rect(rect, PREVIEW_CARD_OUTLINE_COLOR, false, 1.0)
+
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+	if preview_draw_shape_bounds:
+		if bounds.size != Vector2.ZERO:
+			draw_rect(bounds, PREVIEW_SHAPE_BOUNDS_COLOR, false, 2.0)
+
+	for card in preview_cards:
+		card.free()
 
 
 #region Queries
@@ -153,10 +251,10 @@ func _register_card(card: Card, index: int = -1) -> void:
 		index = cards.size() - 1
 	else:
 		cards.insert(index, card)
-	
+
 	_connect_card_signals(card)
 	_apply_card_state(card)
-	
+
 	if not _batch_mode:
 		_compute_layout()
 
@@ -166,7 +264,7 @@ func _register_card(card: Card, index: int = -1) -> void:
 			_settle_card(c, card_move_duration)
 
 		_start_card_idle(card, card_move_duration)
-	
+
 	_handle_card_added(card, index)
 	card_added.emit(card, index)
 	if is_full():
@@ -178,7 +276,7 @@ func _register_card(card: Card, index: int = -1) -> void:
 func _unregister_card(card: Card) -> void:
 	var index = cards.find(card)
 	if index == -1: return
-	
+
 	_stop_card_idle(card)
 
 	cards.remove_at(index)
@@ -227,7 +325,7 @@ func _compute_layout() -> void:
 		_card_rotations.clear()
 		update_minimum_size()
 		return
-	
+
 	if shape:
 		var result: ContainerShape.LayoutResult = shape.compute_layout(cards)
 		_card_positions = result.positions
@@ -543,20 +641,185 @@ func _on_child_exiting(node: Node) -> void:
 	_unregister_card(node as Card)
 
 
-func _get_minimum_size() -> Vector2:
-	if cards.is_empty() or _card_positions.is_empty():
-		return Vector2.ZERO
+func _on_shape_changed() -> void:
+	if Engine.is_editor_hint():
+		_queue_preview_layout_update()
+		return
+	if !cards.is_empty():
+		arrange()
+
+
+func _queue_preview_layout_update() -> void:
+	update_minimum_size()
+	_update_preview_visual_cards()
+	queue_redraw()
+
+
+func _get_preview_card_count() -> int:
+	if preview_card_count > 0:
+		return clampi(preview_card_count, 1, 100)
+	if max_cards > 0:
+		return clampi(max_cards, 1, 100)
+	return PREVIEW_DEFAULT_CARD_COUNT
+
+
+func _build_preview_cards() -> Array[Card]:
+	var result: Array[Card] = []
+	var count := _get_preview_card_count()
+	for i in count:
+		var card := Card.new()
+		card.size = _preview_card_size
+		card.custom_minimum_size = _preview_card_size
+		card.pivot_offset = _preview_card_size / 2.0
+		result.append(card)
+	return result
+
+
+func _update_preview_visual_cards() -> void:
+	if !Engine.is_editor_hint(): return
+	if !preview_enabled or !preview_use_layout_cards:
+		_clear_preview_visual_cards()
+		return
+
+	var preview_cards := _build_preview_cards()
+	var layout := _compute_preview_layout(preview_cards)
+	if layout == null:
+		layout = _compute_stacked_preview_layout(preview_cards)
+
+	_resize_preview_visual_cards(preview_cards.size())
+	for i in _preview_visual_cards.size():
+		var visual_card := _preview_visual_cards[i]
+		if i >= layout.positions.size():
+			visual_card.visible = false
+			continue
+
+		var reference_card := preview_cards[i]
+		var rot := layout.rotations[i] if i < layout.rotations.size() else 0.0
+		visual_card.visible = true
+		visual_card.position = layout.positions[i] - reference_card.pivot_offset
+		visual_card.rotation = rot
+		visual_card.size = reference_card.size
+		visual_card.custom_minimum_size = reference_card.size
+		visual_card.pivot_offset = reference_card.pivot_offset
+		visual_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		visual_card.focus_mode = Control.FOCUS_NONE
+
+	for card in preview_cards:
+		card.free()
+
+
+func _resize_preview_visual_cards(count: int) -> void:
+	while _preview_visual_cards.size() > count:
+		var card := _preview_visual_cards.pop_back()
+		card.queue_free()
+
+	while _preview_visual_cards.size() < count:
+		var card := Card.new()
+		card.name = "_preview_card_%d" % _preview_visual_cards.size()
+		card.front_layout_name = preview_layout_name
+		card.back_layout_name = preview_layout_name
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.focus_mode = Control.FOCUS_NONE
+		card.self_modulate.a = 0.65
+		add_child(card, false, Node.INTERNAL_MODE_FRONT)
+		_preview_visual_cards.append(card)
+
+	for card in _preview_visual_cards:
+		if card.front_layout_name != preview_layout_name:
+			card.front_layout_name = preview_layout_name
+		if card.back_layout_name != preview_layout_name:
+			card.back_layout_name = preview_layout_name
+
+
+func _clear_preview_visual_cards() -> void:
+	for card in _preview_visual_cards:
+		if is_instance_valid(card):
+			card.queue_free()
+	_preview_visual_cards.clear()
+
+
+func _compute_preview_layout(preview_cards: Array[Card]) -> ContainerShape.LayoutResult:
+	if shape:
+		var script = shape.get_script()
+		if script and script.is_tool():
+			return shape.compute_layout(preview_cards)
+
+	return _compute_stacked_preview_layout(preview_cards)
+
+
+func _compute_stacked_preview_layout(preview_cards: Array[Card]) -> ContainerShape.LayoutResult:
+	var positions: Array[Vector2] = []
+	var rotations: Array[float] = []
+	for card in preview_cards:
+		positions.append(card.pivot_offset)
+		rotations.append(0.0)
+	return ContainerShape.LayoutResult.new(positions, rotations)
+
+
+func _get_preview_bounds() -> Rect2:
+	var preview_cards := _build_preview_cards()
+	var layout := _compute_preview_layout(preview_cards)
+	if layout == null:
+		layout = _compute_stacked_preview_layout(preview_cards)
+	var bounds := _get_layout_bounds(preview_cards, layout.positions, layout.rotations)
+	for card in preview_cards:
+		card.free()
+	return bounds
+
+
+func _editor_get_layout_card_size(layout_id: StringName) -> Vector2:
+	if !Engine.is_editor_hint():
+		return Card.EDITOR_DEFAULT_SIZE
+
+	var cache := LayoutCache.new()
+	var path := cache.get_layout_path(layout_id, LayoutID.DEFAULT)
+	if not ResourceLoader.exists(path):
+		return Card.EDITOR_DEFAULT_SIZE
+
+	var scene = load(path)
+	if not scene:
+		return Card.EDITOR_DEFAULT_SIZE
+
+	var instance = scene.instantiate()
+	if not instance is CardLayout:
+		instance.free()
+		return Card.EDITOR_DEFAULT_SIZE
+
+	var result := Card.EDITOR_DEFAULT_SIZE
+	if instance.card_size != Vector2i.ZERO:
+		result = Vector2(instance.card_size)
+	else:
+		var sub_vp = instance.get_node_or_null("SubViewport")
+		if sub_vp and sub_vp is SubViewport and sub_vp.size != Vector2i.ZERO:
+			result = Vector2(sub_vp.size)
+
+	instance.free()
+	return result
+
+
+func _get_layout_bounds(layout_cards: Array[Card], positions: Array[Vector2], rotations: Array[float]) -> Rect2:
+	if shape:
+		var script = shape.get_script()
+		if script and script.is_tool():
+			return shape.get_layout_bounds(layout_cards, ContainerShape.LayoutResult.new(positions, rotations))
+
+	return _get_raw_layout_bounds(layout_cards, positions, rotations)
+
+
+func _get_raw_layout_bounds(layout_cards: Array[Card], positions: Array[Vector2], rotations: Array[float]) -> Rect2:
+	if layout_cards.is_empty() or positions.is_empty():
+		return Rect2()
 
 	var min_x := INF
 	var max_x := -INF
 	var min_y := INF
 	var max_y := -INF
+	var has_bounds := false
 
-	for i in cards.size():
-		if i >= _card_positions.size(): break
-		var card_position = _card_positions[i]
-		var half_size: Vector2 = cards[i].size / 2.0
-		var rot: float = _card_rotations[i] if i < _card_rotations.size() else 0.0
+	for i in mini(layout_cards.size(), positions.size()):
+		var card_position = positions[i]
+		var half_size: Vector2 = layout_cards[i].size / 2.0
+		var rot: float = rotations[i] if i < rotations.size() else 0.0
 		var corners := [
 			Vector2(-half_size.x, -half_size.y),
 			Vector2(half_size.x, -half_size.y),
@@ -569,8 +832,21 @@ func _get_minimum_size() -> Vector2:
 			max_x = max(max_x, rotated_corner.x)
 			min_y = min(min_y, rotated_corner.y)
 			max_y = max(max_y, rotated_corner.y)
+			has_bounds = true
 
-	return Vector2(max_x - min_x, max_y - min_y)
+	if !has_bounds:
+		return Rect2()
+	return Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+
+
+func _get_minimum_size() -> Vector2:
+	if Engine.is_editor_hint() and preview_enabled:
+		return _get_preview_bounds().size
+
+	if cards.is_empty() or _card_positions.is_empty():
+		return Vector2.ZERO
+
+	return _get_layout_bounds(cards, _card_positions, _card_rotations).size
 
 func _update_card_layer_order() -> void:
 	for i in range(cards.size()):

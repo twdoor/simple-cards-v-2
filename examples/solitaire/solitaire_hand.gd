@@ -11,6 +11,7 @@
 ##
 ## Set hand_type and optionally drop_area in the inspector,
 ## then call set_solitaire_signals() during setup.
+@tool
 class_name SolitaireHand extends CardHand
 
 ## Emitted when a card is clicked. The main scene handles finding the right destination.

@@ -1,3 +1,4 @@
+@tool
 ## Fan tail arrangement — cards stack tightly, with the last few fanned out.
 ##
 ## Useful for solitaire waste/deal piles where you want to see the top N cards.
@@ -39,7 +40,7 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 			var tail_index = i - tail_start
 			offset = tail_start * actual_stack_spacing + tail_index * fan_spacing
 
-		var pos = Vector2(offset, 0.0) if horizontal else Vector2(0.0, offset)
+		var pos = cards[i].pivot_offset + (Vector2(offset, 0.0) if horizontal else Vector2(0.0, offset))
 		positions.append(pos)
 		rotations.append(0.0)
 

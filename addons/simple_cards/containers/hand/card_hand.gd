@@ -4,7 +4,8 @@
 ## For game-specific behavior (selection, validation, multi-drag), extend this class
 ## and override [method _handle_card_added], [method _handle_card_removed], or
 ## [method _handle_clicked_card].
-@icon("uid://b5yeseh7avtmy")
+
+@tool @icon("uid://b5yeseh7avtmy")
 class_name CardHand extends CardContainer
 
 
@@ -63,6 +64,7 @@ func _container_ready() -> void:
 
 
 func _exit_tree() -> void:
+	if Engine.is_editor_hint(): return
 	_stop_idle()
 	if CG.dropped_card.is_connected(_on_card_dropped):
 		CG.dropped_card.disconnect(_on_card_dropped)

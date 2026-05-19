@@ -2,6 +2,7 @@
 ## Selected cards get visually bumped upward. Used in the Balatro example.
 ##
 ## Important: always duplicate the selected array before moving cards to another
+@tool
 class_name BalatroHand extends CardHand
 
 @export var max_selected: int = 5

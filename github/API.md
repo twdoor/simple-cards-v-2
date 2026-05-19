@@ -12,6 +12,7 @@ A draggable button that represents a single card.
 | `undraggable` | `bool` | If `true`, disables dragging (click still works) |
 | `holding` | `bool` | `true` when card is being dragged |
 | `focused` | `bool` | `true` when card has focus |
+| `hovered` | `bool` | `true` when card is hovered |
 | `is_front_face` | `bool` | `true` shows front layout, `false` shows back |
 | `front_layout_name` | `StringName` | ID of the front layout |
 | `back_layout_name` | `StringName` | ID of the back layout |
@@ -367,6 +368,19 @@ Base class for all card containers (`CardHand`, `CardPile`, `CardSlot`). Extends
 | `idle_animation` | `CardAnimationResource` | Looping animation played on all cards while in this container (e.g. bobbing). Stopped per-card during drag |
 | `cards` | `Array[Card]` | Internal card array |
 
+#### Editor Preview Properties
+
+These properties are editor-only. They draw lightweight ghost cards and bounds to help tune `ContainerShape` settings and detect overflow. They do not create runtime cards or affect gameplay. Custom shape scripts and custom container subclasses must use `@tool` for their editor preview code to run; non-tool custom shapes fall back to a simple stacked preview.
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `preview_enabled` | `bool` | Editor-only shape preview toggle |
+| `preview_use_layout_cards` | `bool` | If `true`, shows editor-only visual preview cards using the selected layout |
+| `preview_layout_name` | `StringName` | Layout ID used to determine preview card size and visuals |
+| `preview_card_count` | `int` | Editor preview count; `0` auto-uses `max_cards` or the default preview count |
+| `preview_draw_container_bounds` | `bool` | Draws the panel/container rect in the editor preview |
+| `preview_draw_shape_bounds` | `bool` | Draws computed shape bounds in the editor preview |
+
 #### Signals
 
 | Signal | Parameters | Description |
@@ -465,9 +479,9 @@ func reshuffle():
 
 ### <img src="assets/icon_card_hand_shape.png"> ContainerShape
 
-Abstract resource class that defines how cards are arranged in a `CardContainer`. Subclasses only need to implement `_compute_raw_cards()` — the base class handles bounding box adjustment automatically.
+Abstract resource class that defines how cards are arranged in a `CardContainer`. Subclasses only need to implement `_compute_raw_cards()` and return card center positions in the container's local coordinate space.
 
-Shapes only compute positions — they do not move or tween cards. The container's `arrange()` method handles animation.
+Shapes only compute positions — they do not move or tween cards. The container's `arrange()` method handles animation. `ContainerShape` preserves the positions returned by the shape, so custom offsets remain meaningful.
 
 #### Inner Classes
 
@@ -484,6 +498,10 @@ class LayoutResult:
 # Computes final card positions and rotations (does NOT move cards)
 func compute_layout(cards: Array[Card]) -> LayoutResult
 
+# Returns the layout footprint used for minimum size and editor preview bounds.
+# Override when the logical shape region is larger than the current cards.
+func get_layout_bounds(cards: Array[Card], result: LayoutResult) -> Rect2
+
 # Returns the index of the focus neighbor for [index] in [direction]
 # ("left", "right", "up", "down"), or -1 if there is no neighbor.
 # Default implementation: 1D sequence — left = previous, right = next.
@@ -493,9 +511,13 @@ func get_focus_neighbor(index: int, direction: String, card_count: int) -> int
 
 #### Creating Custom Shapes
 
-Override `_compute_raw_cards()` to return a `LayoutResult` with raw center positions and rotations. The base class automatically adjusts the bounding box so cards fit inside the container rect.
+Override `_compute_raw_cards()` to return a `LayoutResult` with card center positions and rotations. The base class preserves those positions instead of normalizing them to the content bounds. Shapes that want top-left placement should return centers offset by each card's `pivot_offset`; shapes that want centered layouts can return positions around `Vector2.ZERO`.
+
+Optionally override `get_layout_bounds()` when the shape has a logical footprint larger than the currently occupied cards. `LineShape` uses this to report the full `max_width` region so `BEGIN`, `CENTER`, and `END` alignment share the same bounds.
 
 Optionally override `get_focus_neighbor()` if your shape is 2D or has a non-default orientation, so controller/keyboard navigation matches the visible layout.
+
+If your shape should fit its generated content to the container origin, call `_get_bounds_offset(cards, positions, rotations)` and add the returned offset to each position before returning.
 
 ```gdscript
 class_name MyCustomShape extends ContainerShape
@@ -566,7 +588,8 @@ Features:
 - Auto-expansion to fit all cards
 - Auto-centering for incomplete last row/column
 - Configurable row-first or column-first arrangement
-- All shapes automatically fit cards within the container's bounding rect
+- Built-in shapes fit their default content to the container origin
+- Custom shape-defined positions are preserved unless the shape explicitly applies its own bounds offset
 
 ---
 

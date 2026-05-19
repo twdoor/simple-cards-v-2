@@ -44,11 +44,14 @@ var center_pos: Vector2
 var holding: bool = false
 ## True when the card has focus.
 var focused: bool = false
+## True when the card is hovered.
+var hovered: bool = false
 
 var _cursor_down_pos: Vector2
 var _last_pos: Vector2
 var _dragging_offset: Vector2 = Vector2.ZERO
 var _released: bool = true
+var _interaction_sync_queued: bool = false
 
 ## Used to add custom offsets in containers (e.g. selected bump in a hand).
 var position_offset: Vector2 = Vector2.ZERO
@@ -310,6 +313,7 @@ func move_to(target: CardContainer, config: MoveConfig = null) -> void:
 	if target._batch_mode:
 		_move_origin = from_global
 		_move_config = config
+		_queue_interaction_state_sync()
 		return
 
 	var dur: float = config.duration if config.duration >= 0.0 else target.card_move_duration
@@ -325,6 +329,7 @@ func move_to(target: CardContainer, config: MoveConfig = null) -> void:
 		_apply_move(target, dur, config)
 		rotation_degrees = target_rot
 	target._update_card_layer_order()
+	_queue_interaction_state_sync()
 
 
 ## Applies movement using the config's position_callable or the default tween.
@@ -334,9 +339,7 @@ func _apply_move(target: CardContainer, dur: float, config: MoveConfig) -> void:
 	if config.position_callable.is_valid():
 		config.position_callable.call(self, target_pos, dur)
 	else:
-		tween_position(target_pos, dur)
-		if _pos_tween:
-			_pos_tween.finished.connect(func(): move_completed.emit(self), CONNECT_ONE_SHOT)
+		tween_to_container_position(target, target_pos, dur, true)
 
 
 ## Reparents this card to [param new_parent], preserving global position.
@@ -376,12 +379,7 @@ func _on_button_up() -> void:
 			tween_rotation()
 			tween_scale()
 
-		_on_mouse_exited()
-		_on_focus_exited()
-		if is_hovered():
-			_on_mouse_entered()
-		if has_focus():
-			_on_focus_entered()
+		_queue_interaction_state_sync()
 
 	else:
 		card_clicked.emit(self)
@@ -399,20 +397,24 @@ func _check_for_hold() -> void:
 			drag_started.emit(self)
 
 func _on_focus_entered() -> void:
+	if focused:
+		return
+	focused = true
+	set_process(true)
 	if _layout:
 		await _layout._focus_in()
-	if !is_instance_valid(self) or !is_inside_tree(): return
-	focused = true
+	if !is_instance_valid(self) or !is_inside_tree() or !focused: return
 	card_focused.emit()
-	set_process(true)
 
 func _on_focus_exited() -> void:
+	if !focused:
+		return
+	focused = false
+	if !holding: set_process(false)
 	if _layout:
 		await _layout._focus_out()
-	if !is_instance_valid(self) or !is_inside_tree(): return
-	focused = false
+	if !is_instance_valid(self) or !is_inside_tree() or focused: return
 	card_unfocused.emit()
-	if !holding: set_process(false)
 
 
 func _on_layout_size_changed(new_size: Vector2i) -> void:
@@ -426,14 +428,44 @@ func _on_layout_size_changed(new_size: Vector2i) -> void:
 		parent.arrange()
 
 func _on_mouse_entered() -> void:
+	if hovered:
+		return
+	hovered = true
 	card_hovered.emit()
 	if !CG.current_held_item and focus_mode != Control.FOCUS_NONE:
 		grab_focus()
 
 func _on_mouse_exited() -> void:
+	if !hovered:
+		return
+	hovered = false
 	card_unhovered.emit()
 	if !holding and !CG.current_held_item and has_focus():
 		release_focus()
+
+func _queue_interaction_state_sync() -> void:
+	if _interaction_sync_queued:
+		return
+	_interaction_sync_queued = true
+	_defer_interaction_state_sync.call_deferred()
+
+func _defer_interaction_state_sync() -> void:
+	_sync_interaction_state.call_deferred()
+
+func _sync_interaction_state() -> void:
+	_interaction_sync_queued = false
+	if !is_inside_tree():
+		return
+
+	if hovered and !is_hovered():
+		_on_mouse_exited()
+	elif !hovered and is_hovered():
+		_on_mouse_entered()
+
+	if focused and !has_focus():
+		_on_focus_exited()
+	elif !focused and has_focus():
+		_on_focus_entered()
 
 #endregion
 
@@ -462,6 +494,32 @@ func tween_position(desired_position: Vector2, duration: float = .3, global: boo
 		_pos_tween.tween_property(self, "global_position", desired_position, duration)
 	else:
 		_pos_tween.tween_property(self, "position", desired_position, duration)
+
+
+## Tweens to a container-local target while preserving visual continuity across reparenting.
+func tween_to_container_position(target: CardContainer, target_position: Vector2, duration: float = .3, emit_complete: bool = false) -> void:
+	if duration <= 0.0:
+		position = target_position
+		if emit_complete:
+			move_completed.emit(self)
+		return
+
+	var from_global := global_position
+	if _pos_tween:
+		_pos_tween.kill()
+	_pos_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_pos_tween.tween_method(func(weight: float) -> void:
+		if !is_instance_valid(target):
+			return
+		var target_global: Vector2 = target.get_global_transform() * target_position
+		global_position = from_global.lerp(target_global, weight)
+	, 0.0, 1.0, duration)
+	if _pos_tween:
+		_pos_tween.finished.connect(func():
+			position = target_position
+			if emit_complete:
+				move_completed.emit(self)
+		, CONNECT_ONE_SHOT)
 
 func _set_movement_rotation(delta: float) -> void:
 	var desired_rotation: float = clamp(

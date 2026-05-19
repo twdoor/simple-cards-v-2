@@ -1,3 +1,4 @@
+@tool
 ## Grid arrangement shape for card containers.
 class_name GridShape extends ContainerShape
 
@@ -68,6 +69,10 @@ func _compute_raw_cards(cards: Array[Card]) -> LayoutResult:
 		var y_pos = start_y + grid_y * row_offset + y_offset
 		positions.append(Vector2(x_pos, y_pos))
 		rotations.append(0.0)
+
+	var origin_offset = _get_bounds_offset(cards, positions, rotations)
+	for i in positions.size():
+		positions[i] += origin_offset
 
 	return LayoutResult.new(positions, rotations)
 
