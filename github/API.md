@@ -2,7 +2,7 @@
 
 ### <img src="assets/icon_card.png"> Card
 
-A draggable button that represents a single card.
+A draggable button control that represents a single card.
 
 #### Properties
 
@@ -115,7 +115,7 @@ card.flip()
 # Disable dragging but allow clicking
 card.undraggable = true
 
-# To disable clicking just use the buttons disable feature
+# To disable clicking, use the inherited BaseButton disabled property
 card.disabled = true
 ```
 

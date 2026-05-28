@@ -1,7 +1,6 @@
 ## Simple card with basic drag and drop functionality.
-@tool
-@icon("res://addons/simple_cards/card/icon_card.png")
-class_name Card extends Button
+@tool @icon("res://addons/simple_cards/card/icon_card.png")
+class_name Card extends BaseButton
 
 ## Emitted when card is pressed but not dragged.
 signal card_clicked(card: Card)

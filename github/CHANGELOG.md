@@ -6,6 +6,7 @@
 - **Explicit Built-In Shape Bounds** — Built-in shapes now handle their own bounds fitting where appropriate. `LineShape` fits its full `max_width` region while preserving begin/center/end alignment, `GridShape` and `ArcShape` fit their generated content to the container origin, and `StackShape` uses each card's `pivot_offset` to keep top-left stack placement.
 - **Tool-Mode Shapes** — `ContainerShape`, built-in shapes, and the solitaire `FanTailShape` are now `@tool`, allowing editor-time shape previews to call layout code without placeholder-resource errors.
 - **Editor Shape Preview** — `CardContainer` now has an editor-only Preview export group. Containers can display their computed shape footprint in the editor using a selectable reference layout, preview card count, container bounds, and shape bounds.
+- **Cleaner Card Base Class** — `Card` now extends `BaseButton` instead of `Button`, keeping press, disabled, focus, and hover behavior while leaving visuals entirely to card layouts.
 - **Cross-Container Tween Stability** — Default card movement now tweens in global space while temporarily detached from parent layout transforms, preventing first cards from snapping to an empty target container's anchor before moving into position.
 - **Drag Release Focus Stability** — `Card` now reconciles hover/focus state after drag release and `move_to()` instead of forcing exit/enter events immediately. This prevents duplicate focus animations and ensures cards moved into non-focusable containers emit focus loss correctly.
 
