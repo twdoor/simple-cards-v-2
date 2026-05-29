@@ -95,7 +95,7 @@ func handle_card_transport(origin_hand: SolitaireHand, card: Card) -> void:
 
 		var src_idx: int = origin_hand.cards.find(card)
 		var flip_card: Card = _get_flip_candidate(origin_hand, src_idx)
-		await origin_hand.move_cards_to(cards_to_move, hand, Card.MoveConfig.new(-1, -1, 0.1))
+		await origin_hand.move_cards_to(cards_to_move, hand, Card.MoveConfig.new(-1, -1, .1))
 		undo_manager.record_card_move(cards_to_move, origin_hand, src_idx, hand, flip_card)
 
 		if check_for_win():

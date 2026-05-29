@@ -426,6 +426,7 @@ func _settle_card(card: Card, duration: float) -> void:
 	card._move_config = null
 
 	if config and config.position_callable.is_valid():
+		card._queue_interaction_state_sync_on_move_completed()
 		config.position_callable.call(card, target_pos, duration)
 	else:
 		card.tween_position(target_pos, duration)
