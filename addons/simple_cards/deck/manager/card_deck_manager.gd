@@ -33,6 +33,11 @@ signal card_created(card: Card, resource: CardResource)
 
 ## If [code]true[/code], shuffles the starting pile after populating it.
 @export var shuffle_on_setup: bool = true
+@export_group("Multiplayer (Experimental)")
+## If [code]true[/code], the active card network manager assigns opaque IDs to created cards while enabled.
+## @experimental: Multiplayer support may change before it is considered stable.
+@export var network_spawn_cards: bool = true
+@export_group("")
 
 #endregion
 
@@ -63,15 +68,26 @@ func setup(source_deck: CardDeck = deck, target_pile: CardPile = starting_pile) 
 		push_warning("CardDeckManager: No deck assigned.")
 		return
 
+	var net = _get_network_manager()
+	var broadcast_after: bool = net and net.enabled and net.is_server_peer() and net.should_broadcast_local_action()
+	if broadcast_after:
+		net.begin_suppressed_routing()
+
 	starting_pile.clear_and_free()
 
 	for card_resource in deck.cards:
 		var card = _create_card(card_resource)
+		if network_spawn_cards and net and net.enabled and net.is_server_peer():
+			net.assign_card_id(card)
 		card.move_to(starting_pile, Card.MoveConfig.new(0))
 		card_created.emit(card, card_resource)
 
 	if shuffle_on_setup:
 		starting_pile.shuffle()
+
+	if broadcast_after:
+		net.end_suppressed_routing()
+		net.bump_revision_and_broadcast()
 
 	deck_initialized.emit()
 
@@ -80,3 +96,9 @@ func setup(source_deck: CardDeck = deck, target_pile: CardPile = starting_pile) 
 ## (e.g., connecting signals, setting properties, using a custom Card subclass).
 func _create_card(card_resource: CardResource) -> Card:
 	return Card.new(card_resource)
+
+
+func _get_network_manager() -> CardNetworkManager:
+	if not is_inside_tree():
+		return null
+	return CG.get_network_manager()

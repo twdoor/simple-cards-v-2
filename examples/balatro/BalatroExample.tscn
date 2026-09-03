@@ -206,7 +206,6 @@ script = ExtResource("2_grswf")
 shape = SubResource("Resource_oq12x")
 max_cards = 8
 idle_animation = SubResource("Resource_47qkh")
-preview_group_checked = true
 preview_enabled = true
 preview_layout_name = &"standard_layout"
 metadata/_custom_type_script = "uid://f3ybsxom5cmo"

@@ -90,8 +90,8 @@ func _container_ready() -> void:
 
 
 func _exit_tree() -> void:
+	super._exit_tree()
 	if Engine.is_editor_hint(): return
-	_stop_idle()
 	if CG.holding_card.is_connected(_on_card_held):
 		CG.holding_card.disconnect(_on_card_held)
 	if CG.dropped_card.is_connected(_on_card_dropped):
@@ -122,6 +122,22 @@ func get_card() -> Card:
 ## Swaps cards between this slot and another slot. Returns [code]true[/code] if successful.
 ## Fails if either slot is locked or empty.
 func swap_with(other_slot: CardSlot) -> bool:
+	var net = _get_network_manager()
+	if net and net.should_route_slot_command(self):
+		return await net.request_slot_swap(self, other_slot)
+	var broadcast_after: bool = net and net.should_broadcast_local_action()
+	if broadcast_after:
+		net.begin_suppressed_routing()
+	var swapped := _swap_with_local(other_slot)
+	if broadcast_after:
+		net.end_suppressed_routing()
+	if swapped and broadcast_after:
+		net.bump_revision_and_broadcast(-1.0)
+	return swapped
+
+
+## Local implementation for [method swap_with].
+func _swap_with_local(other_slot: CardSlot) -> bool:
 	if slot_locked or other_slot.slot_locked: return false
 	if is_empty() or other_slot.is_empty(): return false
 
@@ -272,6 +288,22 @@ func _on_card_dropped() -> void:
 #region Drop Handling
 
 func _handle_drop(incoming: Card) -> void:
+	var net = _get_network_manager()
+	if net and net.should_route_slot_command(self, incoming):
+		net.request_slot_drop(self, incoming)
+		_return_to_source(incoming)
+		return
+	var broadcast_after: bool = net and net.should_broadcast_local_action()
+	if broadcast_after:
+		net.begin_suppressed_routing()
+	_handle_drop_local(incoming)
+	if broadcast_after:
+		net.end_suppressed_routing()
+		net.bump_revision_and_broadcast(-1.0)
+
+
+## Local implementation for slot drop handling.
+func _handle_drop_local(incoming: Card) -> void:
 	var source = incoming.get_parent()
 
 	if source == self and cards.has(incoming):

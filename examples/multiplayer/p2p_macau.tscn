@@ -1,0 +1,183 @@
+[gd_scene load_steps=14 format=3 uid="uid://cmnb4r1x7hkjh"]
+
+[ext_resource type="Script" uid="uid://drwkwp0mdsmh4" path="res://examples/multiplayer/p2p_macau.gd" id="1_t05i1"]
+[ext_resource type="Script" uid="uid://bkryh5jjpbqdx" path="res://addons/simple_cards/network/card_peer_to_peer_network.gd" id="1_voejs"]
+[ext_resource type="Script" uid="uid://bisyk4bowdvsf" path="res://addons/simple_cards/deck/manager/card_deck_manager.gd" id="2_3l3j0"]
+[ext_resource type="Script" uid="uid://bbi8i6vef3f6y" path="res://addons/simple_cards/containers/hand/card_hand.gd" id="3_t05i1"]
+[ext_resource type="Script" uid="uid://cgtxv1fnflwfu" path="res://addons/simple_cards/shape/premade_shapes/arc_shape.gd" id="4_wlpae"]
+[ext_resource type="Script" uid="uid://bgmqt21bcemq6" path="res://addons/simple_cards/card/card_layout/card_animation_resource/prebuild_animations/bob_animation.gd" id="5_l04mh"]
+[ext_resource type="Resource" uid="uid://u1x8i453q018" path="res://examples/cards/standard_deck/standard_deck.tres" id="6_deck"]
+[ext_resource type="Script" uid="uid://d2l8uaoel5whd" path="res://addons/simple_cards/containers/pile/card_pile.gd" id="7_wlpae"]
+[ext_resource type="PackedScene" uid="uid://1xlllxkpuqv3" path="res://examples/multiplayer/opponent_scene.tscn" id="8_opponent"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lu2n7"]
+bg_color = Color(0.1619519, 0.27889124, 0.20867068, 1)
+border_width_left = 16
+border_width_top = 16
+border_width_right = 16
+border_width_bottom = 16
+border_color = Color(0.32194266, 0.19428441, 0.19088537, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vxnx7"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+
+[sub_resource type="Resource" id="Resource_1v58x"]
+script = ExtResource("4_wlpae")
+arc_angle = 45.0
+card_spacing = 80.0
+metadata/_custom_type_script = "uid://cgtxv1fnflwfu"
+
+[sub_resource type="Resource" id="Resource_3qmur"]
+script = ExtResource("5_l04mh")
+amplitude = 3.0
+frequency = 1.0
+phase_variance = 0.785
+looping = true
+metadata/_custom_type_script = "uid://bgmqt21bcemq6"
+
+[node name="P2pMacau" type="CanvasLayer"]
+script = ExtResource("1_t05i1")
+deck = ExtResource("6_deck")
+opponent_scene = ExtResource("8_opponent")
+
+[node name="CardPeerToPeerNetwork" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("1_voejs")
+metadata/_custom_type_script = "uid://bkryh5jjpbqdx"
+
+[node name="CardDeckManager" type="Node" parent="." node_paths=PackedStringArray("starting_pile")]
+script = ExtResource("2_3l3j0")
+deck = ExtResource("6_deck")
+starting_pile = NodePath("../BGPanel/MarginContainer/DrawPile")
+metadata/_custom_type_script = "uid://bisyk4bowdvsf"
+
+[node name="BGPanel" type="Panel" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_lu2n7")
+
+[node name="MarginContainer" type="MarginContainer" parent="BGPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="PlayerHand" type="Panel" parent="BGPanel/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+theme_override_styles/panel = SubResource("StyleBoxEmpty_vxnx7")
+script = ExtResource("3_t05i1")
+shape = SubResource("Resource_1v58x")
+idle_animation = SubResource("Resource_3qmur")
+preview_enabled = true
+preview_layout_name = &"standard_layout"
+preview_card_count = 8
+metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
+
+[node name="DrawPile" type="Panel" parent="BGPanel/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+script = ExtResource("7_wlpae")
+preview_enabled = true
+preview_layout_name = &"standard_back_layout"
+metadata/_custom_type_script = "uid://d2l8uaoel5whd"
+
+[node name="PlayPile" type="Panel" parent="BGPanel/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+script = ExtResource("7_wlpae")
+preview_enabled = true
+preview_layout_name = &"standard_layout"
+metadata/_custom_type_script = "uid://d2l8uaoel5whd"
+
+[node name="OpponentsBox" type="HBoxContainer" parent="BGPanel/MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/separation = 64
+alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BGPanel/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+
+[node name="HostButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Host"
+
+[node name="JoinButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Join"
+
+[node name="StartButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Start"
+
+[node name="DrawButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Draw"
+
+[node name="SnapshotButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Snapshot"
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="BGPanel/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 4
+
+[node name="StatusLabel" type="Label" parent="BGPanel/MarginContainer/VBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+text = "Host or join, then start a Macau match."
+horizontal_alignment = 2
+autowrap_mode = 2
+
+[node name="TurnLabel" type="Label" parent="BGPanel/MarginContainer/VBoxContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Lobby: 1/6 players"
+horizontal_alignment = 2
+
+[node name="DrawStateLabel" type="Label" parent="BGPanel/MarginContainer/VBoxContainer2"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "1 deck | draw 0 | discard 0 | no active draw"
+horizontal_alignment = 2
+
+[node name="RulesLabel" type="Label" parent="BGPanel/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+text = "A - skip a turn
+J - draw 2
+Q - draw 3
+K - deny active draw
+Match suit/number
+First to finish wins"
+horizontal_alignment = 2

@@ -54,6 +54,33 @@ var current_held_item: Card = null:
 			dropped_card.emit()
 
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+## Active scene-local card network manager.
+## @experimental: Multiplayer support may change before it is considered stable.
+var current_net: CardNetworkManager = null
+
+
+## Registers the active scene-local card network manager.
+## @experimental: Multiplayer support may change before it is considered stable.
+func set_network_manager(net: CardNetworkManager) -> void:
+	if current_net and is_instance_valid(current_net) and current_net != net:
+		push_warning("CardGlobal: Replacing active CardNetworkManager.")
+	current_net = net
+
+
+## Clears the active scene-local card network manager.
+## @experimental: Multiplayer support may change before it is considered stable.
+func clear_network_manager(net: CardNetworkManager) -> void:
+	if current_net == net:
+		current_net = null
+
+
+## Returns the active scene-local card network manager, if valid.
+## @experimental: Multiplayer support may change before it is considered stable.
+func get_network_manager() -> CardNetworkManager:
+	if current_net and is_instance_valid(current_net):
+		return current_net
+	current_net = null
+	return null
 
 ##Global function to get cursor position
 func get_cursor_position() -> Vector2:

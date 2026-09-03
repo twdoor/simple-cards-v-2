@@ -69,6 +69,15 @@ var _pending_layout_switch: bool = false
 
 ## If true, disables drag function.
 @export var undraggable: bool = false
+@export_group("Multiplayer (Experimental)")
+## Stable ID used by [CardNetworkManager]. Empty scene-card IDs are derived from
+## the node path; runtime cards receive opaque session IDs.
+## @experimental: Multiplayer support may change before it is considered stable.
+@export var network_id: StringName = &""
+## Peer allowed to command this card. [code]0[/code] means no card-specific owner.
+## @experimental: Multiplayer support may change before it is considered stable.
+@export var network_owner_peer_id: int = 0
+@export_group("")
 
 ## Holds the reference to the card resource.
 @export var card_data: CardResource:
@@ -77,6 +86,9 @@ var _pending_layout_switch: bool = false
 		if _layout:
 			_layout.card_resource = value
 		card_data_changed.emit(value)
+		var net = _get_network_manager()
+		if net and net.enabled and value:
+			net.register_resource(value)
 		if Engine.is_editor_hint() and is_node_ready():
 			_editor_setup_layout()
 
@@ -102,6 +114,7 @@ var layout_name: StringName = &"":
 
 ## Resolved layout ID currently displayed after fallback rules are applied.
 var current_layout_name: StringName = &""
+var _local_face_override: int = -1
 
 ## If true uses front_layout else uses back_layout.
 var is_front_face: bool = true:
@@ -156,6 +169,9 @@ func _ready() -> void:
 	_setup_layout(true)
 	set_card_size()
 	set_process(false)
+	var net = _get_network_manager()
+	if net and net.enabled:
+		net.register_card(self)
 	_card_ready()
 
 
@@ -298,6 +314,20 @@ class MoveConfig:
 ## Moves this card into a [CardContainer]. Handles reparenting, registration,
 ## and animation in one call.
 func move_to(target: CardContainer, config: MoveConfig = null) -> void:
+	var net = _get_network_manager()
+	if net and net.should_route_move(self, target):
+		net.request_move(self, target, config)
+		return
+
+	_move_to_local(target, config)
+	if net and net.should_broadcast_local_action():
+		var animation_duration := config.duration if config else -1.0
+		net.bump_revision_and_broadcast(animation_duration)
+
+
+## Local implementation for [method move_to]. Called directly by the active card network manager when applying
+## authoritative state so routing does not recurse.
+func _move_to_local(target: CardContainer, config: MoveConfig = null) -> void:
 	if !target: return
 	if !target.can_accept_card(self): return
 	if !config: config = MoveConfig.new()
@@ -653,6 +683,17 @@ func refresh_layout() -> void:
 
 ## Flips the card face.
 func flip() -> void:
+	var net = _get_network_manager()
+	if net and net.should_route_container_command(get_parent() as CardContainer):
+		net.request_flip(self)
+		return
+	_flip_local()
+	if net and net.should_broadcast_local_action():
+		net.bump_revision_and_broadcast()
+
+
+## Local implementation for [method flip].
+func _flip_local() -> void:
 	is_front_face = !is_front_face
 	card_flipped.emit(is_front_face)
 
@@ -660,13 +701,111 @@ func flip() -> void:
 
 
 func _get_requested_layout_id() -> StringName:
+	if _local_face_override == 1:
+		return front_layout_name
+	if _local_face_override == 0:
+		return back_layout_name
 	if is_front_face:
 		return front_layout_name
 	return back_layout_name
 
+
+## Overrides this peer's displayed face without changing authoritative card state.
+## Pass [code]-1[/code] to display [member is_front_face], [code]0[/code] for back,
+## or [code]1[/code] for front.
+## @experimental: Multiplayer support may change before it is considered stable.
+func set_local_face_override(face_override: int = -1) -> void:
+	face_override = clampi(face_override, -1, 1)
+	if _local_face_override == face_override:
+		return
+	_local_face_override = face_override
+	if not Engine.is_editor_hint() and is_node_ready():
+		_setup_layout()
+
+
 ## Called at the end of [method _ready]. Override for subclass setup.
 func _card_ready() -> void:
 	pass
+
+
+## Assigns this card's stable network ID.
+## @experimental: Multiplayer support may change before it is considered stable.
+func set_network_id(id: StringName) -> void:
+	if network_id == id:
+		return
+	var net = _get_network_manager()
+	if net and not network_id.is_empty():
+		net.unregister_card(self)
+	network_id = id
+	if net:
+		net.register_card(self)
+
+
+## Returns this card's network snapshot data for the given peer.
+## @experimental: Multiplayer support may change before it is considered stable.
+func get_network_state(for_peer_id: int = 0) -> Dictionary:
+	var net = _get_network_manager()
+	if net:
+		net.ensure_card_id(self)
+
+	var container := get_parent() as CardContainer
+	var container_id := &""
+	var index := -1
+	if container:
+		container_id = container.network_id
+		index = container.get_card_index(self)
+
+	var known := true
+	if net:
+		known = net.can_peer_see_card(self, for_peer_id)
+
+	var state: Dictionary = {
+		"card_id": network_id,
+		"container_id": container_id,
+		"index": index,
+		"owner_peer_id": network_owner_peer_id,
+		"known": known,
+		"is_front_face": is_front_face if known else false,
+		"front_layout_name": front_layout_name if known else &"",
+		"back_layout_name": back_layout_name,
+	}
+
+	if known and card_data:
+		state["resource_id"] = card_data.get_network_resource_id()
+		state["resource_path"] = card_data.resource_path
+		state["card_data"] = card_data.to_network_data(for_peer_id)
+
+	return state
+
+
+## Applies card state from a network snapshot.
+## @experimental: Multiplayer support may change before it is considered stable.
+func apply_network_state(state: Dictionary, _config: MoveConfig = null) -> void:
+	if state.has("card_id"):
+		set_network_id(StringName(state.get("card_id", &"")))
+	network_owner_peer_id = int(state.get("owner_peer_id", network_owner_peer_id))
+	back_layout_name = StringName(state.get("back_layout_name", back_layout_name))
+
+	var known := bool(state.get("known", true))
+	if known:
+		front_layout_name = StringName(state.get("front_layout_name", front_layout_name))
+		var net = _get_network_manager()
+		var resource = net.resolve_resource_from_payload(state) if net else null
+		if resource:
+			card_data = resource
+		if card_data and state.get("card_data", {}) is Dictionary:
+			card_data.apply_network_data(state.get("card_data", {}))
+			refresh_layout()
+		is_front_face = bool(state.get("is_front_face", is_front_face))
+	else:
+		card_data = null
+		is_front_face = false
+
+
+func _get_network_manager() -> CardNetworkManager:
+	if Engine.is_editor_hint() or not is_inside_tree():
+		return null
+	return CG.get_network_manager()
 
 
 func _exit_tree() -> void:
@@ -677,4 +816,7 @@ func _exit_tree() -> void:
 			_layout.queue_free()
 			_layout = null
 		return
+	var net = CG.get_network_manager()
+	if net:
+		net.unregister_card(self)
 	kill_all_tweens()

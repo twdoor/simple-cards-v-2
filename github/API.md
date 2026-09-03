@@ -1,5 +1,7 @@
 # API Reference
 
+> **Experimental:** The multiplayer API is available for testing in this release, but its class names, command payloads, visibility rules, and helper methods may change before it is considered stable.
+
 ### <img src="assets/icon_card.png"> Card
 
 A draggable button control that represents a single card.
@@ -10,6 +12,8 @@ A draggable button control that represents a single card.
 | --- | --- | --- |
 | `card_data` | `CardResource` | The resource containing card data |
 | `undraggable` | `bool` | If `true`, disables dragging (click still works) |
+| `network_id` | `StringName` | **Experimental multiplayer.** Stable ID used by `CardNetworkManager`; scene cards use deterministic path IDs and runtime cards use opaque session IDs |
+| `network_owner_peer_id` | `int` | **Experimental multiplayer.** Peer allowed to command this card in network mode. `0` means no card-specific owner |
 | `holding` | `bool` | `true` when card is being dragged |
 | `focused` | `bool` | `true` when card has focus |
 | `hovered` | `bool` | `true` when card is hovered |
@@ -57,6 +61,15 @@ func get_layout() -> CardLayout
 
 # Refresh the current layout display
 func refresh_layout() -> void
+
+# Override this peer's displayed face without changing authoritative is_front_face.
+# -1 = real face, 0 = back, 1 = front.
+func set_local_face_override(face_override: int = -1) -> void
+
+# Experimental multiplayer state helpers
+func set_network_id(id: StringName) -> void
+func get_network_state(for_peer_id: int = 0) -> Dictionary
+func apply_network_state(state: Dictionary, config: Card.MoveConfig = null) -> void
 
 # Animated transforms
 func tween_scale(desired_scale: Vector2 = Vector2.ONE, duration: float = 0.2) -> void
@@ -153,6 +166,21 @@ Abstract base class for storing card data. **Extend this class** to add your own
 | --- | --- | --- |
 | `front_layout_name` | `StringName` | Override the default front layout for this card (shown as enum dropdown) |
 | `back_layout_name` | `StringName` | Override the default back layout for this card (shown as enum dropdown) |
+| `network_resource_id` | `StringName` | **Experimental multiplayer.** Stable resource ID for multiplayer serialization. If empty, `resource_path` is used |
+
+#### Network Methods
+
+```gdscript
+# Returns network_resource_id if set, otherwise resource_path.
+func get_network_resource_id() -> StringName
+
+# Serializes Variant-safe exported primitive data.
+# Object, Resource, RID, Callable, Signal, and unsafe nested values are skipped.
+func to_network_data(for_peer_id: int = 0) -> Dictionary
+
+# Applies data produced by to_network_data().
+func apply_network_data(data: Dictionary) -> void
+```
 
 #### Example
 
@@ -366,16 +394,19 @@ Base class for all card containers (`CardHand`, `CardPile`, `CardSlot`). Extends
 | `card_move_duration` | `float` | Default tween duration for cards settling into position |
 | `cards_focusable` | `bool` | If `false`, all cards in this container have keyboard/controller focus disabled. Default `true` |
 | `idle_animation` | `CardAnimationResource` | Looping animation played on all cards while in this container (e.g. bobbing). Stopped per-card during drag |
+| `network_id` | `StringName` | **Experimental multiplayer.** Stable ID used by `CardNetworkManager`; empty IDs are assigned from the scene path |
+| `network_owner_peer_id` | `int` | **Experimental multiplayer.** Peer allowed to command this container in network mode. `0` means shared/public |
+| `network_visibility_policy` | `int` | **Experimental multiplayer.** Visibility policy: `PUBLIC`, `OWNER_ONLY`, `FACE_UP_PUBLIC`, or `HIDDEN` |
+| `allow_remote_commands` | `bool` | **Experimental multiplayer.** If `false`, non-server peers cannot command this container. Defaults to `false`; opt in deliberately |
 | `cards` | `Array[Card]` | Internal card array |
 
 #### Editor Preview Properties
 
-These properties are editor-only. They draw lightweight ghost cards and bounds to help tune `ContainerShape` settings and detect overflow. They do not create runtime cards or affect gameplay. Custom shape scripts and custom container subclasses must use `@tool` for their editor preview code to run; non-tool custom shapes fall back to a simple stacked preview.
+These properties are editor-only. They show layout-card previews and bounds to help tune `ContainerShape` settings and detect overflow. They do not create runtime cards or affect gameplay. Custom shape scripts and custom container subclasses must use `@tool` for their editor preview code to run; non-tool custom shapes fall back to a simple stacked preview.
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `preview_enabled` | `bool` | Editor-only shape preview toggle |
-| `preview_use_layout_cards` | `bool` | If `true`, shows editor-only visual preview cards using the selected layout |
+| `preview_enabled` | `bool` | Editor-only shape preview group toggle |
 | `preview_layout_name` | `StringName` | Layout ID used to determine preview card size and visuals |
 | `preview_card_count` | `int` | Editor preview count; `0` auto-uses `max_cards` or the default preview count |
 | `preview_draw_container_bounds` | `bool` | Draws the panel/container rect in the editor preview |
@@ -417,9 +448,15 @@ func move_cards_to(card_array: Array[Card], target: CardContainer, config: Card.
 func move_all_to(target: CardContainer, config: Card.MoveConfig = null) -> int
 func sort_cards(compare_func: Callable) -> void
 
+# Experimental multiplayer order helpers
+func get_network_card_order() -> PackedStringArray
+func apply_network_card_order(card_ids: PackedStringArray, duration: float = 0.0) -> void
+
 # Clear
 func clear_and_free() -> void       # Frees all cards
 ```
+
+In experimental server-authoritative network mode, await bulk methods to receive the accepted moved-card count. Rejected or timed-out requests return `0`.
 
 #### Virtual Methods
 
@@ -882,6 +919,7 @@ The manager does **not** own or create piles — you add `CardPile` nodes in the
 | `starting_pile` | `CardPile` | The pile to populate on setup (auto-created if null) |
 | `auto_setup` | `bool` | If `true`, calls `setup()` on ready |
 | `shuffle_on_setup` | `bool` | If `true`, shuffles the starting pile after populating it |
+| `network_spawn_cards` | `bool` | **Experimental multiplayer.** If `true`, server-created cards receive opaque network IDs when an active card network manager is enabled |
 
 #### Signals
 
@@ -931,6 +969,120 @@ func reshuffle():
 
 ---
 
+### CardNetworkManager (Experimental)
+
+Experimental abstract base class for scene-local card network managers. Add a concrete subclass node, such as `CardServerAuthoritativeNetwork`, to a multiplayer scene. The node registers itself on `CG`; offline scenes without a network node keep local-only behavior.
+
+Use [Multiplayer](MULTIPLAYER.md) for the built-in managers and [Custom Multiplayer](CUSTOM_MULTIPLAYER.md) when implementing your own `CardNetworkManager`.
+
+#### Enums
+
+```gdscript
+enum PredictionMode { NONE, LOCAL_VISUAL_ONLY, OPTIMISTIC }
+enum VisibilityPolicy { PUBLIC, OWNER_ONLY, FACE_UP_PUBLIC, HIDDEN }
+```
+
+#### Properties
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `enabled` | `bool` | `true` | Enables card networking for this scene node |
+| `prediction_mode` | `PredictionMode` | `LOCAL_VISUAL_ONLY` | Client prediction behavior for requested moves |
+| `default_move_duration` | `float` | `-1.0` | Default duration used when network commands do not include one |
+| `command_timeout` | `float` | `10.0` | Seconds to wait for an authoritative command result |
+| `state_revision` | `int` | `0` | Authoritative state revision |
+
+#### Signals
+
+| Signal | Parameters | Description |
+| --- | --- | --- |
+| `command_rejected` | `command: Dictionary, reason: String` | Emitted when the server rejects a command |
+| `state_revision_applied` | `revision: int` | Emitted after a state revision is applied or broadcast |
+| `snapshot_applied` | - | Emitted after a full snapshot or delta payload is applied locally |
+
+#### Common Methods
+
+```gdscript
+func is_server_peer() -> bool
+func is_applying_remote_state() -> bool
+
+func register_container(container: CardContainer) -> void
+func unregister_container(container: CardContainer) -> void
+func register_card(card: Card) -> void
+func unregister_card(card: Card) -> void
+func register_resource(resource: CardResource) -> void
+
+func get_card(card_id: StringName) -> Card
+func get_container(container_id: StringName) -> CardContainer
+func get_resource(resource_id: StringName) -> CardResource
+
+func ensure_card_id(card: Card) -> StringName
+func assign_card_id(card: Card) -> StringName
+func ensure_container_id(container: CardContainer) -> StringName
+
+func bump_revision_and_broadcast(animation_duration: float = 0.0) -> void
+func broadcast_state(animation_duration: float = 0.0) -> void
+func build_snapshot_for_peer(peer_id: int = 0, animation_duration: float = 0.0) -> Dictionary
+func can_peer_see_card(card: Card, peer_id: int) -> bool
+func resolve_resource_from_payload(payload: Dictionary) -> CardResource
+```
+
+Most methods on `CardNetworkManager` are abstract so custom networking implementations must provide the command routing, registries, snapshots, visibility checks, and RPC behavior they support.
+
+#### RPC Entry Points
+
+These are exposed for the networking layer and late-join snapshot requests:
+
+```gdscript
+@rpc("any_peer", "reliable")
+func _request_card_command(command: Dictionary) -> void
+
+@rpc("authority", "reliable")
+func _apply_card_delta(delta: Dictionary) -> void
+
+@rpc("authority", "reliable")
+func _apply_full_snapshot(snapshot: Dictionary) -> void
+
+@rpc("any_peer", "reliable")
+func _request_full_snapshot() -> void
+```
+
+---
+
+### CardServerAuthoritativeNetwork (Experimental)
+
+Experimental multiplayer implementation. Extends `CardNetworkManager` and routes client card commands through the server.
+
+Add it to the multiplayer scene as a node named `CardNetwork` and make it unique in owner so scripts can use:
+
+```gdscript
+@onready var card_network: CardServerAuthoritativeNetwork = %CardNetwork
+```
+
+This class owns the server-authoritative RPC surface, command validation, snapshot broadcast, rejection handling, and late-join snapshot requests.
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `allow_remote_card_data_updates` | `bool` | `false` | **Experimental multiplayer.** Allows clients to submit `SET_CARD_DATA`; enable only with game-specific validation |
+
+---
+
+### CardPeerToPeerNetwork (Experimental)
+
+Experimental trusted peer-to-peer implementation. Extends `CardNetworkManager` and lets each peer apply local card actions, then broadcast peer-specific snapshots to the other peers.
+
+Add it to a multiplayer scene as a node named `CardNetwork` and make it unique in owner so scripts can use:
+
+```gdscript
+@onready var card_network: CardPeerToPeerNetwork = %CardNetwork
+```
+
+Use this for trusted/local games where every peer is allowed to author its owned cards and containers. It is not cheat-resistant; use `CardServerAuthoritativeNetwork` when one peer must validate all actions.
+
+The P2P manager still uses stable network IDs, ownership fields, visibility policies, resource-safe card data serialization, and animated snapshot application.
+
+---
+
 ### CardGlobal (CG)
 
 The global singleton providing shared state and utilities. Access via `CG`.
@@ -943,6 +1095,7 @@ The global singleton providing shared state and utilities. Access via `CG`.
 | `def_back_layout` | `StringName` | Default back layout ID |
 | `current_held_item` | `Card` | Currently dragged card |
 | `card_index` | `int` | Auto-incrementing card counter |
+| `current_net` | `CardNetworkManager` | **Experimental multiplayer.** Active scene-local card network manager, if one is registered |
 |`rng`|`RandomNumberGenerator`|Responsible for random events of in the addon|
 
 #### Signals
@@ -963,6 +1116,11 @@ The global singleton providing shared state and utilities. Access via `CG`.
 func get_cursor_position() -> Vector2
 func get_local_cursor_position(node: Node) -> Vector2
 # Return mouse global/local position. TOBE used on controller support
+
+# Experimental scene-local card networking
+func set_network_manager(net: CardNetworkManager) -> void
+func clear_network_manager(net: CardNetworkManager) -> void
+func get_network_manager() -> CardNetworkManager
 
 # Layout management
 func get_available_layouts() -> Array[StringName]

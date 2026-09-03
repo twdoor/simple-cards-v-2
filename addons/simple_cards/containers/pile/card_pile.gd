@@ -61,6 +61,17 @@ func _restore_card_state(card: Card) -> void:
 
 ## Shuffles the card order randomly.
 func shuffle() -> void:
+	var net = _get_network_manager()
+	if net and net.should_route_pile_command(self):
+		net.request_shuffle(self)
+		return
+	_shuffle_local()
+	if net and net.should_broadcast_local_action():
+		net.bump_revision_and_broadcast(-1.0)
+
+
+## Local implementation for [method shuffle].
+func _shuffle_local() -> void:
 	for i in range(cards.size() - 1, 0, -1):
 		var j = CG.rng.randi_range(0, i)
 		var tmp = cards[i]

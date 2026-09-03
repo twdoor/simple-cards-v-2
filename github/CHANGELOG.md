@@ -2,6 +2,26 @@
 
 ## Version 2.13
 
+### Multiplayer (Experimental)
+
+- **Built-In Multiplayer Layer** — Added scene-local card network nodes for opt-in, server-authoritative card synchronization. Existing APIs such as `Card.move_to()`, `CardContainer.deal_to()`, `move_cards_to()`, `CardPile.shuffle()`, `Card.flip()`, hand reorder, and slot drop/swap now route through the active `CardNetworkManager` when a multiplayer scene node is registered on `CG`.
+- **Peer-To-Peer Multiplayer Manager** — Added `CardPeerToPeerNetwork`, a trusted peer-to-peer implementation of `CardNetworkManager`. Local owners apply card actions and broadcast peer-specific snapshots with animation durations.
+- **Network Identity** — `Card` and `CardContainer` now expose `network_id` and `network_owner_peer_id`. `CardDeckManager.network_spawn_cards` assigns opaque server-side IDs to spawned cards so duplicate resources still produce distinct runtime cards.
+- **Network Visibility Policies** — `CardContainer` now exposes `network_visibility_policy` and `allow_remote_commands`. Supported policies are `PUBLIC`, `OWNER_ONLY`, `FACE_UP_PUBLIC`, and `HIDDEN`, allowing private hands and hidden piles without serializing card resources to every peer.
+- **CardResource Network Serialization** — `CardResource` now has `network_resource_id`, `get_network_resource_id()`, `to_network_data()`, and `apply_network_data()`. Default serialization sends only Variant-safe exported primitive data and skips `Object`, `Resource`, `RID`, `Callable`, `Signal`, and unsafe nested values.
+- **Snapshot And Late Join Support** — `CardServerAuthoritativeNetwork` can build peer-specific snapshots, create missing client card nodes, apply container orders, and request full snapshots through `_request_full_snapshot.rpc_id(1)`.
+- **Network Animation Durations** — Authoritative card state broadcasts now carry an animation duration so clients tween remote moves instead of snapping cards instantly.
+- **Network Idle Animation Restart** — Network-applied card order changes now stop idle animations on source cards and restart idle animations after cards settle into the target container, keeping peer hand animations such as bobbing active after snapshots.
+- **Local Face Override** — `Card.set_local_face_override()` allows one peer to display a card as front or back without changing authoritative `is_front_face`. This is useful for host-as-player views, spectator views, and private-hand presentation.
+- **Multiplayer Documentation** — Added a consolidated `github/MULTIPLAYER.md` guide and a `github/CUSTOM_MULTIPLAYER.md` implementation guide, plus README/API coverage for the new scene-local multiplayer surface.
+- **Macau Multiplayer Example** — Added `examples/multiplayer/p2p_macau.tscn`, a 2-6 player trusted peer-to-peer sample with host-coordinated Macau rules, private-hand UI masking, one visible local hand, on-demand background network containers, active draw chains, animated updates, and snapshot refresh.
+- **Concealed Identity Rotation** — Hidden cards now use per-peer, per-snapshot wire IDs so revealed cards cannot be tracked through hidden piles or shuffles by canonical ID.
+- **Authoritative Snapshot Reconciliation** — Applying a full-state payload now frees cards absent from the authoritative snapshot, preventing stale and duplicate client cards after resets.
+- **Authoritative Command Results** — Routed bulk moves and slot swaps now return server-approved results when awaited, with command rejection and timeout handling.
+- **Hardened Server Defaults And Sample Validation** — Containers deny remote commands and card-data mutation by default; the Macau sample keeps generic remote commands disabled and validates game actions through host-coordinated RPCs.
+
+### General
+
 - **Shape Offsets Preserved** — `ContainerShape.compute_layout()` no longer normalizes every shape to the content bounding box. Shape-defined positions are preserved, so custom offsets and built-in options like `LineShape.alignment` work correctly.
 - **Explicit Built-In Shape Bounds** — Built-in shapes now handle their own bounds fitting where appropriate. `LineShape` fits its full `max_width` region while preserving begin/center/end alignment, `GridShape` and `ArcShape` fit their generated content to the container origin, and `StackShape` uses each card's `pivot_offset` to keep top-left stack placement.
 - **Tool-Mode Shapes** — `ContainerShape`, built-in shapes, and the solitaire `FanTailShape` are now `@tool`, allowing editor-time shape previews to call layout code without placeholder-resource errors.

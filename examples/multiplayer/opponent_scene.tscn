@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3 uid="uid://1xlllxkpuqv3"]
+
+[ext_resource type="Script" path="res://examples/multiplayer/opponent_scene.gd" id="1_h4bsg"]
+[ext_resource type="Texture2D" uid="uid://cvwcyhqx6fvdk" path="res://addons/simple_cards/card/card_resource/icon_card_resource.png" id="1_yas8t"]
+
+[node name="PlayerIcon" type="TextureRect" node_paths=PackedStringArray("num_of_card_label")]
+custom_minimum_size = Vector2(128, 128)
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("1_yas8t")
+expand_mode = 5
+script = ExtResource("1_h4bsg")
+num_of_card_label = NodePath("NumOfCardsLabel")
+
+[node name="NumOfCardsLabel" type="Label" parent="."]
+layout_mode = 0
+offset_top = 128.0
+offset_right = 127.0
+offset_bottom = 176.0
+text = "Peer
+10 cards"
+horizontal_alignment = 1

@@ -66,18 +66,25 @@ signal container_full()
 
 ## Idle animation looped on all cards while in this container (e.g. bobbing).
 @export var idle_animation: CardAnimationResource
+@export_group("Multiplayer (Experimental)")
+## Stable ID used by [CardNetworkManager]. Empty IDs are assigned from the scene path.
+## @experimental: Multiplayer support may change before it is considered stable.
+@export var network_id: StringName = &""
+## Peer allowed to command this container. [code]0[/code] means shared/public.
+## @experimental: Multiplayer support may change before it is considered stable.
+@export var network_owner_peer_id: int = 0
+## Controls which peers receive card identity/data for cards in this container.
+## @experimental: Multiplayer support may change before it is considered stable.
+@export_enum("PUBLIC", "OWNER_ONLY", "FACE_UP_PUBLIC", "HIDDEN") var network_visibility_policy: int = 0
+## If [code]false[/code], non-server peers cannot command this container.
+## @experimental: Multiplayer support may change before it is considered stable.
+@export var allow_remote_commands: bool = false
 
 @export_group("Preview")
-@export_custom(PROPERTY_HINT_GROUP_ENABLE, "Preview") var preview_group_checked:= false
 ## Editor-only shape preview toggle.
-@export var preview_enabled: bool = false:
+@export_custom(PROPERTY_HINT_GROUP_ENABLE, "Preview") var preview_enabled: bool = false:
 	set(value):
 		preview_enabled = value
-		_queue_preview_layout_update()
-## If true, instantiates editor-only preview cards using [member preview_layout_name].
-@export var preview_use_layout_cards: bool = true:
-	set(value):
-		preview_use_layout_cards = value
 		_queue_preview_layout_update()
 ## Layout ID used to determine ghost card size in the editor preview.
 @export var preview_layout_name: StringName = LayoutID.DEFAULT:
@@ -127,6 +134,9 @@ func _ready() -> void:
 		_preview_card_size = _editor_get_layout_card_size(preview_layout_name)
 		_queue_preview_layout_update()
 		return
+	var net = _get_network_manager()
+	if net and net.enabled:
+		net.register_container(self)
 	child_exiting_tree.connect(_on_child_exiting)
 	_container_ready()
 	if idle_animation and not cards.is_empty():
@@ -137,6 +147,9 @@ func _exit_tree() -> void:
 	_clear_preview_visual_cards()
 	if Engine.is_editor_hint(): return
 	_stop_idle()
+	var net = CG.get_network_manager()
+	if net:
+		net.unregister_container(self)
 
 
 func _notification(what: int) -> void:
@@ -246,6 +259,9 @@ func can_accept_card(card: Card) -> bool:
 ## Registers a card in internal state. Does NOT reparent or animate the card.
 ## [br]Computes layout and settles existing cards (unless in batch mode).
 func _register_card(card: Card, index: int = -1) -> void:
+	var net = _get_network_manager()
+	if net and net.enabled:
+		net.register_card(card)
 	if index < 0 or index > cards.size():
 		cards.append(card)
 		index = cards.size() - 1
@@ -297,6 +313,9 @@ func _unregister_card(card: Card) -> void:
 ## Registers a card without triggering layout or signals.
 ## Used for atomic multi-card operations like swaps.
 func _raw_register(card: Card, index: int = -1) -> void:
+	var net = _get_network_manager()
+	if net and net.enabled:
+		net.register_card(card)
 	if index < 0 or index > cards.size():
 		cards.append(card)
 	else:
@@ -501,6 +520,22 @@ func _schedule_idle_restart(duration: float) -> void:
 ## If [member Card.MoveConfig.batch] is [code]true[/code] (or [member Card.MoveConfig.duration]
 ## is [code]0[/code]), layout computation is deferred until all cards are placed.
 func deal_to(target: CardContainer, count: int, config: Card.MoveConfig = null) -> int:
+	var net = _get_network_manager()
+	if net and net.should_route_container_command(self, target):
+		return await net.request_deal(self, target, count, config)
+	var broadcast_after: bool = net and net.should_broadcast_local_action()
+	var animation_duration := config.duration if config else -1.0
+	if broadcast_after:
+		net.begin_suppressed_routing()
+	var dealt := await _deal_to_local(target, count, config)
+	if broadcast_after:
+		net.end_suppressed_routing()
+		net.bump_revision_and_broadcast(animation_duration)
+	return dealt
+
+
+## Local implementation for [method deal_to].
+func _deal_to_local(target: CardContainer, count: int, config: Card.MoveConfig = null) -> int:
 	if !config: config = Card.MoveConfig.new()
 	var use_batch = config.batch or config.duration == 0
 	if use_batch:
@@ -533,6 +568,22 @@ func deal_to(target: CardContainer, count: int, config: Card.MoveConfig = null) 
 ## If [member Card.MoveConfig.batch] is [code]true[/code] (or [member Card.MoveConfig.duration]
 ## is [code]0[/code]), layout computation is deferred until all cards are placed.
 func move_cards_to(card_array: Array[Card], target: CardContainer, config: Card.MoveConfig = null) -> int:
+	var net = _get_network_manager()
+	if net and net.should_route_container_command(self, target):
+		return await net.request_move_cards(card_array, self, target, config)
+	var broadcast_after: bool = net and net.should_broadcast_local_action()
+	var animation_duration := config.duration if config else -1.0
+	if broadcast_after:
+		net.begin_suppressed_routing()
+	var moved := await _move_cards_to_local(card_array, target, config)
+	if broadcast_after:
+		net.end_suppressed_routing()
+		net.bump_revision_and_broadcast(animation_duration)
+	return moved
+
+
+## Local implementation for [method move_cards_to].
+func _move_cards_to_local(card_array: Array[Card], target: CardContainer, config: Card.MoveConfig = null) -> int:
 	if !config: config = Card.MoveConfig.new()
 	var use_batch = config.batch or config.duration == 0
 	if use_batch:
@@ -568,8 +619,80 @@ func move_all_to(target: CardContainer, config: Card.MoveConfig = null) -> int:
 
 ## Sorts cards using a custom comparison and re-arranges.
 func sort_cards(compare_func: Callable) -> void:
+	var net = _get_network_manager()
+	if net and net.should_route_container_order(self):
+		_sort_cards_local(compare_func)
+		net.request_set_container_order(self)
+		return
+	_sort_cards_local(compare_func)
+	if net and net.should_broadcast_local_action():
+		net.bump_revision_and_broadcast(-1.0)
+
+
+## Local implementation for [method sort_cards].
+func _sort_cards_local(compare_func: Callable) -> void:
 	cards.sort_custom(compare_func)
 	arrange()
+
+
+## Returns the current card order as network IDs.
+## @experimental: Multiplayer support may change before it is considered stable.
+func get_network_card_order() -> PackedStringArray:
+	var net = _get_network_manager()
+	var result := PackedStringArray()
+	for card in cards:
+		if net:
+			net.ensure_card_id(card)
+		result.append(String(card.network_id))
+	return result
+
+
+## Applies an authoritative card order by network ID.
+## @experimental: Multiplayer support may change before it is considered stable.
+func apply_network_card_order(card_ids: PackedStringArray, duration: float = 0.0) -> void:
+	var net = _get_network_manager()
+	if net:
+		net.begin_apply_remote_state()
+
+	var desired: Array[Card] = []
+	if net:
+		for id in card_ids:
+			var card = net.get_card(StringName(id))
+			if card:
+				desired.append(card)
+
+	for card in desired:
+		var source := card.get_parent() as CardContainer
+		if source and source != self and source.cards.has(card):
+			source._stop_card_idle(card)
+			source._raw_unregister(card)
+			source._compute_layout()
+			for source_card in source.cards:
+				if source_card.holding: continue
+				source._settle_card(source_card, duration)
+
+	for card in cards.duplicate():
+		if desired.has(card):
+			continue
+		_stop_card_idle(card)
+		_raw_unregister(card)
+
+	for card in desired:
+		if card.get_parent() != self:
+			card._reparent_to(self)
+		if not cards.has(card):
+			_raw_register(card)
+
+	cards = desired.duplicate()
+	_compute_layout()
+	for card in cards:
+		if card.holding: continue
+		_settle_card(card, duration)
+	_update_card_layer_order()
+	_schedule_idle_restart(duration)
+
+	if net:
+		net.end_apply_remote_state()
 
 #endregion
 
@@ -578,10 +701,13 @@ func sort_cards(compare_func: Callable) -> void:
 
 ## Removes all cards and frees them.
 func clear_and_free() -> void:
+	var net = _get_network_manager()
 	_stop_idle()
 	_suppress_auto_remove = true
 	for card in cards:
 		_disconnect_card_signals(card)
+		if net:
+			net.unregister_card(card)
 		card.queue_free()
 	cards.clear()
 	_card_positions.clear()
@@ -590,6 +716,8 @@ func clear_and_free() -> void:
 	update_minimum_size()
 	container_empty.emit()
 	_handle_container_empty()
+	if net and net.should_broadcast_local_action():
+		net.bump_revision_and_broadcast()
 
 #endregion
 
@@ -650,6 +778,12 @@ func _on_shape_changed() -> void:
 		arrange()
 
 
+func _get_network_manager() -> CardNetworkManager:
+	if Engine.is_editor_hint() or not is_inside_tree():
+		return null
+	return CG.get_network_manager()
+
+
 func _queue_preview_layout_update() -> void:
 	update_minimum_size()
 	_update_preview_visual_cards()
@@ -678,7 +812,7 @@ func _build_preview_cards() -> Array[Card]:
 
 func _update_preview_visual_cards() -> void:
 	if !Engine.is_editor_hint(): return
-	if !preview_enabled or !preview_use_layout_cards:
+	if !preview_enabled:
 		_clear_preview_visual_cards()
 		return
 

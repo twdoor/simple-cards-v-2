@@ -64,8 +64,8 @@ func _container_ready() -> void:
 
 
 func _exit_tree() -> void:
+	super._exit_tree()
 	if Engine.is_editor_hint(): return
-	_stop_idle()
 	if CG.dropped_card.is_connected(_on_card_dropped):
 		CG.dropped_card.disconnect(_on_card_dropped)
 	if CG.holding_card.is_connected(_on_holding_card):
@@ -222,6 +222,11 @@ func _finish_card_drop() -> void:
 		_sync_card_child_order()
 		cards_reordered.emit(cards)
 		_handle_reordered_cards(cards)
+		var net = _get_network_manager()
+		if net and net.should_route_container_order(self):
+			net.request_reorder(self, cards)
+		elif net and net.should_broadcast_local_action():
+			net.bump_revision_and_broadcast(-1.0)
 
 	for follower in _drag_followers:
 		follower.disabled = false

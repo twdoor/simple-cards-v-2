@@ -12,6 +12,8 @@ A flexible, UI-based card system plugin for **Godot 4.5.1+**. Build card games, 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Card Layouts Panel](#card-layouts-panel)
+- [Multiplayer (Experimental)](github/MULTIPLAYER.md)
+- [Custom Multiplayer (Experimental)](github/CUSTOM_MULTIPLAYER.md)
 - [API Reference](github/API.md)
 - [Examples](#examples)
 - [Changelog](github/CHANGELOG.md)
@@ -28,6 +30,7 @@ A flexible, UI-based card system plugin for **Godot 4.5.1+**. Build card games, 
 - **Hand Management** - Arrange cards in lines, arcs, grids, stacks, or custom shapes
 - **Deck System** - Lightweight deck definitions with a minimal manager you can extend
 - **Card Slots** - Drop zones for placing individual cards
+- **Experimental Opt-In Multiplayer** - Scene-local server-authoritative or trusted peer-to-peer synchronization for private-hand presentation, hidden piles, validated moves, and late-join snapshots. This API may change before it is considered stable
 - **Layout Management Panel** - Editor panel to view, create, and manage all card layouts
 - **Fully Documented** - In-editor documentation for all classes
 
@@ -177,6 +180,20 @@ Located in `examples/solitaire/`, this demonstrates:
 Run SolitaireExample.tscn to play.
 
 ![Solitaire Example Animation](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/solitaire_example.gif)
+
+### Multiplayer (Experimental)
+
+Located in `examples/multiplayer/`, this demonstrates:
+
+- A trusted peer-to-peer Macau sample using `CardPeerToPeerNetwork`
+- Host-coordinated turn validation and rule state
+- One visible local player hand with background network containers created only for active seats
+- Private player hand presentation, back-facing draw pile presentation, and public discard sync
+- Player-relative hand layout for 2 to 6 players
+- One deck for 2 to 3 players and two decks for 4 to 6 players
+- Active draw chains with Jacks, Queens, and Kings
+
+The multiplayer API is currently experimental and may change in a future release. See [Multiplayer](github/MULTIPLAYER.md) to build with the included managers, or [Custom Multiplayer](github/CUSTOM_MULTIPLAYER.md) to implement your own card network manager.
 
 ### G.U.I
 Game made for the minijam 201. 
