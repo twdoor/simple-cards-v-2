@@ -34,7 +34,7 @@ SCRIPT_RETENTION_PATHS = {
 def known_script_retention(name, output):
     if os.environ.get('STRICT_ENGINE_LEAKS') == '1':
         return False
-    if name not in {'import', 'CoreRegressionTest', 'ExampleSmokeTest'}:
+    if name not in {'import', 'CoreRegressionTest', 'ExampleSmokeTest', 'rendered-balatro', 'rendered-solitaire'}:
         return False
     if not re.search(r'Godot Engine v4\.5\.[12]\.stable', output):
         return False
@@ -57,6 +57,8 @@ def check(name, code):
         raise RuntimeError(f'{name} failed (exit {code}):\n{output}')
     completion = {
         'CoreRegressionTest': 'Core regression tests passed.',
+        'rendered-balatro': 'Rendered balatro gameplay passed.',
+        'rendered-solitaire': 'Rendered solitaire gameplay passed.',
         'MultiplayerRegressionTest': 'Multiplayer regression tests passed.',
         'ExampleSmokeTest': 'Example teardown checks passed.',
         'client': 'Client roundtrip passed',
@@ -113,9 +115,11 @@ def macau(players, rendered=False):
             name = f'macau-{players}-{index}'
             log = (LOGS / f'{name}.log').open('w')
             logs.append(log)
-            args = [ENGINE, *([] if rendered else ['--headless']), '--path', str(ROOT), '--scene',
+            args = [ENGINE, '--verbose', *(['--display-driver', 'x11'] if rendered else ['--headless']), '--path', str(ROOT), '--scene',
                     'res://tests/MacauIntegrationTest.tscn', '--',
                     f'--players={players}', '--role=' + ('server' if index == 0 else 'client')]
+            if rendered:
+                args.append('--gameplay')
             if rendered and index < 2:
                 screenshot = LOGS / f'{name}.png'
                 args.append(f'--screenshot={screenshot}')
@@ -127,9 +131,11 @@ def macau(players, rendered=False):
                     if process.poll() is not None or time.monotonic() >= deadline:
                         raise RuntimeError(f'{name} did not start')
                     time.sleep(0.05)
-        deadline = time.monotonic() + 30
+        deadline = time.monotonic() + (75 if rendered else 30)
         for name, process in processes:
             check(name, process.wait(timeout=max(0.1, deadline - time.monotonic())))
+            if rendered and name.endswith('-0') and 'Macau rendered gameplay passed.' not in (LOGS / f'{name}.log').read_text():
+                raise RuntimeError(f'{name} did not complete gameplay checks')
             if 'passed.' not in (LOGS / f'{name}.log').read_text():
                 raise RuntimeError(f'{name} exited without reaching its assertions')
     finally:
@@ -145,9 +151,12 @@ def main():
     global ROOT
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--roundtrip-only', action='store_true')
+    parser.add_argument('--rendered-only', action='store_true', help='Run viewport input and multiplayer gameplay checks; requires a display.')
     opts = parser.parse_args()
     if not ENGINE:
         raise RuntimeError('Set GODOT to the Godot editor executable or install godot on PATH.')
+    if opts.rendered_only and not os.environ.get('DISPLAY'):
+        raise RuntimeError('Rendered validation requires an X11 display. Run with xvfb-run -a; validation does not install system packages.')
     print(f'Logs: {LOGS}', flush=True)
     # Isolate generated caches and editor state, including on a developer checkout.
     with tempfile.TemporaryDirectory(prefix='simple-cards-work-') as work:
@@ -155,6 +164,24 @@ def main():
                         ignore=shutil.ignore_patterns('.git', '.godot', '.releases', '__pycache__'))
         ROOT = Path(work)
         run('import', ['--editor', '--import'], timeout=120)
+        if opts.rendered_only:
+            for example in ['balatro', 'solitaire']:
+                name = f'rendered-{example}'
+                try:
+                    with (LOGS / f'{name}.log').open('w') as log:
+                        result = subprocess.run([ENGINE, '--verbose', '--display-driver', 'x11',
+                                                 '--path', str(ROOT), '--scene',
+                                                 'res://tests/RenderedGameplayTest.tscn', '--', example,
+                                                 str(LOGS / f'{example}.png')], stdout=log,
+                                                stderr=subprocess.STDOUT, timeout=75)
+                finally:
+                    # A timed-out drag must not leave the display's mouse button held.
+                    subprocess.run([sys.executable, str(ROOT / 'tests/native_mouse.py'), '0'],
+                                   check=True, timeout=5)
+                check(name, result.returncode)
+            macau(2, rendered=True)
+            macau(6, rendered=True)
+            return
         if not opts.roundtrip_only:
             for name in ['CoreRegressionTest', 'MultiplayerRegressionTest']:
                 run(name, ['--scene', f'res://tests/{name}.tscn'])

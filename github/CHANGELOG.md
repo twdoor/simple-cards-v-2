@@ -2,6 +2,11 @@
 
 ## Unreleased — Stabilization
 
+- Interrupted finite scale, fade, and bob animations finish their pending waits during layout teardown. Overlapping focus animations use separate cleanup callbacks, preventing duplicate signal connections.
+- Delayed idle-animation restarts use callbacks that disconnect on container removal, avoiding retained timers during multiplayer teardown.
+- Solitaire recycle undo restores every waste card face up, preserving the visible fan.
+- Card presses keep drag detection active when the pointer leaves before the next frame.
+- Rejected and same-pile Solitaire drops no longer create undo records; added viewport-input gameplay checks and the example project’s missing gamepad accept binding.
 - Extracted editor card/container previews and network snapshot handling from the core classes, preserving public APIs and saved scenes. Added editor preview lifecycle coverage and restored container previews on tree re-entry.
 - Fixed idle-animation tween retention and delayed idle callbacks accessing freed cards.
 - Slot-to-slot swaps now respect both slots' placement conditions and emit normal remove/add notifications.

@@ -22,6 +22,11 @@ jobs:
         env:
           TEST_LOG_DIR: ${{ runner.temp }}/simple-cards-logs
         run: python3 tests/run_tests.py
+      - name: Validate rendered gameplay
+        env:
+          TEST_LOG_DIR: ${{ runner.temp }}/simple-cards-logs/rendered
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: xvfb-run -a python3 tests/run_tests.py --rendered-only
       - uses: actions/upload-artifact@v4
         if: always()
         with:

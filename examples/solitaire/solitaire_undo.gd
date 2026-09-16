@@ -164,6 +164,9 @@ func _undo_recycle(record: MoveRecord) -> void:
 
 	for card in record.recycled_cards:
 		card.move_to(deal_hand, Card.MoveConfig.new(UNDO_MOVE_DURATION * 0.6))
+		# Stock recycling turns every waste card face down. Restoring only the
+		# interactive top card hides the rest of the previously visible fan.
+		card.is_front_face = true
 
 	if not record.recycled_cards.is_empty():
 		await record.recycled_cards.back().move_completed

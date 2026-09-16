@@ -28,8 +28,9 @@ func play_animation(layout: CardLayout) -> void:
 	tween.tween_method(_apply_bob.bind(layout, period), 0.0, period, period)
 
 	if not looping:
-		await tween.finished
-		_tweens.erase(layout)
+		await _await_tween(layout, tween)
+		if is_instance_valid(layout):
+			_tweens.erase(layout)
 
 
 func stop_animation(layout: CardLayout) -> void:

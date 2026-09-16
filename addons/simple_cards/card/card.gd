@@ -339,6 +339,7 @@ func _is_owned() -> bool:
 
 func _on_button_down() -> void:
 	_released = false
+	set_process(true)
 	_cursor_down_pos = CardGlobal.get_instance().get_cursor_position()
 
 func _on_button_up() -> void:
@@ -356,6 +357,7 @@ func _on_button_up() -> void:
 		_queue_interaction_state_sync()
 
 	else:
+		if not focused: set_process(false)
 		card_clicked.emit(self)
 
 func _check_for_hold() -> void:
@@ -384,7 +386,8 @@ func _on_focus_exited() -> void:
 	if !focused:
 		return
 	focused = false
-	if !holding: set_process(false)
+	# A press may leave the card before the next frame detects the drag threshold.
+	if !holding and _released: set_process(false)
 	if _layout:
 		await _layout._focus_out()
 	if !is_instance_valid(self) or !is_inside_tree() or focused: return
@@ -407,6 +410,9 @@ func _on_mouse_entered() -> void:
 	hovered = true
 	card_hovered.emit()
 	if !CardGlobal.get_instance().current_held_item and focus_mode != Control.FOCUS_NONE:
+		var focused_card := get_viewport().gui_get_focus_owner() as Card
+		if focused_card and not focused_card._released:
+			return
 		grab_focus()
 
 func _on_mouse_exited() -> void:
@@ -414,7 +420,8 @@ func _on_mouse_exited() -> void:
 		return
 	hovered = false
 	card_unhovered.emit()
-	if !holding and !CardGlobal.get_instance().current_held_item and has_focus():
+	# Releasing focus during a press makes BaseButton cancel it with button_up.
+	if _released and !holding and !CardGlobal.get_instance().current_held_item and has_focus():
 		release_focus()
 
 func _queue_interaction_state_sync() -> void:

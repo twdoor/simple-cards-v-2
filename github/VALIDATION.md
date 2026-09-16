@@ -32,7 +32,7 @@ GODOT=/path/to/godot python3 tests/reproduce_engine_retention.py
 
 It reproduces the behavior described in [Godot issue #122022](https://github.com/godotengine/godot/issues/122022). The reproduction intentionally prints a leak diagnostic; it is not a passing gameplay test. This is evidence for attributing the matching script-only shutdown signature to engine retention, rather than a claim that all shutdown leaks are engine defects.
 
-The runner permits only an exact, recorded signature on 4.5.1/4.5.2 for import, core regression, and combined example teardown: 11 named addon GDScript resources, 13 GDScript instances including two inner classes, and 10 GDScriptNativeClass instances. The preview extraction removes LayoutCache and its native base from the previously recorded signature; no new helper, node, or helper instance is retained. Helpers load lazily to avoid adding preload cycles to this script graph. No other instance type or resource path is accepted. Logs retain the full diagnostics and the console labels the exception. Set `STRICT_ENGINE_LEAKS=1` to fail on this signature too. Revisit the exception when updating Godot; do not expand it to cover a new leak without diagnosis.
+The runner permits only an exact, recorded signature on 4.5.1/4.5.2 for import, core regression, combined example teardown, and rendered example gameplay: 11 named addon GDScript resources, 13 GDScript instances including two inner classes, and 10 GDScriptNativeClass instances. The preview extraction removes LayoutCache and its native base from the previously recorded signature; no new helper, node, or helper instance is retained. Helpers load lazily to avoid adding preload cycles to this script graph. No other instance type or resource path is accepted. Logs retain the full diagnostics and the console labels the exception. Set `STRICT_ENGINE_LEAKS=1` to fail on this signature too. Revisit the exception when updating Godot; do not expand it to cover a new leak without diagnosis.
 
 ## Snapshot benchmark
 
@@ -60,11 +60,19 @@ A rendered capture helper sends Tab, resizes the window to 1024 × 640, captures
 
 Balatro and Solitaire rendered captures were inspected during implementation: cards, controls, layout, and stacking remained visible after resize. Two- and six-player Macau captures were also inspected: local hands were readable, opponent identities stayed concealed in the UI, and counts matched the one-/two-deck setup. The six-player rendered process test passed after orderly session teardown. These checks do not replace a full mouse/controller playthrough.
 
-Before publishing, record the following manual checks and the hosted CI result:
+Run the rendered gameplay suite in an isolated X11 display (requires Xvfb and libXtst on Linux):
 
-- Balatro: select, reorder, play/discard, preview piles, change modifiers, and navigate by keyboard/controller.
-- Solitaire: drag single cards and stacks, reject an illegal drop, draw/recycle, undo each action, reset, and resize.
-- Macau with two and six players: local hand readable, opponent cards concealed, play/draw/penalty animations, snapshot refresh, and disconnect presentation.
-- Editor: enable/disable/re-enable the addon, create/rename/delete a custom layout, and verify layout ID regeneration and default fallbacks.
+```bash
+GODOT=/path/to/godot xvfb-run -a python3 tests/run_tests.py --rendered-only
+```
+
+This separate, bounded suite imports a fresh copy, uses native X11 mouse events for drags and injects keyboard/gamepad events, checks state after actions, saves screenshots, and runs real two-/six-process Macau games. It covers:
+
+- Balatro: selection, reorder, keyboard/gamepad focus and accept, modifiers, sorting, play/discard/refill, and both pile previews.
+- Solitaire: one-/three-card draw, recycle, rejected drops, legal single/stack drops, face restoration and undo (including every recycled waste card), reset, and resize. The stack setup uses existing deck cards in a deterministic legal arrangement.
+- Macau: local hand visibility, concealed opponent nodes, host penalty play, remote penalty draw, ordinary draw/play, snapshot refresh, card conservation, and host disconnect presentation. Controlled card ranks exercise the same paths regardless of the deal.
+- Editor plugin/cache lifecycle and native Linux export remain covered by `check_install.py`.
+
+The CI matrix runs both headless and rendered suites and retains screenshots with logs. Injected controller events verify application input handling; physical controller discovery, mapping, and feel still require hardware testing. These are automated gameplay checks, not a claim of a human playthrough.
 
 Public class names, exported properties, signals, and method signatures remain compatible. Network snapshots now isolate each card's mutable resource data; code should compare resource IDs rather than rely on two client cards sharing the same resource object.

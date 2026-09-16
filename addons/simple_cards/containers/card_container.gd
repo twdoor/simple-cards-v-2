@@ -463,8 +463,13 @@ func _stop_card_idle(card: Card) -> void:
 ## Starts idle animation on a single card after a delay.
 func _start_card_idle(card: Card, delay: float) -> void:
 	if not idle_animation: return
-	await get_tree().create_timer(maxf(delay, 0.001)).timeout
+	# A bound callback disconnects on owner deletion without retaining an await.
+	get_tree().create_timer(maxf(delay, 0.001)).timeout.connect(_finish_card_idle.bind(weakref(card)), CONNECT_ONE_SHOT)
+
+
+func _finish_card_idle(card_ref: WeakRef) -> void:
 	if not is_inside_tree(): return
+	var card := card_ref.get_ref() as Card
 	if not is_instance_valid(card) or not cards.has(card): return
 	if card.holding: return
 	var layout = card.get_layout()
@@ -478,7 +483,10 @@ func _schedule_idle_restart(duration: float) -> void:
 	if not idle_animation: return
 	_idle_restart_gen += 1
 	var gen = _idle_restart_gen
-	await get_tree().create_timer(maxf(duration, 0.001)).timeout
+	get_tree().create_timer(maxf(duration, 0.001)).timeout.connect(_finish_idle_restart.bind(gen), CONNECT_ONE_SHOT)
+
+
+func _finish_idle_restart(gen: int) -> void:
 	if not is_inside_tree(): return
 	if gen != _idle_restart_gen: return
 	_start_idle()
