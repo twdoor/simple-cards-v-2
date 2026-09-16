@@ -62,6 +62,8 @@ Balatro and Solitaire rendered captures were inspected during implementation: ca
 
 Run the rendered gameplay suite in an isolated X11 display (requires Xvfb and libXtst on Linux):
 
+Rendered tests explicitly use Godot's dummy audio driver so CI does not require an audio device. Audio playback is not covered.
+
 ```bash
 GODOT=/path/to/godot xvfb-run -a python3 tests/run_tests.py --rendered-only
 ```

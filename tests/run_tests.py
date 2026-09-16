@@ -115,7 +115,7 @@ def macau(players, rendered=False):
             name = f'macau-{players}-{index}'
             log = (LOGS / f'{name}.log').open('w')
             logs.append(log)
-            args = [ENGINE, '--verbose', *(['--display-driver', 'x11'] if rendered else ['--headless']), '--path', str(ROOT), '--scene',
+            args = [ENGINE, '--verbose', *(['--display-driver', 'x11', '--audio-driver', 'Dummy'] if rendered else ['--headless']), '--path', str(ROOT), '--scene',
                     'res://tests/MacauIntegrationTest.tscn', '--',
                     f'--players={players}', '--role=' + ('server' if index == 0 else 'client')]
             if rendered:
@@ -170,6 +170,7 @@ def main():
                 try:
                     with (LOGS / f'{name}.log').open('w') as log:
                         result = subprocess.run([ENGINE, '--verbose', '--display-driver', 'x11',
+                                                 '--audio-driver', 'Dummy',
                                                  '--path', str(ROOT), '--scene',
                                                  'res://tests/RenderedGameplayTest.tscn', '--', example,
                                                  str(LOGS / f'{example}.png')], stdout=log,
