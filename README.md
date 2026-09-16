@@ -141,6 +141,12 @@ When you create or modify layouts through the panel, it automatically:
 
 ---
 
+## Validation and Export
+
+Run `GODOT=/path/to/godot python3 tests/run_tests.py` for isolated regression, multiplayer, and installation/export checks. See [Validation](github/VALIDATION.md) for coverage, performance measurements, and the release checklist.
+
+For exports, keep the plugin enabled and use **Export all resources**. The plugin includes the layout-cache JSON automatically. With selected-resource exports, explicitly include every custom layout and card resource used at runtime.
+
 ## Examples
 
 ### Standard Deck

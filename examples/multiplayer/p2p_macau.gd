@@ -117,6 +117,8 @@ func _configure_cards() -> void:
 
 
 func _configure_player_hands() -> void:
+	# Seat remapping is local presentation/setup, never a new card command.
+	card_network.begin_suppressed_routing()
 	var previous_hands := _seat_hands.duplicate()
 	var local_seat_index := _local_seat_index()
 
@@ -140,6 +142,7 @@ func _configure_player_hands() -> void:
 		hand.network_owner_peer_id = player_peer_ids[index] if index < player_peer_ids.size() else 0
 		card_network.register_container(hand)
 	_connect_all_hands()
+	card_network.end_suppressed_routing()
 
 
 func _get_or_create_network_hand(index: int) -> CardContainer:

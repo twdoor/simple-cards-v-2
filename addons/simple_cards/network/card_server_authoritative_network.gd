@@ -52,9 +52,14 @@ func _ready() -> void:
 	super._ready()
 	if multiplayer and not multiplayer.peer_connected.is_connected(_on_peer_connected):
 		multiplayer.peer_connected.connect(_on_peer_connected)
+	if multiplayer and not multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+		multiplayer.server_disconnected.connect(_on_server_disconnected)
 
 
 func _exit_tree() -> void:
+	_cancel_pending_commands("manager_exited")
+	if multiplayer and multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+		multiplayer.server_disconnected.disconnect(_on_server_disconnected)
 	if multiplayer and multiplayer.peer_connected.is_connected(_on_peer_connected):
 		multiplayer.peer_connected.disconnect(_on_peer_connected)
 	super._exit_tree()
@@ -321,8 +326,9 @@ func broadcast_state(animation_duration: float = 0.0) -> void:
 	if not enabled or not is_server_peer():
 		return
 	_cleanup_registries()
-	for peer_id in multiplayer.get_peers():
-		_send_snapshot_to_peer(peer_id, false, animation_duration)
+	if multiplayer.has_multiplayer_peer():
+		for peer_id in multiplayer.get_peers():
+			_send_snapshot_to_peer(peer_id, false, animation_duration)
 	state_revision_applied.emit(state_revision)
 
 
@@ -1008,3 +1014,15 @@ func _on_peer_connected(peer_id: int) -> void:
 	if not enabled or not is_server_peer():
 		return
 	_send_snapshot_to_peer.call_deferred(peer_id, true)
+
+
+func _on_server_disconnected() -> void:
+	_cancel_pending_commands("server_disconnected")
+
+
+func _cancel_pending_commands(reason: String) -> void:
+	# Clear before emitting: awaiting callers may submit or tear down more state.
+	var pending := _pending_commands.values()
+	_pending_commands.clear()
+	for command in pending:
+		command.completed.emit({"accepted": false, "value": null, "reason": reason})

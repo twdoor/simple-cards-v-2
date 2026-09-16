@@ -72,8 +72,8 @@ func _container_ready() -> void:
 	max_cards = 1
 	card_move_duration = 0.15
 
-	CG.holding_card.connect(_on_card_held)
-	CG.dropped_card.connect(_on_card_dropped)
+	CardGlobal.get_instance().holding_card.connect(_on_card_held)
+	CardGlobal.get_instance().dropped_card.connect(_on_card_dropped)
 
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
@@ -92,10 +92,10 @@ func _container_ready() -> void:
 func _exit_tree() -> void:
 	super._exit_tree()
 	if Engine.is_editor_hint(): return
-	if CG.holding_card.is_connected(_on_card_held):
-		CG.holding_card.disconnect(_on_card_held)
-	if CG.dropped_card.is_connected(_on_card_dropped):
-		CG.dropped_card.disconnect(_on_card_dropped)
+	if CardGlobal.get_instance().holding_card.is_connected(_on_card_held):
+		CardGlobal.get_instance().holding_card.disconnect(_on_card_held)
+	if CardGlobal.get_instance().dropped_card.is_connected(_on_card_dropped):
+		CardGlobal.get_instance().dropped_card.disconnect(_on_card_dropped)
 
 #endregion
 
@@ -138,11 +138,14 @@ func swap_with(other_slot: CardSlot) -> bool:
 
 ## Local implementation for [method swap_with].
 func _swap_with_local(other_slot: CardSlot) -> bool:
+	if not is_instance_valid(other_slot) or other_slot == self: return false
 	if slot_locked or other_slot.slot_locked: return false
 	if is_empty() or other_slot.is_empty(): return false
 
 	var this_card = cards[0]
 	var other_card = other_slot.cards[0]
+	if not _check_conditions(other_card) or not other_slot._check_conditions(this_card):
+		return false
 	var this_global = this_card.global_position
 	var other_global = other_card.global_position
 
@@ -171,6 +174,14 @@ func _swap_with_local(other_slot: CardSlot) -> bool:
 	this_card.global_position = this_global
 	other_slot._settle_card(this_card, other_slot.card_move_duration)
 
+	_handle_card_removed(this_card, 0)
+	card_removed.emit(this_card, 0)
+	_handle_card_added(other_card, 0)
+	card_added.emit(other_card, 0)
+	other_slot._handle_card_removed(other_card, 0)
+	other_slot.card_removed.emit(other_card, 0)
+	other_slot._handle_card_added(this_card, 0)
+	other_slot.card_added.emit(this_card, 0)
 	slot_swapped.emit(this_card, other_card)
 	_handle_slot_swapped(this_card, other_card)
 	other_slot.slot_swapped.emit(other_card, this_card)
@@ -239,12 +250,12 @@ func _settle_card(card: Card, duration: float) -> void:
 #region Drop Detection
 
 func _process(_delta: float) -> void:
-	var cursor_pos = CG.get_cursor_position()
+	var cursor_pos = CardGlobal.get_instance().get_cursor_position()
 	var is_over = get_global_rect().has_point(cursor_pos)
 
 	if is_over and not _card_over:
 		_card_over = true
-		_card_currently_over = CG.current_held_item
+		_card_currently_over = CardGlobal.get_instance().current_held_item
 		card_entered.emit(_card_currently_over)
 		_handle_card_entered(_card_currently_over)
 
@@ -329,6 +340,12 @@ func _handle_drop_local(incoming: Card) -> void:
 		return
 
 	if allow_swap:
+		if source is CardContainer:
+			var source_locked: bool = source is CardSlot and source.slot_locked
+			if source_locked or not source._check_conditions(cards[0]):
+				_reject_card(incoming, "source_rejected")
+				_return_to_source(incoming)
+				return
 		_swap_cards(incoming, source)
 		card_dropped_on.emit(incoming)
 		_handle_card_dropped_on(incoming)
@@ -410,8 +427,8 @@ func _force_return_card(card: Card) -> void:
 	if cards.has(card):
 		card.holding = false
 		_settle_card(card, card_move_duration)
-		if CG.current_held_item == card:
-			CG.current_held_item = null
+		if CardGlobal.get_instance().current_held_item == card:
+			CardGlobal.get_instance().current_held_item = null
 
 
 ## Removes the card from the slot and reparents it to [member abandon_reparent_target].

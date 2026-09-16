@@ -11,7 +11,7 @@ var _tweens: Dictionary = {}
 
 
 func play_animation(layout: CardLayout) -> void:
-	if not layout: return
+	if not is_instance_valid(layout) or not layout.is_inside_tree(): return
 
 	if layout in _tweens:
 		_tweens[layout].kill()
@@ -24,17 +24,8 @@ func play_animation(layout: CardLayout) -> void:
 	if looping:
 		tween.set_loops()
 
-	var period = 1.0 / frequency
-	var card = layout.card_instance
-
-	tween.tween_method(func(t):
-		var parent = card.get_parent() if card else null
-		var idx = parent.cards.find(card) if parent is CardContainer else 0
-		if idx < 0: idx = 0
-		var offset = sin(t * TAU / period + idx * phase_variance) * amplitude
-		layout.offset_top = offset
-		layout.offset_bottom = offset
-	, 0.0, period, period)
+	var period = 1.0 / maxf(frequency, 0.001)
+	tween.tween_method(_apply_bob.bind(layout, period), 0.0, period, period)
 
 	if not looping:
 		await tween.finished
@@ -42,6 +33,9 @@ func play_animation(layout: CardLayout) -> void:
 
 
 func stop_animation(layout: CardLayout) -> void:
+	if not is_instance_valid(layout) or not layout.is_inside_tree():
+		_clear_layout(layout)
+		return
 	if layout in _tweens:
 		_tweens[layout].kill()
 	if is_zero_approx(layout.offset_top) and is_zero_approx(layout.offset_bottom):
@@ -51,10 +45,20 @@ func stop_animation(layout: CardLayout) -> void:
 	_tweens[layout] = tween
 	tween.tween_property(layout, "offset_top", 0.0, 0.15)
 	tween.parallel().tween_property(layout, "offset_bottom", 0.0, 0.15)
-	tween.finished.connect(func(): _tweens.erase(layout))
+	tween.finished.connect(_clear_layout.bind(layout), CONNECT_ONE_SHOT)
 
 
 func _clear_layout(layout: CardLayout) -> void:
 	if layout in _tweens:
 		_tweens[layout].kill()
 		_tweens.erase(layout)
+
+
+func _apply_bob(t: float, layout: CardLayout, period: float) -> void:
+	if not is_instance_valid(layout): return
+	var card := layout.card_instance
+	var parent := card.get_parent() if is_instance_valid(card) else null
+	var idx: int = maxi(parent.cards.find(card), 0) if parent is CardContainer else 0
+	var offset := sin(t * TAU / period + idx * phase_variance) * amplitude
+	layout.offset_top = offset
+	layout.offset_bottom = offset

@@ -1,6 +1,14 @@
 ##The global singleton calls used by the SimpleCards plugin. [color=red]Do not instantiate[/color]
 class_name CardGlobal extends Control
 
+
+## Internal singleton lookup that also allows scripts to compile before the
+## plugin registers the CG autoload in a newly installed project.
+static func get_instance() -> CardGlobal:
+	var tree := Engine.get_main_loop() as SceneTree
+	return tree.root.get_node_or_null("CG") as CardGlobal if tree else null
+
+
 ##Emitted when a card starts being held/dragged
 signal holding_card(card: Card)
 ##Emitted when a card stops being held/dragged

@@ -116,10 +116,13 @@ func _generate_layout_ids_file() -> void:
 	lines.append("static func is_valid(id: StringName) -> bool:")
 	lines.append("\treturn id in get_all()")
 	
-	# Write file
+	# Avoid needless script reloads when startup scanning changes no IDs.
+	var content := "\n".join(lines)
+	if FileAccess.file_exists(LAYOUTS_ENUM_PATH) and FileAccess.get_file_as_string(LAYOUTS_ENUM_PATH) == content:
+		return
 	var file = FileAccess.open(LAYOUTS_ENUM_PATH, FileAccess.WRITE)
 	if file:
-		file.store_string("\n".join(lines))
+		file.store_string(content)
 		if DEBUG_LOG: print("LayoutCache: Generated %s with %d layouts" % [LAYOUTS_ENUM_PATH, ids.size()])
 	else:
 		push_error("LayoutCache: Failed to write layout IDs file")

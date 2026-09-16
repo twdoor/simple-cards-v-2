@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — Stabilization
+
+- Extracted editor card/container previews and network snapshot handling from the core classes, preserving public APIs and saved scenes. Added editor preview lifecycle coverage and restored container previews on tree re-entry.
+- Fixed idle-animation tween retention and delayed idle callbacks accessing freed cards.
+- Slot-to-slot swaps now respect both slots' placement conditions and emit normal remove/add notifications.
+- Server-authoritative requests resolve on disconnect or manager removal, and offline board cleanup no longer queries an absent multiplayer peer.
+- Network-applied card data is isolated per card, preserving resource IDs and source paths without mutating shared templates.
+- Fixed Macau seat remapping broadcasting incomplete client state during multi-peer joins.
+- Fixed addon-only first-install compilation and autoload persistence across editor shutdown; disabling the plugin still removes its own autoload.
+- Export the layout-cache JSON with the plugin, and avoid rewriting unchanged generated layout IDs.
+- Added isolated validation, 4.5.1/4.5.2 CI, core and multiplayer regressions, two-/six-player Macau checks, exported-pack verification, and snapshot measurements. See [Validation](VALIDATION.md), including the narrowly recorded Godot script-retention exception and manual release checks.
+
 ## Version 2.13
 
 ### Multiplayer (Experimental)

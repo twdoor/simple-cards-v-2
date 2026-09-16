@@ -49,8 +49,8 @@ func _container_ready() -> void:
 		shape = LineShape.new()
 		push_warning("CardHand: No shape selected, using default LineShape")
 
-	CG.dropped_card.connect(_on_card_dropped)
-	CG.holding_card.connect(_on_holding_card)
+	CardGlobal.get_instance().dropped_card.connect(_on_card_dropped)
+	CardGlobal.get_instance().holding_card.connect(_on_holding_card)
 
 	for child in get_children():
 		if child is Card and !cards.has(child):
@@ -66,10 +66,10 @@ func _container_ready() -> void:
 func _exit_tree() -> void:
 	super._exit_tree()
 	if Engine.is_editor_hint(): return
-	if CG.dropped_card.is_connected(_on_card_dropped):
-		CG.dropped_card.disconnect(_on_card_dropped)
-	if CG.holding_card.is_connected(_on_holding_card):
-		CG.holding_card.disconnect(_on_holding_card)
+	if CardGlobal.get_instance().dropped_card.is_connected(_on_card_dropped):
+		CardGlobal.get_instance().dropped_card.disconnect(_on_card_dropped)
+	if CardGlobal.get_instance().holding_card.is_connected(_on_holding_card):
+		CardGlobal.get_instance().holding_card.disconnect(_on_holding_card)
 
 #endregion
 
@@ -106,7 +106,7 @@ func _update_card_reordering() -> void:
 	if not _dragged_card.holding:
 		return
 
-	var cursor_pos = CG.get_cursor_position()
+	var cursor_pos = CardGlobal.get_instance().get_cursor_position()
 	if cursor_pos.distance_squared_to(_last_reorder_cursor) < 4.0:
 		return
 	_last_reorder_cursor = cursor_pos

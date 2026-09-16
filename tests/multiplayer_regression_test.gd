@@ -23,6 +23,8 @@ func _ready() -> void:
 
 func _run() -> void:
 	await _test_server_snapshot_and_permissions()
+	await _test_duplicate_resource_state()
+	await _test_pending_command_cleanup()
 	await _test_peer_to_peer_return_values()
 	await _test_network_registry_cleans_up_exiting_nodes()
 	await _test_network_card_order_restarts_idle_animation()
@@ -90,6 +92,14 @@ func _test_server_snapshot_and_permissions() -> void:
 	_expect(first_wire_id != canonical_id, "Hidden snapshot exposed the canonical card ID.")
 	_expect(first_wire_id != second_wire_id, "Hidden card ID remained trackable across snapshots.")
 	_expect(_first_order_id(first_snapshot, hidden_pile.network_id) == first_wire_id, "Hidden card order did not use the peer-specific wire ID.")
+
+	var hidden_state: Dictionary = first_snapshot.cards[0]
+	_expect(not hidden_state.get("known", true), "Hidden card marked as known.")
+	for field in ["resource_id", "resource_path", "card_data"]:
+		_expect(not hidden_state.has(field), "Hidden snapshot exposed " + field)
+	var stale := network._build_command("MOVE_CARD", hidden_pile, player_hand, [card], Card.MoveConfig.new(0.0))
+	stale.revision = network.state_revision - CardServerAuthoritativeNetwork.REVISION_TOLERANCE - 1
+	_expect(network._validate_command(stale, 2) == "stale_revision", "Stale command accepted.")
 
 	var move_command := network._build_command("MOVE_CARD", hidden_pile, player_hand, [card], Card.MoveConfig.new(0.0))
 	_expect(network._validate_command(move_command, 2) == "source_not_allowed", "Protected source accepted a remote move command.")
@@ -296,3 +306,57 @@ func _first_order_id(snapshot: Dictionary, container_id: StringName) -> StringNa
 func _expect(condition: bool, message: String) -> void:
 	if not condition:
 		_failures.append(message)
+
+
+func _test_pending_command_cleanup() -> void:
+	var network := CardServerAuthoritativeNetwork.new()
+	add_child(network)
+	var pending := CardServerAuthoritativeNetwork.PendingCommand.new()
+	var results: Array[Dictionary] = []
+	pending.completed.connect(func(result): results.append(result))
+	network._pending_commands["test"] = pending
+	network._timeout_pending_command(&"test", pending)
+	_expect(results.size() == 1 and results[0].reason == "timeout", "Timeout did not resolve pending request.")
+	network._resolve_pending_command(&"test", {"accepted": true})
+	_expect(results.size() == 1, "Late reply resolved an expired request twice.")
+	var exiting := CardServerAuthoritativeNetwork.PendingCommand.new()
+	exiting.completed.connect(func(result): results.append(result))
+	network._pending_commands["exit"] = exiting
+	remove_child(network)
+	_expect(network._pending_commands.is_empty(), "Manager exit retained pending commands.")
+	_expect(results.size() == 2 and results[1].reason == "manager_exited", "Manager exit did not resolve pending request.")
+	network.free()
+	await get_tree().process_frame
+
+
+func _test_duplicate_resource_state() -> void:
+	var scene := Node.new()
+	add_child(scene)
+	var network := CardServerAuthoritativeNetwork.new()
+	scene.add_child(network)
+	var hand := CardHand.new()
+	hand.shape = LineShape.new()
+	scene.add_child(hand)
+	var resource := StandardCardResource.new()
+	resource.network_resource_id = &"shared_test_resource"
+	resource.value = 3
+	var a := Card.new(resource)
+	var b := Card.new(resource)
+	a._move_to_local(hand, Card.MoveConfig.new(0.0))
+	b._move_to_local(hand, Card.MoveConfig.new(0.0))
+	var state_a := a.get_network_state(1)
+	var state_b := b.get_network_state(1)
+	state_a.card_data.value = 7
+	state_b.card_data.value = 9
+	a.apply_network_state(state_a)
+	b.apply_network_state(state_b)
+	_expect(a.card_data.value == 7 and b.card_data.value == 9, "Per-card network data leaked between duplicate resources.")
+	_expect(resource.value == 3, "Applying a snapshot mutated the shared resource template.")
+	_expect(network._resources_by_id.size() == 1, "Resource cloning created transient registry IDs.")
+	a.apply_network_state({"known": false})
+	_expect(a.card_data == null and not a.is_front_face, "Concealing a visible card retained private data.")
+	a.apply_network_state(state_a)
+	_expect(a.card_data.value == 7 and b.card_data.value == 9, "Revealing a card lost isolated state.")
+	_expect(a.get_network_state(1).resource_id == resource.network_resource_id, "Cloning changed the stable resource identity.")
+	scene.queue_free()
+	await get_tree().process_frame

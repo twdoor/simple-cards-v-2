@@ -42,17 +42,17 @@ var _next_hidden_wire_sequence: int = 1
 
 
 func _ready() -> void:
-	CG.set_network_manager(self)
+	CardGlobal.get_instance().set_network_manager(self)
 	_register_existing_nodes()
 	_register_existing_nodes.call_deferred()
 
 
 func _exit_tree() -> void:
-	CG.clear_network_manager(self)
+	CardGlobal.get_instance().clear_network_manager(self)
 
 
 func is_server_peer() -> bool:
-	if not multiplayer:
+	if not multiplayer or not multiplayer.has_multiplayer_peer():
 		return true
 	return multiplayer.is_server()
 

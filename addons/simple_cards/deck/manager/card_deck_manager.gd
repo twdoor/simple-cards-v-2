@@ -101,4 +101,4 @@ func _create_card(card_resource: CardResource) -> Card:
 func _get_network_manager() -> CardNetworkManager:
 	if not is_inside_tree():
 		return null
-	return CG.get_network_manager()
+	return CardGlobal.get_instance().get_network_manager()
