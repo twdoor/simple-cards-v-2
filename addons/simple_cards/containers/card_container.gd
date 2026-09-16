@@ -91,7 +91,7 @@ signal container_full()
 	set(value):
 		preview_layout_name = value
 		if Engine.is_editor_hint():
-			_preview_card_size = _editor_get_layout_card_size(preview_layout_name)
+			_get_editor_preview()._preview_card_size = _get_editor_preview()._editor_get_layout_card_size(preview_layout_name)
 		_queue_preview_layout_update()
 ## Editor preview count. [code]0[/code] auto-uses [member max_cards] or a default count.
 @export_range(0, 100, 1) var preview_card_count: int = 0:
@@ -125,13 +125,20 @@ var _suppress_auto_remove: bool = false
 ## Used by bulk operations to defer layout to one call at the end.
 var _batch_mode: bool = false
 var _idle_restart_gen: int = 0
-var _preview_card_size: Vector2 = Card.EDITOR_DEFAULT_SIZE
-var _preview_visual_cards: Array[Card] = []
+var _editor_preview: RefCounted
+var _snapshot: RefCounted
+
+
+func _get_editor_preview() -> RefCounted:
+	# Runtime containers never allocate editor preview state.
+	if not _editor_preview:
+		_editor_preview = load("res://addons/simple_cards/editor/container_editor_preview.gd").new()
+	return _editor_preview
 
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
-		_preview_card_size = _editor_get_layout_card_size(preview_layout_name)
+		_get_editor_preview()._preview_card_size = _get_editor_preview()._editor_get_layout_card_size(preview_layout_name)
 		_queue_preview_layout_update()
 		return
 	var net = _get_network_manager()
@@ -144,10 +151,11 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	_clear_preview_visual_cards()
+	if _editor_preview:
+		_editor_preview._clear_preview_visual_cards()
 	if Engine.is_editor_hint(): return
 	_stop_idle()
-	var net = CG.get_network_manager()
+	var net = CardGlobal.get_instance().get_network_manager()
 	if net:
 		net.unregister_container(self)
 
@@ -162,40 +170,6 @@ func _validate_property(property: Dictionary) -> void:
 		var options: String = ",".join(LayoutID.get_all())
 		property.hint = PROPERTY_HINT_ENUM
 		property.hint_string = options
-
-
-func _draw() -> void:
-	if !Engine.is_editor_hint(): return
-	if !preview_enabled: return
-
-	if preview_draw_container_bounds:
-		draw_rect(Rect2(Vector2.ZERO, size), PREVIEW_CONTAINER_BOUNDS_COLOR, false, 2.0)
-
-	var preview_cards := _build_preview_cards()
-	var layout := _compute_preview_layout(preview_cards)
-	if layout == null:
-		layout = _compute_stacked_preview_layout(preview_cards)
-	var bounds := _get_layout_bounds(preview_cards, layout.positions, layout.rotations)
-	var should_draw_ghosts := _preview_visual_cards.is_empty()
-
-	if should_draw_ghosts:
-		for i in preview_cards.size():
-			if i >= layout.positions.size(): break
-			var card := preview_cards[i]
-			var rot := layout.rotations[i] if i < layout.rotations.size() else 0.0
-			draw_set_transform(layout.positions[i], rot, Vector2.ONE)
-			var rect := Rect2(-card.pivot_offset, card.size)
-			draw_rect(rect, PREVIEW_CARD_FILL_COLOR, true)
-			draw_rect(rect, PREVIEW_CARD_OUTLINE_COLOR, false, 1.0)
-
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-	if preview_draw_shape_bounds:
-		if bounds.size != Vector2.ZERO:
-			draw_rect(bounds, PREVIEW_SHAPE_BOUNDS_COLOR, false, 2.0)
-
-	for card in preview_cards:
-		card.free()
 
 
 #region Queries
@@ -489,9 +463,14 @@ func _stop_card_idle(card: Card) -> void:
 ## Starts idle animation on a single card after a delay.
 func _start_card_idle(card: Card, delay: float) -> void:
 	if not idle_animation: return
-	await get_tree().create_timer(maxf(delay, 0.001)).timeout
+	# A bound callback disconnects on owner deletion without retaining an await.
+	get_tree().create_timer(maxf(delay, 0.001)).timeout.connect(_finish_card_idle.bind(weakref(card)), CONNECT_ONE_SHOT)
+
+
+func _finish_card_idle(card_ref: WeakRef) -> void:
 	if not is_inside_tree(): return
-	if not cards.has(card): return
+	var card := card_ref.get_ref() as Card
+	if not is_instance_valid(card) or not cards.has(card): return
 	if card.holding: return
 	var layout = card.get_layout()
 	if layout:
@@ -504,7 +483,10 @@ func _schedule_idle_restart(duration: float) -> void:
 	if not idle_animation: return
 	_idle_restart_gen += 1
 	var gen = _idle_restart_gen
-	await get_tree().create_timer(maxf(duration, 0.001)).timeout
+	get_tree().create_timer(maxf(duration, 0.001)).timeout.connect(_finish_idle_restart.bind(gen), CONNECT_ONE_SHOT)
+
+
+func _finish_idle_restart(gen: int) -> void:
 	if not is_inside_tree(): return
 	if gen != _idle_restart_gen: return
 	_start_idle()
@@ -638,61 +620,14 @@ func _sort_cards_local(compare_func: Callable) -> void:
 ## Returns the current card order as network IDs.
 ## @experimental: Multiplayer support may change before it is considered stable.
 func get_network_card_order() -> PackedStringArray:
-	var net = _get_network_manager()
-	var result := PackedStringArray()
-	for card in cards:
-		if net:
-			net.ensure_card_id(card)
-		result.append(String(card.network_id))
-	return result
+	return _get_snapshot().get_network_card_order(self)
 
 
 ## Applies an authoritative card order by network ID.
 ## @experimental: Multiplayer support may change before it is considered stable.
 func apply_network_card_order(card_ids: PackedStringArray, duration: float = 0.0) -> void:
-	var net = _get_network_manager()
-	if net:
-		net.begin_apply_remote_state()
+	_get_snapshot().apply_network_card_order(self, card_ids, duration)
 
-	var desired: Array[Card] = []
-	if net:
-		for id in card_ids:
-			var card = net.get_card(StringName(id))
-			if card:
-				desired.append(card)
-
-	for card in desired:
-		var source := card.get_parent() as CardContainer
-		if source and source != self and source.cards.has(card):
-			source._stop_card_idle(card)
-			source._raw_unregister(card)
-			source._compute_layout()
-			for source_card in source.cards:
-				if source_card.holding: continue
-				source._settle_card(source_card, duration)
-
-	for card in cards.duplicate():
-		if desired.has(card):
-			continue
-		_stop_card_idle(card)
-		_raw_unregister(card)
-
-	for card in desired:
-		if card.get_parent() != self:
-			card._reparent_to(self)
-		if not cards.has(card):
-			_raw_register(card)
-
-	cards = desired.duplicate()
-	_compute_layout()
-	for card in cards:
-		if card.holding: continue
-		_settle_card(card, duration)
-	_update_card_layer_order()
-	_schedule_idle_restart(duration)
-
-	if net:
-		net.end_apply_remote_state()
 
 #endregion
 
@@ -781,96 +716,14 @@ func _on_shape_changed() -> void:
 func _get_network_manager() -> CardNetworkManager:
 	if Engine.is_editor_hint() or not is_inside_tree():
 		return null
-	return CG.get_network_manager()
+	return CardGlobal.get_instance().get_network_manager()
 
 
 func _queue_preview_layout_update() -> void:
 	update_minimum_size()
-	_update_preview_visual_cards()
+	if Engine.is_editor_hint():
+		_get_editor_preview()._update_preview_visual_cards(self)
 	queue_redraw()
-
-
-func _get_preview_card_count() -> int:
-	if preview_card_count > 0:
-		return clampi(preview_card_count, 1, 100)
-	if max_cards > 0:
-		return clampi(max_cards, 1, 100)
-	return PREVIEW_DEFAULT_CARD_COUNT
-
-
-func _build_preview_cards() -> Array[Card]:
-	var result: Array[Card] = []
-	var count := _get_preview_card_count()
-	for i in count:
-		var card := Card.new()
-		card.size = _preview_card_size
-		card.custom_minimum_size = _preview_card_size
-		card.pivot_offset = _preview_card_size / 2.0
-		result.append(card)
-	return result
-
-
-func _update_preview_visual_cards() -> void:
-	if !Engine.is_editor_hint(): return
-	if !preview_enabled:
-		_clear_preview_visual_cards()
-		return
-
-	var preview_cards := _build_preview_cards()
-	var layout := _compute_preview_layout(preview_cards)
-	if layout == null:
-		layout = _compute_stacked_preview_layout(preview_cards)
-
-	_resize_preview_visual_cards(preview_cards.size())
-	for i in _preview_visual_cards.size():
-		var visual_card := _preview_visual_cards[i]
-		if i >= layout.positions.size():
-			visual_card.visible = false
-			continue
-
-		var reference_card := preview_cards[i]
-		var rot := layout.rotations[i] if i < layout.rotations.size() else 0.0
-		visual_card.visible = true
-		visual_card.position = layout.positions[i] - reference_card.pivot_offset
-		visual_card.rotation = rot
-		visual_card.size = reference_card.size
-		visual_card.custom_minimum_size = reference_card.size
-		visual_card.pivot_offset = reference_card.pivot_offset
-		visual_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		visual_card.focus_mode = Control.FOCUS_NONE
-
-	for card in preview_cards:
-		card.free()
-
-
-func _resize_preview_visual_cards(count: int) -> void:
-	while _preview_visual_cards.size() > count:
-		var card := _preview_visual_cards.pop_back()
-		card.queue_free()
-
-	while _preview_visual_cards.size() < count:
-		var card := Card.new()
-		card.name = "_preview_card_%d" % _preview_visual_cards.size()
-		card.front_layout_name = preview_layout_name
-		card.back_layout_name = preview_layout_name
-		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.focus_mode = Control.FOCUS_NONE
-		card.self_modulate.a = 0.65
-		add_child(card, false, Node.INTERNAL_MODE_FRONT)
-		_preview_visual_cards.append(card)
-
-	for card in _preview_visual_cards:
-		if card.front_layout_name != preview_layout_name:
-			card.front_layout_name = preview_layout_name
-		if card.back_layout_name != preview_layout_name:
-			card.back_layout_name = preview_layout_name
-
-
-func _clear_preview_visual_cards() -> void:
-	for card in _preview_visual_cards:
-		if is_instance_valid(card):
-			card.queue_free()
-	_preview_visual_cards.clear()
 
 
 func _compute_preview_layout(preview_cards: Array[Card]) -> ContainerShape.LayoutResult:
@@ -889,47 +742,6 @@ func _compute_stacked_preview_layout(preview_cards: Array[Card]) -> ContainerSha
 		positions.append(card.pivot_offset)
 		rotations.append(0.0)
 	return ContainerShape.LayoutResult.new(positions, rotations)
-
-
-func _get_preview_bounds() -> Rect2:
-	var preview_cards := _build_preview_cards()
-	var layout := _compute_preview_layout(preview_cards)
-	if layout == null:
-		layout = _compute_stacked_preview_layout(preview_cards)
-	var bounds := _get_layout_bounds(preview_cards, layout.positions, layout.rotations)
-	for card in preview_cards:
-		card.free()
-	return bounds
-
-
-func _editor_get_layout_card_size(layout_id: StringName) -> Vector2:
-	if !Engine.is_editor_hint():
-		return Card.EDITOR_DEFAULT_SIZE
-
-	var cache := LayoutCache.new()
-	var path := cache.get_layout_path(layout_id, LayoutID.DEFAULT)
-	if not ResourceLoader.exists(path):
-		return Card.EDITOR_DEFAULT_SIZE
-
-	var scene = load(path)
-	if not scene:
-		return Card.EDITOR_DEFAULT_SIZE
-
-	var instance = scene.instantiate()
-	if not instance is CardLayout:
-		instance.free()
-		return Card.EDITOR_DEFAULT_SIZE
-
-	var result := Card.EDITOR_DEFAULT_SIZE
-	if instance.card_size != Vector2i.ZERO:
-		result = Vector2(instance.card_size)
-	else:
-		var sub_vp = instance.get_node_or_null("SubViewport")
-		if sub_vp and sub_vp is SubViewport and sub_vp.size != Vector2i.ZERO:
-			result = Vector2(sub_vp.size)
-
-	instance.free()
-	return result
 
 
 func _get_layout_bounds(layout_cards: Array[Card], positions: Array[Vector2], rotations: Array[float]) -> Rect2:
@@ -976,7 +788,7 @@ func _get_raw_layout_bounds(layout_cards: Array[Card], positions: Array[Vector2]
 
 func _get_minimum_size() -> Vector2:
 	if Engine.is_editor_hint() and preview_enabled:
-		return _get_preview_bounds().size
+		return _get_editor_preview()._get_preview_bounds(self).size
 
 	if cards.is_empty() or _card_positions.is_empty():
 		return Vector2.ZERO
@@ -989,3 +801,20 @@ func _update_card_layer_order() -> void:
 		card.z_index = i
 
 #endregion
+
+
+func _draw() -> void:
+	if Engine.is_editor_hint() and preview_enabled:
+		_get_editor_preview()._draw(self)
+
+
+func _enter_tree() -> void:
+	if Engine.is_editor_hint() and is_node_ready():
+		_queue_preview_layout_update()
+
+
+func _get_snapshot() -> RefCounted:
+	# Lazy loading avoids a circular preload graph through the core node types.
+	if not _snapshot:
+		_snapshot = load("res://addons/simple_cards/network/container_snapshot.gd").new()
+	return _snapshot

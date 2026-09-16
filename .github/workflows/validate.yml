@@ -1,0 +1,34 @@
+name: Validate
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  godot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        godot: ['4.5.1', '4.5.2']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Godot
+        env:
+          VERSION: ${{ matrix.godot }}
+        run: |
+          curl --fail --location --retry 3 --connect-timeout 20 --max-time 120 -o /tmp/godot.zip "https://github.com/godotengine/godot-builds/releases/download/${VERSION}-stable/Godot_v${VERSION}-stable_linux.x86_64.zip"
+          unzip /tmp/godot.zip -d /tmp/godot
+          echo "GODOT=/tmp/godot/Godot_v${VERSION}-stable_linux.x86_64" >> "$GITHUB_ENV"
+      - name: Validate fresh checkout
+        env:
+          TEST_LOG_DIR: ${{ runner.temp }}/simple-cards-logs
+        run: python3 tests/run_tests.py
+      - name: Validate rendered gameplay
+        env:
+          TEST_LOG_DIR: ${{ runner.temp }}/simple-cards-logs/rendered
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: xvfb-run -a python3 tests/run_tests.py --rendered-only
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs-${{ matrix.godot }}
+          path: ${{ runner.temp }}/simple-cards-logs

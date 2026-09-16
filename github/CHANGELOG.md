@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased — Stabilization
+
+- Interrupted finite scale, fade, and bob animations finish their pending waits during layout teardown. Overlapping focus animations use separate cleanup callbacks, preventing duplicate signal connections.
+- Delayed idle-animation restarts use callbacks that disconnect on container removal, avoiding retained timers during multiplayer teardown.
+- Solitaire recycle undo restores every waste card face up, preserving the visible fan.
+- Card presses keep drag detection active when the pointer leaves before the next frame.
+- Rejected and same-pile Solitaire drops no longer create undo records; added viewport-input gameplay checks and the example project’s missing gamepad accept binding.
+- Extracted editor card/container previews and network snapshot handling from the core classes, preserving public APIs and saved scenes. Added editor preview lifecycle coverage and restored container previews on tree re-entry.
+- Fixed idle-animation tween retention and delayed idle callbacks accessing freed cards.
+- Slot-to-slot swaps now respect both slots' placement conditions and emit normal remove/add notifications.
+- Server-authoritative requests resolve on disconnect or manager removal, and offline board cleanup no longer queries an absent multiplayer peer.
+- Network-applied card data is isolated per card, preserving resource IDs and source paths without mutating shared templates.
+- Fixed Macau seat remapping broadcasting incomplete client state during multi-peer joins.
+- Fixed addon-only first-install compilation and autoload persistence across editor shutdown; disabling the plugin still removes its own autoload.
+- Export the layout-cache JSON with the plugin, and avoid rewriting unchanged generated layout IDs.
+- Added isolated validation, 4.5.1/4.5.2 CI, core and multiplayer regressions, two-/six-player Macau checks, exported-pack verification, and snapshot measurements. See [Validation](VALIDATION.md), including the narrowly recorded Godot script-retention exception and manual release checks.
+
 ## Version 2.13
 
 ### Multiplayer (Experimental)

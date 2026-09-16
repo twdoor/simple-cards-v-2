@@ -17,8 +17,8 @@ var _card_over: bool = false
 var _card_currently_over: Card = null
 
 func _ready() -> void:
-	CG.holding_card.connect(_on_holding_card)
-	CG.dropped_card.connect(_on_card_dropped)
+	CardGlobal.get_instance().holding_card.connect(_on_holding_card)
+	CardGlobal.get_instance().dropped_card.connect(_on_card_dropped)
 	
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
@@ -27,12 +27,12 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	var cursor_pos = CG.get_cursor_position()
+	var cursor_pos = CardGlobal.get_instance().get_cursor_position()
 	var is_over = get_global_rect().has_point(cursor_pos)
 	
 	if is_over and not _card_over:
 		_card_over = true
-		_card_currently_over = CG.current_held_item
+		_card_currently_over = CardGlobal.get_instance().current_held_item
 		card_entered.emit(_card_currently_over)
 		_handle_card_entered(_card_currently_over)
 	
@@ -67,10 +67,10 @@ func _on_mouse_exited() -> void:
 
 
 func _exit_tree() -> void:
-	if CG.holding_card.is_connected(_on_holding_card):
-		CG.holding_card.disconnect(_on_holding_card)
-	if CG.dropped_card.is_connected(_on_card_dropped):
-		CG.dropped_card.disconnect(_on_card_dropped)
+	if CardGlobal.get_instance().holding_card.is_connected(_on_holding_card):
+		CardGlobal.get_instance().holding_card.disconnect(_on_holding_card)
+	if CardGlobal.get_instance().dropped_card.is_connected(_on_card_dropped):
+		CardGlobal.get_instance().dropped_card.disconnect(_on_card_dropped)
 	if mouse_entered.is_connected(_on_mouse_entered):
 		mouse_entered.disconnect(_on_mouse_entered)
 	if mouse_exited.is_connected(_on_mouse_exited):

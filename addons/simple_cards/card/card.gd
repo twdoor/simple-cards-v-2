@@ -83,6 +83,8 @@ var _pending_layout_switch: bool = false
 @export var card_data: CardResource:
 	set(value):
 		card_data = value
+		if _snapshot:
+			_snapshot.reset_resource(value)
 		if _layout:
 			_layout.card_resource = value
 		card_data_changed.emit(value)
@@ -115,6 +117,7 @@ var layout_name: StringName = &"":
 ## Resolved layout ID currently displayed after fallback rules are applied.
 var current_layout_name: StringName = &""
 var _local_face_override: int = -1
+var _snapshot: RefCounted
 
 ## If true uses front_layout else uses back_layout.
 var is_front_face: bool = true:
@@ -133,8 +136,8 @@ func _validate_property(property: Dictionary) -> void:
 
 func _init(card_resource: CardResource = null) -> void:
 	if Engine.is_editor_hint(): return
-	name = "card_" + str(CG.card_index)
-	CG.card_index += 1
+	name = "card_" + str(CardGlobal.get_instance().card_index)
+	CardGlobal.get_instance().card_index += 1
 	if card_resource:
 		card_data = card_resource
 
@@ -150,9 +153,9 @@ func _ready() -> void:
 
 	# Resolve empty layout names to CG defaults at runtime.
 	if front_layout_name.is_empty():
-		front_layout_name = CG.def_front_layout
+		front_layout_name = CardGlobal.get_instance().def_front_layout
 	if back_layout_name.is_empty():
-		back_layout_name = CG.def_back_layout
+		back_layout_name = CardGlobal.get_instance().def_back_layout
 
 	button_down.connect(_on_button_down)
 	button_up.connect(_on_button_up)
@@ -161,9 +164,9 @@ func _ready() -> void:
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 
-	if card_data and CG.get_available_layouts().has(card_data.front_layout_name):
+	if card_data and CardGlobal.get_instance().get_available_layouts().has(card_data.front_layout_name):
 		front_layout_name = card_data.front_layout_name
-	if card_data and CG.get_available_layouts().has(card_data.back_layout_name):
+	if card_data and CardGlobal.get_instance().get_available_layouts().has(card_data.back_layout_name):
 		back_layout_name = card_data.back_layout_name
 
 	_setup_layout(true)
@@ -185,73 +188,14 @@ func _editor_ready() -> void:
 ## Editor-only: (re)loads the layout scene and adds it as a child.
 ## Called on ready, and when card_data or front_layout_name changes in inspector.
 func _editor_setup_layout() -> void:
-	if _layout:
-		if _layout.card_size_changed.is_connected(_on_layout_size_changed):
-			_layout.card_size_changed.disconnect(_on_layout_size_changed)
-		_layout.queue_free()
-		_layout = null
-
-	var layout_id: StringName = front_layout_name
-	if card_data and !card_data.front_layout_name.is_empty():
-		layout_id = card_data.front_layout_name
-
-	_layout = _editor_create_layout(layout_id)
-	if not _layout:
-		size = EDITOR_DEFAULT_SIZE
-		custom_minimum_size = EDITOR_DEFAULT_SIZE
-		pivot_offset = EDITOR_DEFAULT_SIZE / 2.0
-		return
-
-	# Read card size — prefer layout.card_size, fall back to SubViewport.size.
-	var card_size := EDITOR_DEFAULT_SIZE
-	if _layout.card_size != Vector2i.ZERO:
-		card_size = Vector2(_layout.card_size)
-	else:
-		var sub_vp = _layout.get_node_or_null("SubViewport")
-		if sub_vp and sub_vp is SubViewport:
-			var vp_size := Vector2(sub_vp.size)
-			if vp_size != Vector2.ZERO:
-				card_size = vp_size
-
-	size = card_size
-	custom_minimum_size = card_size
-	pivot_offset = size / 2.0
-	self_modulate.a = 0
-
-	add_child(_layout)
-	_layout.card_size_changed.connect(_on_layout_size_changed)
-	_layout.anchors_preset = Control.PRESET_FULL_RECT
-	_layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	# Only call setup() if the layout script is @tool — non-@tool scripts become
-	# placeholder instances in the editor and cannot receive method calls.
-	# Placeholder layouts still render their baked-in scene visuals (panels, borders, etc.).
-	var script = _layout.get_script()
-	if script and script.is_tool():
-		_layout.setup(self, card_data)
+	load("res://addons/simple_cards/editor/card_editor_preview.gd").setup(self)
 
 
 ## Editor-only: creates a CardLayout by reading layout_cache.json directly,
 ## bypassing CG (which may not be available in editor context).
 ## Reuses LayoutCache (already @tool) to avoid duplicating JSON logic.
 func _editor_create_layout(layout_id: StringName) -> CardLayout:
-	var cache := LayoutCache.new()
-	var path := cache.get_layout_path(layout_id, LayoutID.DEFAULT)
-
-	if not ResourceLoader.exists(path):
-		push_warning("Card: Editor layout not found at " + path)
-		return null
-
-	var scene = load(path)
-	if not scene:
-		return null
-
-	var instance = scene.instantiate()
-	if not instance is CardLayout:
-		instance.queue_free()
-		return null
-
-	return instance
+	return load("res://addons/simple_cards/editor/card_editor_preview.gd").create_layout(layout_id)
 
 #endregion
 
@@ -279,7 +223,7 @@ func _drag(delta: float) -> void:
 
 	global_position = lerp(
 		global_position,
-		CG.get_cursor_position() - _dragging_offset,
+		CardGlobal.get_instance().get_cursor_position() - _dragging_offset,
 		1 - exp(delta * drag_coef))
 	_set_movement_rotation(delta)
 
@@ -395,14 +339,15 @@ func _is_owned() -> bool:
 
 func _on_button_down() -> void:
 	_released = false
-	_cursor_down_pos = CG.get_cursor_position()
+	set_process(true)
+	_cursor_down_pos = CardGlobal.get_instance().get_cursor_position()
 
 func _on_button_up() -> void:
 	_released = true
 	if holding:
 		holding = false
 		set_process(false)
-		CG.current_held_item = null
+		CardGlobal.get_instance().current_held_item = null
 		drag_ended.emit(self)
 
 		if !_is_owned():
@@ -412,18 +357,19 @@ func _on_button_up() -> void:
 		_queue_interaction_state_sync()
 
 	else:
+		if not focused: set_process(false)
 		card_clicked.emit(self)
 
 func _check_for_hold() -> void:
 	if !_released and !holding:
-		var current_cursor_pos = CG.get_cursor_position()
+		var current_cursor_pos = CardGlobal.get_instance().get_cursor_position()
 		var drag_distance = _cursor_down_pos.distance_to(current_cursor_pos)
 
 		if drag_distance > drag_threshold and !undraggable:
 			rotation = 0
 			holding = true
 			_dragging_offset = center_pos
-			CG.current_held_item = self
+			CardGlobal.get_instance().current_held_item = self
 			drag_started.emit(self)
 
 func _on_focus_entered() -> void:
@@ -440,7 +386,8 @@ func _on_focus_exited() -> void:
 	if !focused:
 		return
 	focused = false
-	if !holding: set_process(false)
+	# A press may leave the card before the next frame detects the drag threshold.
+	if !holding and _released: set_process(false)
 	if _layout:
 		await _layout._focus_out()
 	if !is_instance_valid(self) or !is_inside_tree() or focused: return
@@ -462,7 +409,10 @@ func _on_mouse_entered() -> void:
 		return
 	hovered = true
 	card_hovered.emit()
-	if !CG.current_held_item and focus_mode != Control.FOCUS_NONE:
+	if !CardGlobal.get_instance().current_held_item and focus_mode != Control.FOCUS_NONE:
+		var focused_card := get_viewport().gui_get_focus_owner() as Card
+		if focused_card and not focused_card._released:
+			return
 		grab_focus()
 
 func _on_mouse_exited() -> void:
@@ -470,7 +420,8 @@ func _on_mouse_exited() -> void:
 		return
 	hovered = false
 	card_unhovered.emit()
-	if !holding and !CG.current_held_item and has_focus():
+	# Releasing focus during a press makes BaseButton cancel it with button_up.
+	if _released and !holding and !CardGlobal.get_instance().current_held_item and has_focus():
 		release_focus()
 
 func _queue_interaction_state_sync() -> void:
@@ -511,7 +462,7 @@ func _is_cursor_over_card() -> bool:
 	if disabled or mouse_filter == Control.MOUSE_FILTER_IGNORE:
 		return false
 
-	var local_cursor := CG.get_local_cursor_position(self)
+	var local_cursor := CardGlobal.get_instance().get_local_cursor_position(self)
 	return Rect2(Vector2.ZERO, size).has_point(local_cursor)
 
 #endregion
@@ -629,9 +580,9 @@ func _setup_layout(no_animations: bool = false) -> void:
 		_layout = null
 
 	var requested_layout := _get_requested_layout_id()
-	var fallback_layout := CG.def_front_layout if is_front_face else CG.def_back_layout
-	current_layout_name = CG.resolve_layout_id(requested_layout, fallback_layout)
-	_layout = CG.create_layout(requested_layout, fallback_layout)
+	var fallback_layout := CardGlobal.get_instance().def_front_layout if is_front_face else CardGlobal.get_instance().def_back_layout
+	current_layout_name = CardGlobal.get_instance().resolve_layout_id(requested_layout, fallback_layout)
+	_layout = CardGlobal.get_instance().create_layout(requested_layout, fallback_layout)
 
 	if not _layout:
 		push_error("Card: Failed to create layout")
@@ -744,68 +695,19 @@ func set_network_id(id: StringName) -> void:
 ## Returns this card's network snapshot data for the given peer.
 ## @experimental: Multiplayer support may change before it is considered stable.
 func get_network_state(for_peer_id: int = 0) -> Dictionary:
-	var net = _get_network_manager()
-	if net:
-		net.ensure_card_id(self)
-
-	var container := get_parent() as CardContainer
-	var container_id := &""
-	var index := -1
-	if container:
-		container_id = container.network_id
-		index = container.get_card_index(self)
-
-	var known := true
-	if net:
-		known = net.can_peer_see_card(self, for_peer_id)
-
-	var state: Dictionary = {
-		"card_id": network_id,
-		"container_id": container_id,
-		"index": index,
-		"owner_peer_id": network_owner_peer_id,
-		"known": known,
-		"is_front_face": is_front_face if known else false,
-		"front_layout_name": front_layout_name if known else &"",
-		"back_layout_name": back_layout_name,
-	}
-
-	if known and card_data:
-		state["resource_id"] = card_data.get_network_resource_id()
-		state["resource_path"] = card_data.resource_path
-		state["card_data"] = card_data.to_network_data(for_peer_id)
-
-	return state
+	return _get_snapshot().get_network_state(self, for_peer_id)
 
 
 ## Applies card state from a network snapshot.
 ## @experimental: Multiplayer support may change before it is considered stable.
 func apply_network_state(state: Dictionary, _config: MoveConfig = null) -> void:
-	if state.has("card_id"):
-		set_network_id(StringName(state.get("card_id", &"")))
-	network_owner_peer_id = int(state.get("owner_peer_id", network_owner_peer_id))
-	back_layout_name = StringName(state.get("back_layout_name", back_layout_name))
-
-	var known := bool(state.get("known", true))
-	if known:
-		front_layout_name = StringName(state.get("front_layout_name", front_layout_name))
-		var net = _get_network_manager()
-		var resource = net.resolve_resource_from_payload(state) if net else null
-		if resource:
-			card_data = resource
-		if card_data and state.get("card_data", {}) is Dictionary:
-			card_data.apply_network_data(state.get("card_data", {}))
-			refresh_layout()
-		is_front_face = bool(state.get("is_front_face", is_front_face))
-	else:
-		card_data = null
-		is_front_face = false
+	_get_snapshot().apply_network_state(self, state, _config)
 
 
 func _get_network_manager() -> CardNetworkManager:
 	if Engine.is_editor_hint() or not is_inside_tree():
 		return null
-	return CG.get_network_manager()
+	return CardGlobal.get_instance().get_network_manager()
 
 
 func _exit_tree() -> void:
@@ -816,7 +718,15 @@ func _exit_tree() -> void:
 			_layout.queue_free()
 			_layout = null
 		return
-	var net = CG.get_network_manager()
+	var net = CardGlobal.get_instance().get_network_manager()
 	if net:
 		net.unregister_card(self)
 	kill_all_tweens()
+
+
+func _get_snapshot() -> RefCounted:
+	# Lazy loading avoids a circular preload graph through the core node types.
+	if not _snapshot:
+		_snapshot = load("res://addons/simple_cards/network/card_snapshot.gd").new()
+		_snapshot.reset_resource(card_data)
+	return _snapshot

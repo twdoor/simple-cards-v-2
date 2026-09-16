@@ -117,6 +117,8 @@ func _get_drag_companions(card: Card) -> Array[Card]:
 ## Captures pre-move state for the undo system before executing the move.
 func _on_mat_card_dropped(card: Card) -> void:
 	var source_hand: CardContainer = card.get_parent()
+	if source_hand == self or not can_accept_card(card):
+		return
 
 	var src_idx: int = source_hand.cards.find(card) if source_hand is CardContainer else -1
 	var drag_stack: Array[Card] = source_hand.get_drag_stack() if source_hand is CardHand else [card]

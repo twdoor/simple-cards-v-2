@@ -73,7 +73,7 @@ func shuffle() -> void:
 ## Local implementation for [method shuffle].
 func _shuffle_local() -> void:
 	for i in range(cards.size() - 1, 0, -1):
-		var j = CG.rng.randi_range(0, i)
+		var j = CardGlobal.get_instance().rng.randi_range(0, i)
 		var tmp = cards[i]
 		cards[i] = cards[j]
 		cards[j] = tmp

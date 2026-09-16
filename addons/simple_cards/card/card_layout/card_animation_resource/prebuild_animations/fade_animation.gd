@@ -17,4 +17,4 @@ func play_animation(layout: CardLayout) -> void:
 		Fade.OUT:
 			fade_tween.tween_property(layout.card_instance, "modulate", Color.TRANSPARENT, fade_duration).from(Color.WHITE)
 
-	await fade_tween.finished
+	await _await_tween(layout, fade_tween)
