@@ -15,7 +15,7 @@ func _enter_tree():
 	if not ProjectSettings.has_setting("autoload/%s" % CARD_GLOBAL):
 		add_autoload_singleton(CARD_GLOBAL, CARD_GLOBAL_FILE_PATH)
 		ProjectSettings.save()
-	elif ProjectSettings.get_setting("autoload/%s" % CARD_GLOBAL) != "*" + CARD_GLOBAL_FILE_PATH:
+	elif not _is_card_global_autoload(ProjectSettings.get_setting("autoload/%s" % CARD_GLOBAL)):
 		push_warning("SimpleCards: Autoload name '%s' already exists; using the existing autoload." % CARD_GLOBAL)
 
 	layout_panel = LayoutPanel.new()
@@ -35,6 +35,18 @@ func _exit_tree():
 
 
 func _disable_plugin() -> void:
-	if ProjectSettings.get_setting("autoload/%s" % CARD_GLOBAL, "") == "*" + CARD_GLOBAL_FILE_PATH:
+	if _is_card_global_autoload(ProjectSettings.get_setting("autoload/%s" % CARD_GLOBAL, "")):
 		remove_autoload_singleton(CARD_GLOBAL)
 		ProjectSettings.save()
+
+
+static func _is_card_global_autoload(value: String) -> bool:
+	if not value.begins_with("*"):
+		return false
+	var path := value.trim_prefix("*")
+	if path.begins_with("uid://"):
+		var uid := ResourceUID.text_to_id(path)
+		if not ResourceUID.has_id(uid):
+			return false
+		path = ResourceUID.get_id_path(uid)
+	return path == CARD_GLOBAL_FILE_PATH
