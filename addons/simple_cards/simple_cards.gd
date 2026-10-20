@@ -6,6 +6,7 @@ const CARD_GLOBAL_FILE_PATH = "res://addons/simple_cards/card_global.gd"
 const LayoutPanel = preload("res://addons/simple_cards/editor/layout_panel.gd")
 
 var layout_panel: Control = null
+var layout_dock: EditorDock
 var layout_export_plugin: EditorExportPlugin
 
 
@@ -20,7 +21,15 @@ func _enter_tree():
 
 	layout_panel = LayoutPanel.new()
 	layout_panel.editor_interface = EditorInterface
-	add_control_to_bottom_panel(layout_panel, "Card Layouts")
+	layout_dock = EditorDock.new()
+	layout_dock.name = "CardLayouts"
+	layout_dock.title = "Card Layouts"
+	layout_dock.layout_key = "SimpleCardsLayouts"
+	layout_dock.default_slot = EditorDock.DOCK_SLOT_BOTTOM
+	layout_dock.available_layouts = EditorDock.DOCK_LAYOUT_ALL
+	layout_dock.icon_name = &"Control"
+	layout_dock.add_child(layout_panel)
+	add_dock(layout_dock)
 
 
 func _exit_tree():
@@ -28,9 +37,10 @@ func _exit_tree():
 		remove_export_plugin(layout_export_plugin)
 		layout_export_plugin = null
 
-	if layout_panel:
-		remove_control_from_bottom_panel(layout_panel)
-		layout_panel.queue_free()
+	if layout_dock:
+		remove_dock(layout_dock)
+		layout_dock.queue_free()
+		layout_dock = null
 		layout_panel = null
 
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://dajkkw30vo3rp"]
+[gd_scene format=3 uid="uid://dajkkw30vo3rp"]
 
 [ext_resource type="Script" uid="uid://dwquwtady16or" path="res://examples/solitaire/solitaire.gd" id="1_el2jo"]
 [ext_resource type="Script" uid="uid://bisyk4bowdvsf" path="res://addons/simple_cards/deck/manager/card_deck_manager.gd" id="2_f1iev"]
@@ -71,7 +71,7 @@ fan_spacing = 40.0
 max_length = 90.0
 metadata/_custom_type_script = "uid://ddqdtbqqh2xxi"
 
-[node name="Solitare" type="CanvasLayer" node_paths=PackedStringArray("reset_button", "undo_button", "deal_hand", "foundations", "tableau_piles")]
+[node name="Solitare" type="CanvasLayer" unique_id=1218470387 node_paths=PackedStringArray("reset_button", "undo_button", "deal_hand", "foundations", "tableau_piles")]
 script = ExtResource("1_el2jo")
 reset_button = NodePath("MarginContainer/VBoxContainer/ResetButton")
 undo_button = NodePath("MarginContainer/VBoxContainer/UndoButton")
@@ -80,16 +80,16 @@ deal_hand_num = 1
 foundations = [NodePath("MarginContainer/Stacks/Stack"), NodePath("MarginContainer/Stacks/Stack2"), NodePath("MarginContainer/Stacks/Stack3"), NodePath("MarginContainer/Stacks/Stack4")]
 tableau_piles = [NodePath("MarginContainer/Piles/Pile"), NodePath("MarginContainer/Piles/Pile2"), NodePath("MarginContainer/Piles/Pile3"), NodePath("MarginContainer/Piles/Pile4"), NodePath("MarginContainer/Piles/Pile5"), NodePath("MarginContainer/Piles/Pile6"), NodePath("MarginContainer/Piles/Pile7")]
 
-[node name="SolitaireUndo" type="Node" parent="."]
+[node name="SolitaireUndo" type="Node" parent="." unique_id=2095604910]
 script = ExtResource("11_undo")
 
-[node name="CardDeckManager" type="Node" parent="." node_paths=PackedStringArray("starting_pile")]
+[node name="CardDeckManager" type="Node" parent="." unique_id=458422987 node_paths=PackedStringArray("starting_pile")]
 script = ExtResource("2_f1iev")
 deck = ExtResource("3_x6rcj")
 starting_pile = NodePath("../MarginContainer/HBoxContainer/DrawCard/CardPile")
 metadata/_custom_type_script = "uid://bisyk4bowdvsf"
 
-[node name="BGPanel" type="Panel" parent="."]
+[node name="BGPanel" type="Panel" parent="." unique_id=1859593607]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -97,7 +97,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_qytrh")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=232098154]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -108,7 +108,7 @@ theme_override_constants/margin_top = 64
 theme_override_constants/margin_right = 64
 theme_override_constants/margin_bottom = 64
 
-[node name="Stacks" type="HBoxContainer" parent="MarginContainer"]
+[node name="Stacks" type="HBoxContainer" parent="MarginContainer" unique_id=1885678412]
 custom_minimum_size = Vector2(0, 112)
 layout_mode = 2
 size_flags_horizontal = 8
@@ -116,7 +116,7 @@ size_flags_vertical = 0
 theme_override_constants/separation = 32
 alignment = 2
 
-[node name="Stack" type="Panel" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
+[node name="Stack" type="Panel" parent="MarginContainer/Stacks" unique_id=1052192202 node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 112)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
@@ -127,7 +127,7 @@ enable_reordering = false
 shape = SubResource("Resource_x6rcj")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
-[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack"]
+[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack" unique_id=1329989871]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -144,7 +144,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Stack2" type="Panel" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
+[node name="Stack2" type="Panel" parent="MarginContainer/Stacks" unique_id=546864768 node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 112)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
@@ -155,7 +155,7 @@ enable_reordering = false
 shape = SubResource("Resource_008rh")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
-[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack2"]
+[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack2" unique_id=89643709]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -172,7 +172,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Stack3" type="Panel" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
+[node name="Stack3" type="Panel" parent="MarginContainer/Stacks" unique_id=2106131140 node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 112)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
@@ -183,7 +183,7 @@ enable_reordering = false
 shape = SubResource("Resource_3ywlq")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
-[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack3"]
+[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack3" unique_id=1326501324]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -200,7 +200,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Stack4" type="Panel" parent="MarginContainer/Stacks" node_paths=PackedStringArray("drop_area")]
+[node name="Stack4" type="Panel" parent="MarginContainer/Stacks" unique_id=271313761 node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 112)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
@@ -211,7 +211,7 @@ enable_reordering = false
 shape = SubResource("Resource_2oijv")
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
-[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack4"]
+[node name="CardMat" type="Panel" parent="MarginContainer/Stacks/Stack4" unique_id=1737530045]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -228,14 +228,14 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Piles" type="HBoxContainer" parent="MarginContainer"]
+[node name="Piles" type="HBoxContainer" parent="MarginContainer" unique_id=497831995]
 custom_minimum_size = Vector2(0, 410)
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 8
 theme_override_constants/separation = 32
 
-[node name="Pile" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile" type="Panel" parent="MarginContainer/Piles" unique_id=199338920 node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
@@ -251,7 +251,7 @@ preview_draw_container_bounds = false
 preview_draw_shape_bounds = false
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
-[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile"]
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile" unique_id=1261699006]
 show_behind_parent = true
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 1
@@ -264,7 +264,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile2" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile2" type="Panel" parent="MarginContainer/Piles" unique_id=429054609 node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
@@ -280,7 +280,7 @@ preview_draw_container_bounds = false
 preview_draw_shape_bounds = false
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
-[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile2"]
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile2" unique_id=1933025582]
 show_behind_parent = true
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 1
@@ -293,7 +293,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile3" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile3" type="Panel" parent="MarginContainer/Piles" unique_id=1337098052 node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
@@ -309,7 +309,7 @@ preview_draw_container_bounds = false
 preview_draw_shape_bounds = false
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
-[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile3"]
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile3" unique_id=372527079]
 show_behind_parent = true
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 1
@@ -322,7 +322,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile4" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile4" type="Panel" parent="MarginContainer/Piles" unique_id=884341613 node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
@@ -338,7 +338,7 @@ preview_draw_container_bounds = false
 preview_draw_shape_bounds = false
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
-[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile4"]
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile4" unique_id=638662818]
 show_behind_parent = true
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 1
@@ -351,7 +351,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile5" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile5" type="Panel" parent="MarginContainer/Piles" unique_id=525918242 node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
@@ -367,7 +367,7 @@ preview_draw_container_bounds = false
 preview_draw_shape_bounds = false
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
-[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile5"]
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile5" unique_id=689915966]
 show_behind_parent = true
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 1
@@ -380,7 +380,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile6" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile6" type="Panel" parent="MarginContainer/Piles" unique_id=853998890 node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
@@ -396,7 +396,7 @@ preview_draw_container_bounds = false
 preview_draw_shape_bounds = false
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
-[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile6"]
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile6" unique_id=1720335767]
 show_behind_parent = true
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 1
@@ -409,7 +409,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="Pile7" type="Panel" parent="MarginContainer/Piles" node_paths=PackedStringArray("drop_area")]
+[node name="Pile7" type="Panel" parent="MarginContainer/Piles" unique_id=1915882375 node_paths=PackedStringArray("drop_area")]
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_f1iev")
@@ -425,7 +425,7 @@ preview_draw_container_bounds = false
 preview_draw_shape_bounds = false
 metadata/_custom_type_script = "uid://b8kdeax26ggxc"
 
-[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile7"]
+[node name="CardMat" type="Panel" parent="MarginContainer/Piles/Pile7" unique_id=590916499]
 show_behind_parent = true
 custom_minimum_size = Vector2(80, 400)
 layout_mode = 1
@@ -438,14 +438,13 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_el2jo")
 script = ExtResource("8_303tp")
 metadata/_custom_type_script = "uid://du1ike80fkx83"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=1488976233]
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
 theme_override_constants/separation = 32
 
-[node name="DrawCard" type="BaseButton" parent="MarginContainer/HBoxContainer"]
-_import_path = NodePath("")
+[node name="DrawCard" type="BaseButton" parent="MarginContainer/HBoxContainer" unique_id=2019533807]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -460,6 +459,7 @@ self_modulate = Color(1, 1, 1, 0)
 show_behind_parent = false
 top_level = false
 clip_children = 0
+oversampling_with_scale = 0
 light_mask = 1
 visibility_layer = 1
 z_index = 0
@@ -469,14 +469,25 @@ texture_filter = 0
 texture_repeat = 0
 material = null
 use_parent_material = false
-clip_contents = false
 custom_minimum_size = Vector2(80, 112)
-layout_direction = 0
+custom_maximum_size = Vector2(-1, -1)
+propagate_maximum_size = false
+clip_contents = false
 layout_mode = 2
 size_flags_horizontal = 1
 size_flags_vertical = 1
 size_flags_stretch_ratio = 1.0
+offset_transform_enabled = false
+offset_transform_position = Vector2(0, 0)
+offset_transform_position_ratio = Vector2(0, 0)
+offset_transform_scale = Vector2(1, 1)
+offset_transform_rotation = 0.0
+offset_transform_pivot = Vector2(0, 0)
+offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+offset_transform_visual_only = true
 localize_numeral_system = true
+layout_direction = 0
+translation_context = &""
 tooltip_text = ""
 tooltip_auto_translate_mode = 0
 focus_neighbor_left = NodePath("")
@@ -516,7 +527,7 @@ front_layout_name = &"standard_back_layout"
 back_layout_name = &"standard_back_layout"
 metadata/_custom_type_script = "uid://dowgud10rp5yf"
 
-[node name="CardPile" type="Panel" parent="MarginContainer/HBoxContainer/DrawCard"]
+[node name="CardPile" type="Panel" parent="MarginContainer/HBoxContainer/DrawCard" unique_id=1056876970]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -530,7 +541,7 @@ script = ExtResource("10_x6rcj")
 cards_focusable = false
 metadata/_custom_type_script = "uid://d2l8uaoel5whd"
 
-[node name="DealHand" type="Panel" parent="MarginContainer/HBoxContainer"]
+[node name="DealHand" type="Panel" parent="MarginContainer/HBoxContainer" unique_id=730754550]
 custom_minimum_size = Vector2(170, 112)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -544,19 +555,19 @@ preview_layout_name = &"standard_layout"
 preview_card_count = 19
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=579877964]
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 8
 
-[node name="ResetButton" type="Button" parent="MarginContainer/VBoxContainer"]
+[node name="ResetButton" type="Button" parent="MarginContainer/VBoxContainer" unique_id=1645597565]
 custom_minimum_size = Vector2(128, 64)
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 8
 text = "RESET GAME"
 
-[node name="UndoButton" type="Button" parent="MarginContainer/VBoxContainer"]
+[node name="UndoButton" type="Button" parent="MarginContainer/VBoxContainer" unique_id=66647461]
 custom_minimum_size = Vector2(128, 64)
 layout_mode = 2
 size_flags_horizontal = 0

@@ -422,7 +422,7 @@ func _settle_card(card: Card, duration: float) -> void:
 		card._queue_interaction_state_sync_on_move_completed()
 		config.position_callable.call(card, target_pos, duration)
 	else:
-		card.tween_position(target_pos, duration)
+		card.tween_to_container_position(self, target_pos, duration)
 
 	card.rotation_degrees = get_card_target_rotation(card)
 

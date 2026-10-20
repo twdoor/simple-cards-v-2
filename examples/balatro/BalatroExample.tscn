@@ -1,11 +1,10 @@
-[gd_scene load_steps=27 format=3 uid="uid://brvun6l03k0hu"]
+[gd_scene format=3 uid="uid://brvun6l03k0hu"]
 
 [ext_resource type="Script" uid="uid://bmc1k8rf2430l" path="res://examples/balatro/balatro_example.gd" id="1_ieake"]
 [ext_resource type="Script" uid="uid://f3ybsxom5cmo" path="res://examples/balatro/balatro_card_hand.gd" id="2_grswf"]
 [ext_resource type="Script" uid="uid://bisyk4bowdvsf" path="res://addons/simple_cards/deck/manager/card_deck_manager.gd" id="3_hg8is"]
 [ext_resource type="Resource" uid="uid://u1x8i453q018" path="res://examples/cards/standard_deck/standard_deck.tres" id="4_2a7na"]
 [ext_resource type="FontFile" uid="uid://fpoco0u13011" path="res://examples/cards/standard_deck/KarenFat.ttf" id="4_gmp31"]
-[ext_resource type="Script" uid="uid://d2l8uaoel5whd" path="res://addons/simple_cards/containers/pile/card_pile.gd" id="4_oq12x"]
 [ext_resource type="Script" uid="uid://cllotwm1jb3ta" path="res://examples/balatro/combo_label.gd" id="5_eqskn"]
 [ext_resource type="Script" uid="uid://bbi8i6vef3f6y" path="res://addons/simple_cards/containers/hand/card_hand.gd" id="5_gjekf"]
 [ext_resource type="Texture2D" uid="uid://d13a1tcqjxkas" path="res://examples/cards/standard_deck/club.png" id="6_rmqmx"]
@@ -17,6 +16,7 @@
 [ext_resource type="Texture2D" uid="uid://ral2awpcmpdv" path="res://examples/cards/standard_deck/spade.png" id="9_tijkg"]
 [ext_resource type="Script" uid="uid://b1s6x4iyt2pps" path="res://addons/simple_cards/shape/premade_shapes/line_shape.gd" id="10_asqof"]
 [ext_resource type="Script" uid="uid://qd3kangeiqg" path="res://addons/simple_cards/shape/premade_shapes/grid_shape.gd" id="11_gmp31"]
+[ext_resource type="Script" uid="uid://dbtx7p66ev8hc" path="res://examples/balatro/preview_pile.gd" id="16_rmqmx"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_m6hid"]
 bg_color = Color(0.16078432, 0.2784314, 0.20784314, 1)
@@ -64,22 +64,33 @@ phase_variance = 0.449
 looping = true
 metadata/_custom_type_script = "uid://bgmqt21bcemq6"
 
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tsvty"]
+
 [sub_resource type="Resource" id="Resource_gmp31"]
 script = ExtResource("9_gmp31")
+random_seed = null
 metadata/_custom_type_script = "uid://cle02hultetj5"
 
-[node name="BalatroExample" type="CanvasLayer"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rmqmx"]
+
+[sub_resource type="Resource" id="Resource_rmqmx"]
+script = ExtResource("9_gmp31")
+randomization_enabled = true
+max_rotation_degrees = 180.0
+metadata/_custom_type_script = "uid://cle02hultetj5"
+
+[node name="BalatroExample" type="CanvasLayer" unique_id=591976540]
 script = ExtResource("1_ieake")
 deck = ExtResource("4_2a7na")
 
-[node name="CardDeckManager" type="Node" parent="." node_paths=PackedStringArray("starting_pile")]
+[node name="CardDeckManager" type="Node" parent="." unique_id=511390559 node_paths=PackedStringArray("starting_pile")]
 physics_interpolation_mode = 2
 script = ExtResource("3_hg8is")
 deck = ExtResource("4_2a7na")
 starting_pile = NodePath("../MarginContainer/Draw")
 metadata/_custom_type_script = "uid://bisyk4bowdvsf"
 
-[node name="BGPanel" type="Panel" parent="."]
+[node name="BGPanel" type="Panel" parent="." unique_id=512706137]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -87,7 +98,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_m6hid")
 
-[node name="ComboLabel" type="Label" parent="."]
+[node name="ComboLabel" type="Label" parent="." unique_id=1843677282]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -106,7 +117,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 script = ExtResource("5_eqskn")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=2144539429]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -117,43 +128,43 @@ theme_override_constants/margin_top = 32
 theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 32
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=1939517252]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 4
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer" unique_id=1986480228]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 4
 
-[node name="GoldButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="GoldButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer" unique_id=1897689136]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 tooltip_text = "Select at least a card to turn to Gold"
 text = "Gold"
 
-[node name="SilvButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="SilvButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer" unique_id=693318020]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 tooltip_text = "Select at least a card to turn to Glass"
 text = "Glass"
 
-[node name="NoneButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="NoneButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer" unique_id=1051279606]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 tooltip_text = "Select at least a card to remove effects"
 text = "None"
 
-[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer/HBoxContainer" unique_id=1990714488]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 4
 
-[node name="ClubButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2"]
+[node name="ClubButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2" unique_id=247974845]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
@@ -161,7 +172,7 @@ tooltip_text = "Select at least a card to turn to color"
 icon = ExtResource("6_rmqmx")
 icon_alignment = 1
 
-[node name="DiamButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2"]
+[node name="DiamButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2" unique_id=765288534]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
@@ -169,7 +180,7 @@ tooltip_text = "Select at least a card to turn to color"
 icon = ExtResource("7_tsvty")
 icon_alignment = 1
 
-[node name="HeartButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2"]
+[node name="HeartButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2" unique_id=2102110319]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
@@ -177,7 +188,7 @@ tooltip_text = "Select at least a card to turn to color"
 icon = ExtResource("8_p010p")
 icon_alignment = 1
 
-[node name="SpadeButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2"]
+[node name="SpadeButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer2" unique_id=1969464952]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
@@ -185,18 +196,18 @@ tooltip_text = "Select at least a card to turn to color"
 icon = ExtResource("9_tijkg")
 icon_alignment = 1
 
-[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer" unique_id=2028289278]
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 4
 
-[node name="MarginContainer" type="MarginContainer" parent="MarginContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer" unique_id=415927032]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 8
 theme_override_constants/margin_bottom = 80
 
-[node name="BalatroHand" type="Panel" parent="MarginContainer/MarginContainer"]
+[node name="BalatroHand" type="Panel" parent="MarginContainer/MarginContainer" unique_id=1785051745]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Panel shows the size of the hand.
@@ -210,53 +221,53 @@ preview_enabled = true
 preview_layout_name = &"standard_layout"
 metadata/_custom_type_script = "uid://f3ybsxom5cmo"
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer" unique_id=516898539]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 8
 
-[node name="PlayButton" type="Button" parent="MarginContainer/HBoxContainer2"]
+[node name="PlayButton" type="Button" parent="MarginContainer/HBoxContainer2" unique_id=222311977]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 64)
 layout_mode = 2
 text = "Play"
 
-[node name="VBoxContainer3" type="VBoxContainer" parent="MarginContainer/HBoxContainer2"]
+[node name="VBoxContainer3" type="VBoxContainer" parent="MarginContainer/HBoxContainer2" unique_id=497967499]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 8
 
-[node name="Label" type="Label" parent="MarginContainer/HBoxContainer2/VBoxContainer3"]
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer2/VBoxContainer3" unique_id=1241104538]
 layout_mode = 2
 text = "Sort Hand"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer2/VBoxContainer3"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer2/VBoxContainer3" unique_id=1265751252]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 8
 theme_override_constants/separation = 8
 
-[node name="SortValueButton" type="Button" parent="MarginContainer/HBoxContainer2/VBoxContainer3/HBoxContainer"]
+[node name="SortValueButton" type="Button" parent="MarginContainer/HBoxContainer2/VBoxContainer3/HBoxContainer" unique_id=1860996543]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 32)
 layout_mode = 2
 text = "Rank"
 
-[node name="SortSuitButton" type="Button" parent="MarginContainer/HBoxContainer2/VBoxContainer3/HBoxContainer"]
+[node name="SortSuitButton" type="Button" parent="MarginContainer/HBoxContainer2/VBoxContainer3/HBoxContainer" unique_id=1699796703]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 32)
 layout_mode = 2
 text = "Suit"
 
-[node name="DiscardButton" type="Button" parent="MarginContainer/HBoxContainer2"]
+[node name="DiscardButton" type="Button" parent="MarginContainer/HBoxContainer2" unique_id=1442435167]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 64)
 layout_mode = 2
 text = "Discard"
 
-[node name="PlayedHand" type="Panel" parent="MarginContainer"]
+[node name="PlayedHand" type="Panel" parent="MarginContainer" unique_id=1220250246]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
@@ -269,7 +280,7 @@ preview_layout_name = &"standard_layout"
 preview_card_count = 6
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
-[node name="PreviewHand" type="Panel" parent="MarginContainer"]
+[node name="PreviewHand" type="Panel" parent="MarginContainer" unique_id=653359782]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
@@ -283,45 +294,27 @@ preview_layout_name = &"standard_back_layout"
 preview_card_count = 52
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
-[node name="Draw" type="Panel" parent="MarginContainer"]
+[node name="Draw" type="Panel" parent="MarginContainer" unique_id=874026808]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 8
-script = ExtResource("4_oq12x")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_tsvty")
+script = ExtResource("16_rmqmx")
 show_cards = true
 shape = SubResource("Resource_gmp31")
 cards_focusable = false
 metadata/_custom_type_script = "uid://d2l8uaoel5whd"
 
-[node name="Discard" type="Panel" parent="MarginContainer"]
+[node name="Discard" type="Panel" parent="MarginContainer" unique_id=947549890]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 8
-script = ExtResource("4_oq12x")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_rmqmx")
+script = ExtResource("16_rmqmx")
 show_cards = true
 face_up = true
-shape = SubResource("Resource_gmp31")
+shape = SubResource("Resource_rmqmx")
 cards_focusable = false
 metadata/_custom_type_script = "uid://d2l8uaoel5whd"
-
-[node name="PreviewDraw" type="Button" parent="MarginContainer"]
-unique_name_in_owner = true
-z_index = 999
-custom_minimum_size = Vector2(80, 112)
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 8
-text = "Preview
-Draw"
-
-[node name="PreviewDiscard" type="Button" parent="MarginContainer"]
-unique_name_in_owner = true
-z_index = 999
-custom_minimum_size = Vector2(80, 112)
-layout_mode = 2
-size_flags_horizontal = 8
-size_flags_vertical = 8
-text = "Preview
-Discard"

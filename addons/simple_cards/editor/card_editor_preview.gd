@@ -64,7 +64,6 @@ static func create_layout(layout_id: StringName) -> CardLayout:
 static func get_layout_size(layout: CardLayout) -> Vector2:
 	if layout.card_size != Vector2i.ZERO:
 		return Vector2(layout.card_size)
-	var viewport := layout.get_node_or_null("SubViewport") as SubViewport
-	if viewport and viewport.size != Vector2i.ZERO:
-		return Vector2(viewport.size)
+	if layout.size.x > 0 and layout.size.y > 0:
+		return layout.size
 	return Card.EDITOR_DEFAULT_SIZE

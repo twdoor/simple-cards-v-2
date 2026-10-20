@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://cmnb4r1x7hkjh"]
+[gd_scene format=3 uid="uid://cmnb4r1x7hkjh"]
 
 [ext_resource type="Script" uid="uid://drwkwp0mdsmh4" path="res://examples/multiplayer/p2p_macau.gd" id="1_t05i1"]
 [ext_resource type="Script" uid="uid://bkryh5jjpbqdx" path="res://addons/simple_cards/network/card_peer_to_peer_network.gd" id="1_voejs"]
@@ -9,6 +9,7 @@
 [ext_resource type="Resource" uid="uid://u1x8i453q018" path="res://examples/cards/standard_deck/standard_deck.tres" id="6_deck"]
 [ext_resource type="Script" uid="uid://d2l8uaoel5whd" path="res://addons/simple_cards/containers/pile/card_pile.gd" id="7_wlpae"]
 [ext_resource type="PackedScene" uid="uid://1xlllxkpuqv3" path="res://examples/multiplayer/opponent_scene.tscn" id="8_opponent"]
+[ext_resource type="Script" uid="uid://cle02hultetj5" path="res://addons/simple_cards/shape/premade_shapes/stack_shape.gd" id="10_lu2n7"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lu2n7"]
 bg_color = Color(0.1619519, 0.27889124, 0.20867068, 1)
@@ -38,23 +39,31 @@ phase_variance = 0.785
 looping = true
 metadata/_custom_type_script = "uid://bgmqt21bcemq6"
 
-[node name="P2pMacau" type="CanvasLayer"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tsvty"]
+
+[sub_resource type="Resource" id="Resource_rmqmx"]
+script = ExtResource("10_lu2n7")
+randomization_enabled = true
+max_rotation_degrees = 15.0
+metadata/_custom_type_script = "uid://cle02hultetj5"
+
+[node name="P2pMacau" type="CanvasLayer" unique_id=19914581]
 script = ExtResource("1_t05i1")
 deck = ExtResource("6_deck")
 opponent_scene = ExtResource("8_opponent")
 
-[node name="CardPeerToPeerNetwork" type="Node" parent="."]
+[node name="CardPeerToPeerNetwork" type="Node" parent="." unique_id=767881001]
 unique_name_in_owner = true
 script = ExtResource("1_voejs")
 metadata/_custom_type_script = "uid://bkryh5jjpbqdx"
 
-[node name="CardDeckManager" type="Node" parent="." node_paths=PackedStringArray("starting_pile")]
+[node name="CardDeckManager" type="Node" parent="." unique_id=123434613 node_paths=PackedStringArray("starting_pile")]
 script = ExtResource("2_3l3j0")
 deck = ExtResource("6_deck")
 starting_pile = NodePath("../BGPanel/MarginContainer/DrawPile")
 metadata/_custom_type_script = "uid://bisyk4bowdvsf"
 
-[node name="BGPanel" type="Panel" parent="."]
+[node name="BGPanel" type="Panel" parent="." unique_id=1578386160]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -62,7 +71,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_lu2n7")
 
-[node name="MarginContainer" type="MarginContainer" parent="BGPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="BGPanel" unique_id=739296773]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -74,7 +83,7 @@ theme_override_constants/margin_top = 32
 theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 32
 
-[node name="PlayerHand" type="Panel" parent="BGPanel/MarginContainer"]
+[node name="PlayerHand" type="Panel" parent="BGPanel/MarginContainer" unique_id=347809232]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
@@ -88,7 +97,7 @@ preview_layout_name = &"standard_layout"
 preview_card_count = 8
 metadata/_custom_type_script = "uid://bbi8i6vef3f6y"
 
-[node name="DrawPile" type="Panel" parent="BGPanel/MarginContainer"]
+[node name="DrawPile" type="Panel" parent="BGPanel/MarginContainer" unique_id=637623735]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 0
@@ -98,59 +107,61 @@ preview_enabled = true
 preview_layout_name = &"standard_back_layout"
 metadata/_custom_type_script = "uid://d2l8uaoel5whd"
 
-[node name="PlayPile" type="Panel" parent="BGPanel/MarginContainer"]
+[node name="PlayPile" type="Panel" parent="BGPanel/MarginContainer" unique_id=975033156]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxEmpty_tsvty")
 script = ExtResource("7_wlpae")
+shape = SubResource("Resource_rmqmx")
 preview_enabled = true
 preview_layout_name = &"standard_layout"
 metadata/_custom_type_script = "uid://d2l8uaoel5whd"
 
-[node name="OpponentsBox" type="HBoxContainer" parent="BGPanel/MarginContainer"]
+[node name="OpponentsBox" type="HBoxContainer" parent="BGPanel/MarginContainer" unique_id=2104819714]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_constants/separation = 64
 alignment = 1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="BGPanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="BGPanel/MarginContainer" unique_id=2114099310]
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 8
 
-[node name="HostButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer"]
+[node name="HostButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer" unique_id=1206220137]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Host"
 
-[node name="JoinButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer"]
+[node name="JoinButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer" unique_id=388578070]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Join"
 
-[node name="StartButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer"]
+[node name="StartButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer" unique_id=794391936]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Start"
 
-[node name="DrawButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer"]
+[node name="DrawButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer" unique_id=1145295938]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Draw"
 
-[node name="SnapshotButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer"]
+[node name="SnapshotButton" type="Button" parent="BGPanel/MarginContainer/VBoxContainer" unique_id=1963977107]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Snapshot"
 
-[node name="VBoxContainer2" type="VBoxContainer" parent="BGPanel/MarginContainer"]
+[node name="VBoxContainer2" type="VBoxContainer" parent="BGPanel/MarginContainer" unique_id=1590926237]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 4
 
-[node name="StatusLabel" type="Label" parent="BGPanel/MarginContainer/VBoxContainer2"]
+[node name="StatusLabel" type="Label" parent="BGPanel/MarginContainer/VBoxContainer2" unique_id=1951707058]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
@@ -158,19 +169,19 @@ text = "Host or join, then start a Macau match."
 horizontal_alignment = 2
 autowrap_mode = 2
 
-[node name="TurnLabel" type="Label" parent="BGPanel/MarginContainer/VBoxContainer2"]
+[node name="TurnLabel" type="Label" parent="BGPanel/MarginContainer/VBoxContainer2" unique_id=1634760434]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Lobby: 1/6 players"
 horizontal_alignment = 2
 
-[node name="DrawStateLabel" type="Label" parent="BGPanel/MarginContainer/VBoxContainer2"]
+[node name="DrawStateLabel" type="Label" parent="BGPanel/MarginContainer/VBoxContainer2" unique_id=1590500260]
 unique_name_in_owner = true
 layout_mode = 2
 text = "1 deck | draw 0 | discard 0 | no active draw"
 horizontal_alignment = 2
 
-[node name="RulesLabel" type="Label" parent="BGPanel/MarginContainer"]
+[node name="RulesLabel" type="Label" parent="BGPanel/MarginContainer" unique_id=539106060]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 8

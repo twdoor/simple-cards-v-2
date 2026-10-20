@@ -12,7 +12,7 @@ config_version=5
 
 config/name="SimpleCards"
 run/main_scene="uid://brvun6l03k0hu"
-config/features=PackedStringArray("4.5", "GL Compatibility")
+config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://github/assets/simple_card_v2.png"
 
 [autoload]
@@ -31,7 +31,7 @@ enabled=PackedStringArray("res://addons/simple_cards/plugin.cfg")
 
 [godots]
 
-version_hint="4.5+"
+version_hint="4.7.2+"
 
 [input]
 

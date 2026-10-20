@@ -2,12 +2,20 @@
 
 ## Unreleased — Stabilization
 
+- StackShape has an optional Randomization group with per-axis position limits, rotation limits, and a seed. Variation stays stable per card during rearrangement; disabling it restores a straight stack.
+
+- Bobbing restores a layout’s resting position when reparented, preventing cards from retaining a visual offset after moving into a stack. It animates position without changing the face’s size offsets.
+
+- CardLayout now renders direct UI; optional CardViewportLayout provides composed textures for whole-card shaders. New Layout discovers custom named subclasses and uses their starter templates. Default and standard-deck faces no longer create per-card viewports.
+
+- Card Layouts now uses a movable editor dock with side, bottom, and floating placements, plus a responsive list/details layout for narrow and wide panels. Requires Godot 4.7.2+.
+
 - Interrupted finite scale, fade, and bob animations finish their pending waits during layout teardown. Overlapping focus animations use separate cleanup callbacks, preventing duplicate signal connections.
 - Delayed idle-animation restarts use callbacks that disconnect on container removal, avoiding retained timers during multiplayer teardown.
 - Solitaire recycle undo restores every waste card face up, preserving the visible fan.
 - Card presses keep drag detection active when the pointer leaves before the next frame.
-- Rejected and same-pile Solitaire drops no longer create undo records; added viewport-input gameplay checks and the example project’s missing gamepad accept binding.
-- Extracted editor card/container previews and network snapshot handling from the core classes, preserving public APIs and saved scenes. Added editor preview lifecycle coverage and restored container previews on tree re-entry.
+- Rejected and same-pile Solitaire drops no longer create undo records; added the example project’s missing gamepad accept binding.
+- Extracted editor card/container previews and network snapshot handling from the core classes, preserving public APIs and saved scenes. Restored container previews on tree re-entry.
 - Fixed idle-animation tween retention and delayed idle callbacks accessing freed cards.
 - Slot-to-slot swaps now respect both slots' placement conditions and emit normal remove/add notifications.
 - Server-authoritative requests resolve on disconnect or manager removal, and offline board cleanup no longer queries an absent multiplayer peer.
@@ -15,7 +23,6 @@
 - Fixed Macau seat remapping broadcasting incomplete client state during multi-peer joins.
 - Fixed addon-only first-install compilation and autoload persistence across editor shutdown; disabling the plugin still removes its own autoload.
 - Export the layout-cache JSON with the plugin, and avoid rewriting unchanged generated layout IDs.
-- Added isolated validation, 4.5.1/4.5.2 CI, core and multiplayer regressions, two-/six-player Macau checks, exported-pack verification, and snapshot measurements. See [Validation](VALIDATION.md), including the narrowly recorded Godot script-retention exception and manual release checks.
 
 ## Version 2.13
 

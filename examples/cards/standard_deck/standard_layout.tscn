@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://lnx1x5uhufo4"]
+[gd_scene format=3 uid="uid://lnx1x5uhufo4"]
 
 [ext_resource type="Script" uid="uid://cscn0sc5gt01y" path="res://examples/cards/standard_deck/standard_layout.gd" id="1_2dmvv"]
 [ext_resource type="Script" uid="uid://c535lguvmfhkb" path="res://addons/simple_cards/card/card_layout/card_animation_resource/prebuild_animations/scale_animation.gd" id="2_cho7o"]
@@ -31,7 +31,7 @@ corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 corner_detail = 16
 
-[node name="CardLayout" type="SubViewportContainer"]
+[node name="CardLayout" type="Container" unique_id=1665435466]
 offset_right = 80.0
 offset_bottom = 112.0
 script = ExtResource("1_2dmvv")
@@ -44,13 +44,11 @@ metadata/layout_id = "standard_layout"
 metadata/tags = ["front"]
 metadata/_custom_type_script = "uid://dm115oleoggyt"
 
-[node name="SubViewport" type="SubViewport" parent="."]
-transparent_bg = true
-handle_input_locally = false
-size = Vector2i(80, 112)
-render_target_update_mode = 4
+[node name="Content" type="Control" parent="."]
+layout_mode = 2
 
-[node name="CardColor" type="PanelContainer" parent="SubViewport"]
+
+[node name="CardColor" type="PanelContainer" parent="Content" unique_id=31199842]
 unique_name_in_owner = true
 self_modulate = Color(1, 0.88235295, 0.81960785, 1)
 anchors_preset = 15
@@ -60,7 +58,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_jahet")
 
-[node name="Texture" type="TextureRect" parent="SubViewport"]
+[node name="Texture" type="TextureRect" parent="Content" unique_id=2082568373]
 unique_name_in_owner = true
 anchors_preset = 15
 anchor_right = 1.0
@@ -70,7 +68,7 @@ grow_vertical = 2
 texture = ExtResource("3_2yl1v")
 stretch_mode = 3
 
-[node name="MarginContainer" type="MarginContainer" parent="SubViewport"]
+[node name="MarginContainer" type="MarginContainer" parent="Content" unique_id=356276679]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -81,12 +79,12 @@ theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 6
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="SubViewport/MarginContainer"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="Content/MarginContainer" unique_id=523016408]
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
 
-[node name="Value2" type="Label" parent="SubViewport/MarginContainer/HBoxContainer2"]
+[node name="Value2" type="Label" parent="Content/MarginContainer/HBoxContainer2" unique_id=266221668]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.14117648, 0.14117648, 0.14117648, 1)
@@ -94,7 +92,7 @@ theme_override_fonts/font = ExtResource("2_jahet")
 text = "Test"
 vertical_alignment = 1
 
-[node name="Texture2" type="TextureRect" parent="SubViewport/MarginContainer/HBoxContainer2"]
+[node name="Texture2" type="TextureRect" parent="Content/MarginContainer/HBoxContainer2" unique_id=1894252015]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 2
@@ -102,7 +100,7 @@ texture = ExtResource("3_2yl1v")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="MarginContainer2" type="MarginContainer" parent="SubViewport"]
+[node name="MarginContainer2" type="MarginContainer" parent="Content" unique_id=1522935363]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -118,12 +116,12 @@ theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 6
 
-[node name="HBoxContainer" type="HBoxContainer" parent="SubViewport/MarginContainer2"]
+[node name="HBoxContainer" type="HBoxContainer" parent="Content/MarginContainer2" unique_id=1602824395]
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
 
-[node name="Value1" type="Label" parent="SubViewport/MarginContainer2/HBoxContainer"]
+[node name="Value1" type="Label" parent="Content/MarginContainer2/HBoxContainer" unique_id=687406357]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.14117648, 0.14117648, 0.14117648, 1)
@@ -131,7 +129,7 @@ theme_override_fonts/font = ExtResource("2_jahet")
 text = "Test"
 vertical_alignment = 1
 
-[node name="Texture1" type="TextureRect" parent="SubViewport/MarginContainer2/HBoxContainer"]
+[node name="Texture1" type="TextureRect" parent="Content/MarginContainer2/HBoxContainer" unique_id=1382904147]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 2

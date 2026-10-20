@@ -11,6 +11,8 @@
 ## - PlayedHand: staging area for played cards (line shape)
 extends CanvasLayer
 
+const PreviewPile = preload("res://examples/balatro/preview_pile.gd")
+
 @export var deck: CardDeck
 @export var use_stagger_draw: bool = true
 @export var stagger_delay: float = 0.075
@@ -21,8 +23,8 @@ extends CanvasLayer
 @onready var combo_label: Label = $ComboLabel
 
 
-@onready var draw: CardPile = %Draw
-@onready var discard: CardPile = %Discard
+@onready var draw: PreviewPile = %Draw
+@onready var discard: PreviewPile = %Discard
 
 @onready var gold_button: Button = %GoldButton
 @onready var silv_button: Button = %SilvButton
@@ -40,8 +42,6 @@ extends CanvasLayer
 @onready var sort_value_button: Button = %SortValueButton
 
 @onready var preview_hand: CardHand = %PreviewHand
-@onready var preview_draw: Button = %PreviewDraw
-@onready var preview_discard: Button = %PreviewDiscard
 var preview_visible: bool = false
 var current_preview_pile: CardPile
 
@@ -62,9 +62,9 @@ func _ready() -> void:
 	play_button.pressed.connect(_on_play_button)
 	sort_suit_button.pressed.connect(_on_sort_suit_pressed)
 	sort_value_button.pressed.connect(_on_sort_value_pressed)
-	preview_draw.pressed.connect(_on_preview_draw_pressed)
-	preview_discard.pressed.connect(_on_preview_discard_pressed)
-
+	draw.clicked.connect(_on_pile_clicked.bind(draw))
+	discard.clicked.connect(_on_pile_clicked.bind(discard))
+	preview_hand.hide()
 	card_deck_manager.setup()
 	deal()
 
@@ -243,6 +243,8 @@ func _set_ui_enabled(enabled: bool) -> void:
 
 
 func _set_interaction_enabled(enabled: bool) -> void:
+	draw.click_enabled = enabled
+	discard.click_enabled = enabled
 	discard_button.disabled = !enabled
 	play_button.disabled = !enabled
 	sort_suit_button.disabled = !enabled
@@ -262,31 +264,26 @@ func _set_interaction_enabled(enabled: bool) -> void:
 
 #region Preview Functions
 
-func _on_preview_discard_pressed() -> void:
-	if preview_visible and current_preview_pile == discard:
+func _on_pile_clicked(pile: PreviewPile) -> void:
+	if not pile.click_enabled:
+		return
+	if preview_visible and current_preview_pile == pile:
 		_close_preview()
 		return
-
-	if discard.is_empty():
-		return
-
-	_show_preview(discard)
+	if not pile.is_empty():
+		_show_preview(pile)
 
 
-func _on_preview_draw_pressed() -> void:
-	if preview_visible and current_preview_pile == draw:
+func _unhandled_key_input(event: InputEvent) -> void:
+	if preview_visible and event.is_action_pressed("ui_cancel"):
 		_close_preview()
-		return
-
-	if draw.is_empty():
-		return
-
-	_show_preview(draw)
+		get_viewport().set_input_as_handled()
 
 
 func _show_preview(pile: CardPile) -> void:
 	preview_visible = true
 	current_preview_pile = pile
+	preview_hand.show()
 	_set_ui_enabled(false)
 	show_pile_preview_hand(current_preview_pile.get_cards())
 	_sort_preview(preview_hand)
@@ -299,6 +296,7 @@ func _close_preview() -> void:
 		hide_pile_preview_hand()
 	preview_visible = false
 	current_preview_pile = null
+	preview_hand.hide()
 	_set_ui_enabled(true)
 
 

@@ -11,6 +11,12 @@ var tag_filter: OptionButton
 var refresh_button: Button
 var create_button: Button
 var details_panel: VBoxContainer
+var layout_split: SplitContainer
+var details_scroll: ScrollContainer
+var details_content: BoxContainer
+var empty_details: Label
+var empty_list: Label
+var _editor_scale: float = 1.0
 
 var id_edit: LineEdit
 var tags_edit: LineEdit
@@ -28,6 +34,10 @@ var create_id_input: LineEdit
 var create_tags_input: LineEdit
 var create_path_input: LineEdit
 var create_error_label: Label
+var create_type_picker: OptionButton
+var create_type_description: Label
+var _layout_types: Array[Dictionary] = []
+var _preview_pending: Dictionary = {}
 
 var delete_dialog: ConfirmationDialog
 
@@ -54,28 +64,39 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	custom_minimum_size = Vector2(500, 200)
+	if editor_interface:
+		_editor_scale = editor_interface.get_editor_scale()
+	custom_minimum_size = Vector2(240, 200) * _editor_scale
+	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	size_flags_vertical = Control.SIZE_EXPAND_FILL
 
-	var hsplit = HSplitContainer.new()
-	hsplit.anchor_right = 1.0
-	hsplit.anchor_bottom = 1.0
-	add_child(hsplit)
+	var margin = MarginContainer.new()
+	add_child(margin)
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for side in ["left", "top", "right", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, roundi(8 * _editor_scale))
 
-	var left_panel = VBoxContainer.new()
-	left_panel.custom_minimum_size = Vector2(350, 100)
-	hsplit.add_child(left_panel)
-
-	var toolbar = HBoxContainer.new()
-	left_panel.add_child(toolbar)
+	layout_split = SplitContainer.new()
+	margin.add_child(layout_split)
+	var library = VBoxContainer.new()
+	library.custom_minimum_size = Vector2(200, 100) * _editor_scale
+	library.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	library.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout_split.add_child(library)
 
 	search_box = LineEdit.new()
 	search_box.placeholder_text = "Search layouts..."
-	search_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	search_box.clear_button_enabled = true
 	search_box.text_changed.connect(_on_search_changed)
-	toolbar.add_child(search_box)
+	library.add_child(search_box)
 
+	var toolbar = HBoxContainer.new()
+	library.add_child(toolbar)
 	tag_filter = OptionButton.new()
-	tag_filter.custom_minimum_size.x = 50
+	tag_filter.fit_to_longest_item = false
+	tag_filter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tag_filter.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	tag_filter.tooltip_text = "Filter by tag"
 	tag_filter.item_selected.connect(_on_tag_filter_changed)
 	toolbar.add_child(tag_filter)
 
@@ -87,6 +108,7 @@ func _build_ui() -> void:
 
 	create_button = Button.new()
 	create_button.icon = new_icon
+	create_button.text = "New"
 	create_button.tooltip_text = "Create a new layout"
 	create_button.pressed.connect(_on_create_pressed)
 	toolbar.add_child(create_button)
@@ -94,101 +116,132 @@ func _build_ui() -> void:
 	layout_scroll = ScrollContainer.new()
 	layout_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	layout_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left_panel.add_child(layout_scroll)
-
+	library.add_child(layout_scroll)
 	layout_list = VBoxContainer.new()
 	layout_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout_scroll.add_child(layout_list)
 
-	var right_scroll = ScrollContainer.new()
-	right_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hsplit.add_child(right_scroll)
+	empty_list = Label.new()
+	empty_list.text = "No layouts match your search."
+	empty_list.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	empty_list.visible = false
+	library.add_child(empty_list)
 
+	var details = VBoxContainer.new()
+	details.custom_minimum_size = Vector2(200, 80) * _editor_scale
+	details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	details.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout_split.add_child(details)
+
+	empty_details = Label.new()
+	empty_details.text = "Select a layout to edit its details."
+	empty_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	empty_details.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	empty_details.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	empty_details.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	details.add_child(empty_details)
+
+	details_scroll = ScrollContainer.new()
+	details_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	details_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	details.add_child(details_scroll)
 	details_panel = VBoxContainer.new()
 	details_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right_scroll.add_child(details_panel)
-
+	details_scroll.add_child(details_panel)
 	_build_details_panel()
 	_set_details_visible(false)
+	resized.connect(_update_responsive_layout)
+	details_scroll.resized.connect(_update_details_layout)
+	_update_responsive_layout()
+
+
+func _update_responsive_layout() -> void:
+	var stacked := size.x < 620 * _editor_scale
+	if layout_split.vertical != stacked:
+		layout_split.vertical = stacked
+		# Offsets from the other orientation would squash one of the panes.
+		layout_split.split_offset = 0
+	_update_details_layout()
+
+
+func _update_details_layout() -> void:
+	details_content.vertical = details_scroll.size.x < 380 * _editor_scale
 
 
 func _build_details_panel() -> void:
-	var title_bar := MarginContainer.new()
-	title_bar.add_theme_constant_override("margin_right", 6)
+	var title_bar = HBoxContainer.new()
 	details_panel.add_child(title_bar)
-
 	var title = Label.new()
 	title.text = "Layout Details"
-	title.add_theme_font_size_override("font_size", 18)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_bar.add_child(title)
-
 	delete_button = Button.new()
 	delete_button.pressed.connect(_on_delete_pressed)
-	delete_button.size_flags_horizontal = Control.SIZE_SHRINK_END
-	if delete_icon:
-		delete_button.icon = delete_icon
+	delete_button.icon = delete_icon
 	title_bar.add_child(delete_button)
-
 	details_panel.add_child(HSeparator.new())
 
-	# Content row: info fields on the left, preview image on the right
-	var content_hbox = HBoxContainer.new()
-	content_hbox.add_theme_constant_override("separation", 12)
-	details_panel.add_child(content_hbox)
+	details_content = BoxContainer.new()
+	details_content.add_theme_constant_override("separation", roundi(12 * _editor_scale))
+	details_panel.add_child(details_content)
+	var info = VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", roundi(6 * _editor_scale))
+	details_content.add_child(info)
 
-	var info_vbox = VBoxContainer.new()
-	info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info_vbox.add_theme_constant_override("separation", 6)
-	content_hbox.add_child(info_vbox)
+	var id_title = Label.new()
+	id_title.text = "Layout ID"
+	info.add_child(id_title)
+	id_edit = LineEdit.new()
+	id_edit.tooltip_text = "Press Enter to save the layout ID"
+	id_edit.text_submitted.connect(_on_id_submitted)
+	info.add_child(id_edit)
+
+	var tags_title = Label.new()
+	tags_title.text = "Tags"
+	info.add_child(tags_title)
+	tags_edit = LineEdit.new()
+	tags_edit.placeholder_text = "poker, fantasy, ..."
+	tags_edit.tooltip_text = "Comma-separated tags. Press Enter to save."
+	tags_edit.text_submitted.connect(_on_tags_submitted)
+	info.add_child(tags_edit)
 
 	var path_title = Label.new()
-	path_title.text = "Path:"
-	info_vbox.add_child(path_title)
+	path_title.text = "Scene"
+	info.add_child(path_title)
 	path_label = Label.new()
 	path_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	path_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	path_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-	info_vbox.add_child(path_label)
+	path_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.add_child(path_label)
 
-	info_vbox.add_child(HSeparator.new())
-
-	var id_section = HBoxContainer.new()
-	info_vbox.add_child(id_section)
-	var id_title = Label.new()
-	id_title.text = "Layout ID:"
-	id_section.add_child(id_title)
-	id_edit = LineEdit.new()
-	id_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	id_edit.text_submitted.connect(_on_id_submitted)
-	id_section.add_child(id_edit)
-
-	var tags_section = HBoxContainer.new()
-	info_vbox.add_child(tags_section)
-	var tags_title = Label.new()
-	tags_title.text = "Tags (comma-separated):"
-	tags_section.add_child(tags_title)
-	tags_edit = LineEdit.new()
-	tags_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	tags_edit.text_submitted.connect(_on_tags_submitted)
-	tags_section.add_child(tags_edit)
-
-	# Preview image on the right
 	preview_texture = TextureRect.new()
 	preview_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	preview_texture.custom_minimum_size = Vector2(80, 112)
+	preview_texture.custom_minimum_size = Vector2(80, 112) * _editor_scale
 	preview_texture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
-	content_hbox.add_child(preview_texture)
+	details_content.add_child(preview_texture)
 
 
 func _build_create_dialog() -> void:
 	create_dialog = ConfirmationDialog.new()
 	create_dialog.title = "Create New Card Layout"
-	create_dialog.size = Vector2i(500, 280)
+	create_dialog.size = Vector2i(500, 420) * _editor_scale
 	add_child(create_dialog)
 
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
+
+	var type_label = Label.new()
+	type_label.text = "Layout type"
+	vbox.add_child(type_label)
+	create_type_picker = OptionButton.new()
+	create_type_picker.fit_to_longest_item = false
+	create_type_picker.item_selected.connect(_on_layout_type_selected)
+	vbox.add_child(create_type_picker)
+	create_type_description = Label.new()
+	create_type_description.custom_minimum_size.x = 440 * _editor_scale
+	create_type_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(create_type_description)
 
 	var id_label = Label.new()
 	id_label.text = "Layout ID (required):"
@@ -203,7 +256,7 @@ func _build_create_dialog() -> void:
 	tags_label.text = "Tags (optional, comma-separated):"
 	vbox.add_child(tags_label)
 	create_tags_input = LineEdit.new()
-	create_tags_input.placeholder_text = "poker, tarrot, style"
+	create_tags_input.placeholder_text = "poker, tarot, style"
 	create_tags_input.text_changed.connect(_on_create_input_changed)
 	vbox.add_child(create_tags_input)
 
@@ -244,7 +297,8 @@ func _build_delete_dialog() -> void:
 
 
 func _set_details_visible(visible: bool) -> void:
-	details_panel.visible = visible
+	details_scroll.visible = visible
+	empty_details.visible = not visible
 
 
 #region Layout List Item
@@ -271,6 +325,9 @@ func _create_layout_item(layout_data: Dictionary) -> Control:
 	var label_button = Button.new()
 	label_button.text = layout_id
 	label_button.flat = true
+	label_button.toggle_mode = true
+	label_button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	label_button.tooltip_text = layout_id + "\n" + path
 	label_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	label_button.pressed.connect(_on_item_selected.bind(item, path))
@@ -299,7 +356,9 @@ func _create_layout_item(layout_data: Dictionary) -> Control:
 
 func _populate_layout_list() -> void:
 	for child in layout_list.get_children():
+		layout_list.remove_child(child)
 		child.queue_free()
+	selected_item = null
 
 	var search_text = search_box.text.to_lower()
 	var selected_tag = ""
@@ -332,6 +391,8 @@ func _populate_layout_list() -> void:
 		if path == selected_path:
 			_highlight_item(item)
 
+	empty_list.visible = layout_list.get_child_count() == 0
+
 
 func _populate_tag_filter() -> void:
 	var current_selection = ""
@@ -362,6 +423,7 @@ func _populate_details(path: String) -> void:
 	var is_default = cache._is_default_layout(path)
 
 	path_label.text = path
+	path_label.tooltip_text = path
 	id_edit.text = data.layout_id
 	tags_edit.text = ", ".join(data.tags)
 
@@ -375,66 +437,66 @@ func _populate_details(path: String) -> void:
 
 
 func _request_preview(path: String) -> void:
-	if not preview_texture: return
-
-	# Return cached preview instantly
+	if not preview_texture:
+		return
 	if path in _preview_cache:
 		preview_texture.texture = _preview_cache[path]
 		return
-
 	preview_texture.texture = null
-
-	if not ResourceLoader.exists(path): return
-	var scene = load(path)
-	if not scene: return
-
-	var instance = scene.instantiate()
-	if not instance:
+	if path in _preview_pending or not ResourceLoader.exists(path):
 		return
-	add_child(instance)
-	if instance is Control:
-		instance.position = Vector2(-100000, -100000)
-		instance.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	# Find the SubViewport inside the layout
-	var sub_vp: SubViewport = null
-	for child in instance.get_children():
-		if child is SubViewport:
-			sub_vp = child
-			break
-
-	if not sub_vp:
-		instance.queue_free()
+	var scene := load(path) as PackedScene
+	if not scene:
+		return
+	var instance := scene.instantiate()
+	if not instance is CardLayout:
+		instance.free()
 		return
 
-	sub_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-
+	# A temporary capture viewport previews both direct and viewport-backed faces.
+	# It is released after capture; direct runtime layouts do not need a viewport.
+	var capture := SubViewport.new()
+	capture.transparent_bg = true
+	capture.disable_3d = true
+	capture.gui_disable_input = true
+	capture.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	capture.size = Vector2i(80, 112)
+	_preview_pending[path] = true
+	add_child(capture)
+	capture.add_child(instance)
+	capture.size = instance.card_size
+	instance.position = Vector2.ZERO
+	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 
-	if not is_instance_valid(sub_vp):
-		instance.queue_free()
-		return
-
-	# Capture at the exact card size
-	var vp_texture = sub_vp.get_texture()
-	if vp_texture:
-		var image = vp_texture.get_image()
+	if is_instance_valid(capture):
+		var image := capture.get_texture().get_image()
 		if image and not image.is_empty():
-			var tex = ImageTexture.create_from_image(image)
-			_preview_cache[path] = tex
-			if preview_texture and selected_path == path:
-				preview_texture.texture = tex
-
-	instance.queue_free()
+			var texture := ImageTexture.create_from_image(image)
+			_preview_cache[path] = texture
+			if is_instance_valid(preview_texture) and selected_path == path:
+				preview_texture.texture = texture
+		capture.queue_free()
+	_preview_pending.erase(path)
 
 
 func _highlight_item(item: Control) -> void:
-	if selected_item and is_instance_valid(selected_item):
-		selected_item.modulate = Color.WHITE
-
+	if is_instance_valid(selected_item):
+		_set_item_selected(selected_item, false)
 	selected_item = item
-	if item:
-		item.modulate = Color(1.2, 1.2, 1.3)
+	_set_item_selected(item, true)
+
+
+func _set_item_selected(item: Control, selected: bool) -> void:
+	if not is_instance_valid(item):
+		return
+	# Find the selection action, including rows created before a tool-script reload.
+	var select_action := _on_item_selected.bind(item, str(item.get_meta("path", "")))
+	for child in item.get_children():
+		if child is Button and child.pressed.is_connected(select_action):
+			child.toggle_mode = true
+			child.set_pressed_no_signal(selected)
+			return
 
 #endregion
 
@@ -462,12 +524,66 @@ func _on_refresh_pressed() -> void:
 	cache.scan_project()
 
 
+func _populate_layout_types() -> void:
+	_layout_types.clear()
+	create_type_picker.clear()
+	var classes: Dictionary = {}
+	for entry in ProjectSettings.get_global_class_list():
+		classes[str(entry.class)] = entry
+	var names: Array = classes.keys()
+	names.sort()
+	# Built-ins first, followed by project-defined descendants (including indirect ones).
+	names.erase("CardLayout")
+	names.erase("CardViewportLayout")
+	names.push_front("CardViewportLayout")
+	names.push_front("CardLayout")
+	for type_name in names:
+		var ancestor: String = type_name
+		var visited: Dictionary = {}
+		while ancestor != "CardLayout" and ancestor in classes and ancestor not in visited:
+			visited[ancestor] = true
+			ancestor = str(classes[ancestor].base)
+		if ancestor != "CardLayout" or type_name not in classes:
+			continue
+		var script := load(str(classes[type_name].path)) as Script
+		if not script or script.is_abstract() or not _has_default_constructor(script):
+			continue
+		_layout_types.append({"name": type_name, "path": script.resource_path})
+		create_type_picker.add_item(type_name)
+	if not _layout_types.is_empty():
+		create_type_picker.select(0)
+		_on_layout_type_selected(0)
+
+
+func _has_default_constructor(script: Script) -> bool:
+	var current := script
+	while current:
+		for method in current.get_script_method_list():
+			if method.name == "_init":
+				return method.args.size() <= method.default_args.size()
+		current = current.get_base_script()
+	return true
+
+
+func _on_layout_type_selected(index: int) -> void:
+	var type_name: String = _layout_types[index].name
+	match type_name:
+		"CardLayout":
+			create_type_description.text = "Direct UI. A lightweight container for labels, artwork, and other Controls."
+		"CardViewportLayout":
+			create_type_description.text = "Viewport rendering. Apply a shader to the composed card face; edit visuals inside SubViewport."
+		_:
+			create_type_description.text = "Custom layout: %s" % _layout_types[index].path
+	_validate_create_dialog()
+
+
 func _on_create_pressed() -> void:
+	_populate_layout_types()
 	create_id_input.text = "my_custom_layout"
 	create_tags_input.text = ""
 	create_path_input.text = ""
 	_validate_create_dialog()
-	create_dialog.popup_centered()
+	create_dialog.popup_centered(Vector2i(500, 420) * _editor_scale)
 	create_id_input.grab_focus()
 	create_id_input.select_all()
 
@@ -551,7 +667,9 @@ func _validate_create_dialog() -> void:
 	var path = create_path_input.text.strip_edges()
 	var error_msg = ""
 
-	if layout_id.is_empty():
+	if create_type_picker.selected < 0 or _layout_types.is_empty():
+		error_msg = "No creatable layout types found"
+	elif layout_id.is_empty():
 		error_msg = "Layout ID cannot be empty"
 	elif not layout_id.is_valid_identifier():
 		error_msg = "Layout ID cannot contain special characters"
@@ -595,11 +713,14 @@ func _on_browse_pressed() -> void:
 		file_dialog.queue_free()
 	)
 
-	add_child(file_dialog)
+	create_dialog.add_child(file_dialog)
 	file_dialog.popup_centered_ratio(0.6)
 
 
 func _on_create_confirmed() -> void:
+	_validate_create_dialog()
+	if create_dialog.get_ok_button().disabled:
+		return
 	var layout_id = create_id_input.text.strip_edges()
 	var tags_str = create_tags_input.text.strip_edges()
 	var path = create_path_input.text.strip_edges()
@@ -615,12 +736,11 @@ func _on_create_confirmed() -> void:
 				tags.append(cleaned)
 	tags = cache._normalize_tags(tags)
 
-	var err = DirAccess.copy_absolute(LayoutCache.DEFAULT_LAYOUT_PATH, path)
+	var err := _save_new_layout(_layout_types[create_type_picker.selected].path, path, layout_id, tags)
 	if err != OK:
-		push_error("Failed to copy layout: %s" % error_string(err))
+		create_error_label.text = "Could not create layout: %s" % error_string(err)
+		create_dialog.popup_centered()
 		return
-
-	_prepare_new_scene(path, layout_id, tags)
 
 	if editor_interface:
 		editor_interface.get_resource_filesystem().scan()
@@ -632,46 +752,44 @@ func _on_create_confirmed() -> void:
 		editor_interface.open_scene_from_path(path)
 
 
-func _prepare_new_scene(scene_path: String, layout_id: String, tags: Array[String]) -> void:
-	var file = FileAccess.open(scene_path, FileAccess.READ)
-	if not file:
-		return
-
-	var content = file.get_as_text()
-	var lines = content.split("\n")
-
-	for i in range(lines.size()):
-		if "[gd_scene" in lines[i]:
-			var line = lines[i]
-			var uid_start = line.find("uid=")
-			if uid_start != -1:
-				var uid_end = line.find('"', uid_start + 5)
-				if uid_end != -1:
-					lines[i] = line.substr(0, uid_start) + line.substr(uid_end + 1)
-					lines[i] = lines[i].replace("  ", " ").strip_edges()
-			break
-
-	var node_line_idx = -1
-	for i in range(lines.size()):
-		if lines[i].strip_edges().begins_with("[node"):
-			node_line_idx = i
-			break
-
-	if node_line_idx != -1:
-		var metadata_lines: Array[String] = []
-		metadata_lines.append('metadata/is_layout = true')
-		metadata_lines.append('metadata/layout_id = %s' % JSON.stringify(layout_id))
-
-		var layout_tags_str = "[]"
-		if not tags.is_empty():
-			layout_tags_str = JSON.stringify(tags)
-		metadata_lines.append('metadata/tags = %s' % layout_tags_str)
-
-		for i in range(metadata_lines.size()):
-			lines.insert(node_line_idx + 1 + i, metadata_lines[i])
-
-	var out_file = FileAccess.open(scene_path, FileAccess.WRITE)
-	if out_file:
-		out_file.store_string("\n".join(lines))
+func _save_new_layout(script_path: String, scene_path: String, layout_id: String, tags: Array[String]) -> Error:
+	var script := load(script_path) as Script
+	if not script or script.is_abstract() or not _has_default_constructor(script):
+		return ERR_CANT_CREATE
+	var prototype = script.new()
+	if not prototype is CardLayout:
+		if prototype is Node:
+			prototype.free()
+		return ERR_INVALID_DATA
+	var template: PackedScene = prototype.get_layout_template()
+	prototype.free()
+	if not template:
+		return ERR_CANT_CREATE
+	var instance := template.instantiate()
+	if not instance is CardLayout:
+		instance.free()
+		return ERR_INVALID_DATA
+	var layout := instance as CardLayout
+	var template_size := layout.card_size
+	if layout.get_script() != script:
+		layout.set_script(script)
+		layout.card_size = template_size
+	layout.name = "CardLayout"
+	layout.set_meta("is_layout", true)
+	layout.set_meta("layout_id", layout_id)
+	# Keep metadata untyped so the cache's scene scanner can read its array syntax.
+	var layout_tags: Array = []
+	layout_tags.append_array(tags)
+	layout.set_meta("tags", layout_tags)
+	# Registered script classes are identified by their attached script. This
+	# editor-only metadata expects a UID, not a resource path, and may be inherited
+	# from a starter scene for a different type.
+	layout.remove_meta("_custom_type_script")
+	var packed := PackedScene.new()
+	var error := packed.pack(layout)
+	layout.free()
+	if error != OK:
+		return error
+	return ResourceSaver.save(packed, scene_path)
 
 #endregion

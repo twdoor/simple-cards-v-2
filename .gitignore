@@ -15,6 +15,3 @@ export_credentials.cfg
 .mono/
 data_*/
 mono_crash.*.json
-
-# Python validation helpers
-__pycache__/

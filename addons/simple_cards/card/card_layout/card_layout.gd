@@ -1,11 +1,9 @@
-##This will represent the visual basis for a card face.
-##
-##[color=green]Use the "Card Layouts" tab at the bottom for a quick setup![/color][br]
-##Alone is pretty much useless. Use other nodes to build your best layout for the cards that need to be made.[br]
-##The Subviewport required by this node will also give the card size. (Subviewport.size = card.size)
+## Base container for a card face, rendered directly in the surrounding canvas.
+## Add Controls as children to build the face. Use [CardViewportLayout] when a
+## shader needs a texture containing the entire face.
 @tool
 @icon("uid://dfeet1bp3au3l")
-class_name CardLayout extends SubViewportContainer
+class_name CardLayout extends Container
 
 ##Emitted from _layout_ready() after ready-time initialization.
 signal layout_ready()
@@ -34,8 +32,8 @@ signal focus_out_completed()
 ##Emitted at the end of setup()
 signal setup_completed(card: Card, resource: CardResource)
 
-##Size of the card in pixels. Updates the [SubViewport] and notifies the parent [Card] when changed.
-##[br]Defaults to [code]Vector2i.ZERO[/code] which auto-initializes from the SubViewport's size on [method _ready].
+## Size of the card in pixels. Sizes the layout and notifies its parent [Card].
+## Zero initializes from the scene's size, falling back to 80 by 112 pixels.
 @export_custom(PROPERTY_HINT_NONE, "suffix:px") var card_size: Vector2i = Vector2i.ZERO:
 	set(value):
 		if card_size == value: return
@@ -100,18 +98,38 @@ func _layout_ready() -> void:
 
 func _ready() -> void:
 	if card_size == Vector2i.ZERO:
-		var sub_vp = get_node_or_null("SubViewport")
-		if sub_vp and sub_vp is SubViewport and sub_vp.size != Vector2i.ZERO:
-			card_size = sub_vp.size
+		card_size = _get_initial_card_size()
+	else:
+		_apply_card_size()
 	_layout_ready()
 
-## Syncs the child [SubViewport] size to [member card_size] and emits [signal card_size_changed].
+
+func _get_initial_card_size() -> Vector2i:
+	return Vector2i(size) if size.x > 0 and size.y > 0 else Vector2i(80, 112)
+
+
+## Applies the face dimensions and notifies the parent card.
 func _apply_card_size() -> void:
-	if !is_inside_tree(): return
-	var sub_vp = get_node_or_null("SubViewport")
-	if sub_vp and sub_vp is SubViewport:
-		sub_vp.size = card_size
+	if not is_inside_tree() or card_size == Vector2i.ZERO:
+		return
+	custom_minimum_size = Vector2(card_size)
+	size = Vector2(card_size)
+	queue_sort()
 	card_size_changed.emit(card_size)
+
+
+## Fits direct child Controls to the card face. Nest containers for other arrangements.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_SORT_CHILDREN:
+		for child in get_children():
+			if child is Control and not child.is_set_as_top_level():
+				fit_child_in_rect(child, Rect2(Vector2.ZERO, size))
+
+
+## Scene used by the editor's New Layout dialog for this layout type.
+## Override to provide a custom node hierarchy. Called before entering the tree.
+func get_layout_template() -> PackedScene:
+	return load("res://addons/simple_cards/card/card_layout/default_card_layout.tscn")
 
 
 ##Used when a [Card] initializes a layout, sets the card/resource references, updates the display,

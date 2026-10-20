@@ -201,13 +201,13 @@ enum Suit { HEARTS, DIAMONDS, CLUBS, SPADES }
 
 ### <img src="assets/icon_card_layout.png"> CardLayout
 
-Base class for card visuals. A `@tool` `SubViewportContainer` that renders the card face.
+Base class for card visuals. A `@tool` `Container` that renders ordinary child Controls directly. Its direct child Controls fill the face; use nested containers or a child Control for custom arrangements.
 
 #### Properties
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `card_size` | `Vector2i` | Card size in pixels. Updates the SubViewport and notifies the parent Card reactively. Defaults to `Vector2i.ZERO` which auto-initializes from the SubViewport's size |
+| `card_size` | `Vector2i` | Card size in pixels. Sizes the layout and notifies the parent Card reactively. Zero initializes from the scene size, falling back to 80 × 112 |
 | `card_resource` | `CardResource` | Reference to the card's data |
 | `card_instance` | `Card` | Reference to the parent Card node |
 | `focus_in_animation` | `CardAnimationResource` | Animation to play when card gains focus |
@@ -258,6 +258,9 @@ func _focus_out() -> void
 # Called at the end of CardLayout._ready()
 # Override this instead of _ready() for layout-specific setup
 func _layout_ready() -> void
+
+# Starter scene for this type in the New Layout dialog (called before _ready)
+func get_layout_template() -> PackedScene
 ```
 
 **IMPORTANT!!** Overriding any of the flip/focus/update functions will also will override the signals emission. In this case you will need to implement the stared and completed signals yourself.
@@ -331,10 +334,18 @@ func _focus_in() -> void:
 
 **Notes**:
 
-- Set `card_size` to change the card dimensions at runtime — it updates the SubViewport, the Card, and re-arranges containers automatically. If left at `Vector2i.ZERO`, the size is read from the SubViewport on `_ready()` (backward compatible)
-- For using shaders, apply the shader material to the CardLayout for it be applied on the whole card
+- Set `card_size` to change the face dimensions at runtime. The Card and its container update automatically. A zero size initializes from the scene size.
+- For a shader on the whole composed face, use `CardViewportLayout` and assign the material to the layout. For direct layouts, assign materials to the individual visual Controls.
 
 ---
+
+### CardViewportLayout
+
+Optional subclass of `CardLayout` that draws the contents of a child `SubViewport` as a single texture. The layout root is a `Container`. Put the face's Controls inside `SubViewport`; assign a material to the layout to shade the composed image. `card_size` also resizes the viewport, and a zero size initializes from its size. The default template renders when its texture is visible and uses premultiplied-alpha blending. Custom whole-face shaders should use `render_mode blend_premul_alpha` when preserving the viewport texture’s premultiplied colors, or unpremultiply the sampled RGB when using ordinary mix blending.
+
+`get_layout_template()` returns the viewport starter scene. Custom named subclasses can override this method to supply a scene containing their required nodes and materials. Registered, concrete descendants of either layout base appear in **Card Layouts → New**; constructors must have no required arguments. Use `@tool` for live editor previews. Templates must have a `CardLayout` root, and the selected type's script is attached to the newly saved scene.
+
+Existing viewport scenes should use `extends CardViewportLayout` and a `Container` root, retaining their `SubViewport` hierarchy. The bundled default and standard-deck faces now use direct rendering.
 
 ### <img src="assets/icon_card_animation.png"> CardAnimationResource
 
@@ -362,7 +373,7 @@ func stop_animation(layout: CardLayout) -> void:
 
 ##### BobCardAnimation
 
-A looping idle animation that makes cards bob up and down. Uses `CardLayout` offset properties so it never interferes with card positioning or dragging. Phase variance creates a wave effect across the hand.
+A looping idle animation that makes cards bob up and down. Moves the `CardLayout` relative to its resting position without changing its size. Stopping or reparenting restores that resting position, so bobbing does not leave an offset in the next container. Phase variance creates a wave effect across the hand.
 
 - `amplitude: float` - Max vertical offset in pixels (default: 5.0)
 - `frequency: float` - Bobs per second in Hz (default: 1.5)
@@ -612,11 +623,17 @@ Focus navigation is 2D — all four directions move within the grid, respecting 
 
 **StackShape**
 
-Places all cards at the same position (stacked on top of each other). Useful for draw/discard piles via `CardPile`.
+Places all cards at the same position by default. Enable the **Randomization** group in the Inspector for a naturally uneven draw/discard pile.
 
 ```gdscript
 var stack = StackShape.new()
+stack.randomization_enabled = true
+stack.max_position_offset = Vector2(3, 3) # Up to ±3 pixels on each axis
+stack.max_rotation_degrees = 3.0         # Up to ±3 degrees
+stack.random_seed = 0                   # Change to choose another pattern
 ```
+
+Variation remains stable for each card instance when the stack rearranges, gains/loses cards, or changes order. New card instances receive new variation. Inspector changes update the stack immediately; disabling the group restores exact alignment.
 
 Cards arranged by `StackShape` are not focusable in any container — controller/keyboard input passes through to surrounding Controls. This makes it safe to place buttons (e.g. a "Draw" or "Discard" button) directly over a stack pile.
 

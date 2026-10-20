@@ -276,15 +276,15 @@ func _move_to_local(target: CardContainer, config: MoveConfig = null) -> void:
 	if !target.can_accept_card(self): return
 	if !config: config = MoveConfig.new()
 
-	var from_global = global_position
+	var from_center := get_global_transform() * pivot_offset
 
 	_reparent_to(target)
 	target._register_card(self, config.index)
 	kill_all_tweens()
-	global_position = from_global
+	global_position = from_center - get_global_transform().basis_xform(pivot_offset)
 
 	if target._batch_mode:
-		_move_origin = from_global
+		_move_origin = global_position
 		_move_config = config
 		_queue_interaction_state_sync()
 		return
@@ -409,7 +409,7 @@ func _on_mouse_entered() -> void:
 		return
 	hovered = true
 	card_hovered.emit()
-	if !CardGlobal.get_instance().current_held_item and focus_mode != Control.FOCUS_NONE:
+	if !CardGlobal.get_instance().current_held_item and get_focus_mode_with_override() != Control.FOCUS_NONE:
 		var focused_card := get_viewport().gui_get_focus_owner() as Card
 		if focused_card and not focused_card._released:
 			return
@@ -514,15 +514,17 @@ func tween_to_container_position(target: CardContainer, target_position: Vector2
 			move_completed.emit(self)
 		return
 
-	var from_global := global_position
+	var from_center := get_global_transform() * pivot_offset
 	if _pos_tween:
 		_pos_tween.kill()
 	_pos_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	_pos_tween.tween_method(func(weight: float) -> void:
 		if !is_instance_valid(target):
 			return
-		var target_global: Vector2 = target.get_global_transform() * target_position
-		global_position = from_global.lerp(target_global, weight)
+		# Interpolate the visual center so rotation cannot shift the path or
+		# make the final local-position assignment snap at a different endpoint.
+		var target_center: Vector2 = target.get_global_transform() * (target_position + pivot_offset)
+		global_position = from_center.lerp(target_center, weight) - get_global_transform().basis_xform(pivot_offset)
 	, 0.0, 1.0, duration)
 	if _pos_tween:
 		_pos_tween.finished.connect(func():

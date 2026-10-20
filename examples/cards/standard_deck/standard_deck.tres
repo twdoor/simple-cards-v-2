@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="CardDeck" load_steps=55 format=3 uid="uid://u1x8i453q018"]
+[gd_resource type="Resource" script_class="CardDeck" format=3 uid="uid://u1x8i453q018"]
 
 [ext_resource type="Script" uid="uid://c8315v58tr66b" path="res://addons/simple_cards/card/card_resource/card_resource.gd" id="1_pyc1o"]
 [ext_resource type="Script" uid="uid://lhb5ry3o8icy" path="res://addons/simple_cards/deck/card_deck.gd" id="2_2gyh5"]

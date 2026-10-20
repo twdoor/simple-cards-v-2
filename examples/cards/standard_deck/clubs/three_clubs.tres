@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="StandardCardResource" load_steps=2 format=3 uid="uid://bjash8sjc2cyt"]
+[gd_resource type="Resource" script_class="StandardCardResource" format=3 uid="uid://bjash8sjc2cyt"]
 
 [ext_resource type="Script" uid="uid://dox8s17eu2u0u" path="res://examples/cards/standard_deck/standard_card_resource.gd" id="1_v121c"]
 

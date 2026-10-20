@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://dotok77073p27"]
+[gd_scene format=3 uid="uid://dotok77073p27"]
 
 [ext_resource type="Script" uid="uid://dm115oleoggyt" path="res://addons/simple_cards/card/card_layout/card_layout.gd" id="1_0a68r"]
 
@@ -15,19 +15,14 @@ corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 corner_detail = 16
 
-[node name="CardLayout" type="SubViewportContainer"]
+[node name="CardLayout" type="Container" unique_id=1181186639]
 offset_right = 80.0
 offset_bottom = 112.0
 script = ExtResource("1_0a68r")
+card_size = Vector2i(80, 112)
 metadata/_custom_type_script = "uid://dm115oleoggyt"
 
-[node name="SubViewport" type="SubViewport" parent="."]
-transparent_bg = true
-handle_input_locally = false
-size = Vector2i(80, 112)
-render_target_update_mode = 4
-
-[node name="PanelContainer" type="PanelContainer" parent="SubViewport"]
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=863297547]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -35,7 +30,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_0a68r")
 
-[node name="Label" type="Label" parent="SubViewport/PanelContainer"]
+[node name="Label" type="Label" parent="PanelContainer" unique_id=622981327]
 layout_mode = 2
 text = "Front"
 horizontal_alignment = 1

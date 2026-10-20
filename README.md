@@ -1,6 +1,6 @@
 # <img src="https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/simple_card_v2.png" width="8%"> Simple Cards
 
-A flexible, UI-based card system plugin for **Godot 4.5.1+**. Build card games, deck builders, or any card-based interface using Control nodes that work seamlessly in both 2D and 3D projects.
+A flexible, UI-based card system plugin for **Godot 4.7.2+**. Build card games, deck builders, or any card-based interface using Control nodes that work seamlessly in both 2D and 3D projects.
 
 ![Example Animation](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/gui_minijam_example.gif)
 
@@ -73,7 +73,9 @@ Then create `.tres` files using your new resource type to define individual card
 
 ### 2. Create a Card Layout
 
-Layouts define how cards look. Open the **Card Layouts** panel at the bottom of the editor (next to Output, Debugger, etc.) and click **New**.
+Layouts define how cards look. Open **Card Layouts** and click **New**. Choose **CardLayout** for direct UI rendering, or **CardViewportLayout** when you need a shader applied to the entire composed face. The type picker also lists custom named subclasses in your project.
+
+Direct layouts contain ordinary Controls. Viewport layouts put those Controls inside `SubViewport`. Both use `card_size` and the same resource and animation APIs.
 
 ![Photo of layout creation window](https://github.com/twdoor/simple-cards-v-2/blob/main/github/assets/create_layout_part2.png)
 
@@ -98,27 +100,46 @@ func _update_display() -> void:
 ```
 
 
+To offer a reusable custom type in the creation dialog, give its script a `class_name` and extend either base (or another layout subclass). Use `@tool` for editor previews, and a constructor with no required arguments. The picker refreshes whenever you click **New**.
+
+```gdscript
+@tool
+class_name FoilCardLayout extends CardViewportLayout
+
+# Optional: provide a scene with your shader and required child nodes.
+# This runs before _ready(), so avoid @onready references here.
+func get_layout_template() -> PackedScene:
+    return load("res://cards/foil_template.tscn")
+```
+
+Without an override, the type inherits its base's starter scene. The template root must be a `CardLayout`; the created scene receives your selected script, a new layout ID, and its tags.
+
+When migrating an older viewport layout, change its script to `extends CardViewportLayout` and its scene root to `Container`, keeping `SubViewport` and its contents. For direct rendering, use `extends CardLayout`, remove `SubViewport`, and move the visual Controls under the layout (use a child Control to preserve custom anchors and transforms).
+
+
 ### 3. Spawn Cards
 
 ```gdscript
 # In your game scene
 func _ready():
-    var card_data = preload("res://cards/my_card.tres")
-    var card = Card.new(card_data)
-    add_child(card)
+	var card_data = preload("res://cards/my_card.tres")
+	var card = Card.new(card_data)
+	add_child(card)
 ```
 
 ---
 
 ## Card Layouts Panel
 
-The **Card Layouts** panel provides a centralized place to manage all your card layouts.
+The **Card Layouts** panel manages your layouts in a movable editor dock. Use the dock tab menu to move it to either side, the bottom, or a floating window. Godot remembers its position. Reopen a closed panel from **Editor → Editor Docks → Card Layouts**.
+
+The list and details sit side by side in wide docks and stack vertically in narrow docks. Drag the divider to resize them; search, tag filters, and scene shortcuts stay available in either layout.
 
 ### Features
 
 - **View All Layouts** - See every layout in your project at a glance
 - **Search & Filter** - Find layouts by name or filter by tags
-- **Create New Layouts** - Click **+ New Layout** to create a layout with a unique ID and optional tags
+- **Create New Layouts** - Click **New**, choose a built-in or custom layout type, and set its unique ID and optional tags
 - **Edit Layout Properties** - Select a layout to edit its ID and tags in the details panel
 - **Enable/Disable Layouts** - Toggle the checkbox to control which layouts are loaded at runtime
 - **Delete Layouts** - Remove layouts you no longer need (deletes the scene file)
@@ -141,9 +162,7 @@ When you create or modify layouts through the panel, it automatically:
 
 ---
 
-## Validation and Export
-
-Run `GODOT=/path/to/godot python3 tests/run_tests.py` for isolated regression, multiplayer, and installation/export checks. See [Validation](github/VALIDATION.md) for coverage, performance measurements, and the release checklist.
+## Export
 
 For exports, keep the plugin enabled and use **Export all resources**. The plugin includes the layout-cache JSON automatically. With selected-resource exports, explicitly include every custom layout and card resource used at runtime.
 

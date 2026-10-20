@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://bog1ttsv5cyjo"]
+[gd_scene format=3 uid="uid://bog1ttsv5cyjo"]
 
 [ext_resource type="Script" uid="uid://dm115oleoggyt" path="res://addons/simple_cards/card/card_layout/card_layout.gd" id="1_0a68r"]
 [ext_resource type="Script" uid="uid://c535lguvmfhkb" path="res://addons/simple_cards/card/card_layout/card_animation_resource/prebuild_animations/scale_animation.gd" id="2_hvxl3"]
@@ -29,10 +29,11 @@ corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 corner_detail = 16
 
-[node name="CardLayout" type="SubViewportContainer"]
+[node name="CardLayout" type="Container" unique_id=1997329546]
 offset_right = 80.0
 offset_bottom = 112.0
 script = ExtResource("1_0a68r")
+card_size = Vector2i(80, 112)
 anim_group_checked = true
 focus_in_animation = SubResource("Resource_pahr0")
 focus_out_animation = SubResource("Resource_1tvmt")
@@ -41,13 +42,11 @@ metadata/layout_id = "standard_back_layout"
 metadata/tags = ["back"]
 metadata/_custom_type_script = "uid://dm115oleoggyt"
 
-[node name="SubViewport" type="SubViewport" parent="."]
-transparent_bg = true
-handle_input_locally = false
-size = Vector2i(80, 112)
-render_target_update_mode = 4
+[node name="Content" type="Control" parent="."]
+layout_mode = 2
 
-[node name="CardColor" type="PanelContainer" parent="SubViewport"]
+
+[node name="CardColor" type="PanelContainer" parent="Content" unique_id=841881415]
 unique_name_in_owner = true
 anchors_preset = 15
 anchor_right = 1.0
