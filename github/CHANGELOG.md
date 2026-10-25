@@ -1,60 +1,31 @@
 # Changelog
 
-## Version 2.14 — 2026-10-25
+## Version 2.14
 
-- Macau returns to its lobby and clears the interrupted match when a player
-  disconnects, allowing a fresh client to rejoin and the host to start a new match.
-- Standard-deck perspective resets on hover loss independently of focus, including
-  pressed cards and multi-card interactions. Reset also clears the stored rotation;
-  standalone/editor layouts safely handle a missing owning Card.
-- Shader uniform updates now refresh only the affected effect captures and their
-  dependents, preserving cached face artwork and upstream effects. Added
-  `request_shader_render()` for direct material edits with capture caching.
-- Added ordered ShaderMaterial stacks to `CardViewportLayout`, with named/indexed
-  shader and uniform access, per-card materials, effect bypass, padding, capture
-  scaling, and optional caching. The final shader draws directly in the canvas;
-  premultiplied stacks skip alpha-conversion captures.
-- **Breaking:** Renamed the runtime autoload from `CG` to `CardGlobal` and removed
-  the separate `CardGlobal` script class and `get_instance()` lookup. Use
-  `CardGlobal` directly. This release targets Godot 4.7.2+.
-- Added isolated Godot 4.7.2 validation and CI, covering installation, core behavior,
-  both layout types, multiplayer regressions, and existing example startup.
-- Validation runs entirely in Godot, including fresh addon installs, an editor
-  lifecycle probe. Run `tests/run_tests.gd` as an EditorScript in the main project;
-  CI uses a headless entry point sharing the same runner.
-- Added named, typed `CardMotion` and `ContainerFocusNavigation` helpers.
-- Fixed tool slots running runtime drop detection in the editor and instant
-  arrangements leaving old motion tweens active.
-- Centralized layout validation, including duplicate IDs and generated-constant
-  collisions. Scene metadata scanning and editing now operate on the root node;
-  the dock displays invalid metadata instead of silently generating conflicting IDs.
-- Extracted card motion and container focus navigation behind existing APIs, and
-  shared registry handling between the built-in multiplayer managers.
-- Added architecture, validation, and release guides.
+### Changes
 
-- StackShape has an optional Randomization group with per-axis position limits, rotation limits, and a seed. Variation stays stable per card during rearrangement; disabling it restores a straight stack.
+- **Direct Card Layouts** — `CardLayout` renders ordinary child Controls directly. `CardViewportLayout` composes a face into a texture for whole-card shader effects.
+- **Shader Stacks** — `CardViewportLayout.shader_stack` applies ordered ShaderMaterials with per-card material instances, effect bypass, padding, and capture resolution control. The final effect draws directly in the canvas; premultiplied stacks skip alpha-conversion passes.
+- **Shader Access And Capture Caching** — Access materials, shaders, and uniforms by index or Resource Name. `live_source` and `live_effects` control capture updates; uniform changes refresh only affected effect captures and their dependents. `request_shader_render()` refreshes cached effects after direct material edits.
+- **Movable Card Layouts Dock** — The layout editor supports side, bottom, and floating placements, with responsive list/details arrangements for narrow and wide panels.
+- **Custom Layout Templates** — New Layout discovers named `CardLayout` subclasses and uses their `get_layout_template()` starter scenes.
+- **Layout Metadata Validation** — Layout discovery and editing use root-node metadata. Invalid IDs, duplicate IDs, generated-constant collisions, missing scenes, and invalid template roots are reported before updating the cache and generated constants.
+- **StackShape Randomization** — Added per-axis position limits, rotation limits, and a seed. Variation stays stable per card during rearrangement; disabling randomization restores a straight stack.
+- **Animation Cleanup** — Interrupted scale, fade, and bob animations finish pending waits during layout teardown. Idle restarts disconnect when cards leave containers, and overlapping focus animations avoid duplicate signal connections.
+- **Bobbing Position Stability** — Bobbing restores the layout's resting position when reparented and animates its position without changing face sizing.
+- **Card Interaction And Movement** — Pressed cards keep drag detection active after pointer exit. Instant arrangements cancel previous movement tweens instead of leaving them active.
+- **Slot Swap Notifications** — Slot-to-slot swaps respect both slots' placement conditions and emit normal remove/add notifications.
+- **Network Lifecycle Safety** — Server-authoritative requests resolve when peers disconnect or the manager is removed. Offline cleanup avoids querying an absent multiplayer peer.
+- **Network Resource Isolation** — Network-applied card data is isolated per card, preserving resource IDs and source paths without mutating shared templates.
+- **Editor Preview Lifecycle** — Card and container previews are restored on tree re-entry. Tool-mode slots no longer run runtime drop detection in the editor.
+- **Autoload Registration** — Fresh addon installs resolve card dependencies correctly, and the autoload persists across editor shutdown. Disabling the plugin removes its own autoload.
+- **Layout Cache Export** — The export plugin includes the layout-cache JSON, and unchanged generated layout IDs are no longer rewritten.
 
-- Bobbing restores a layout’s resting position when reparented, preventing cards from retaining a visual offset after moving into a stack. It animates position without changing the face’s size offsets.
+### Breaking Changes
 
-- CardLayout renders direct UI; CardViewportLayout composes face textures for shader stacks. New Layout discovers custom named subclasses and uses their starter templates. Built-in default faces use direct rendering; the standard-deck front uses cached viewport rendering for shine and perspective.
-
-- Card Layouts now uses a movable editor dock with side, bottom, and floating placements, plus a responsive list/details layout for narrow and wide panels. Requires Godot 4.7.2+.
-
-- Interrupted finite scale, fade, and bob animations finish their pending waits during layout teardown. Overlapping focus animations use separate cleanup callbacks, preventing duplicate signal connections.
-- Delayed idle-animation restarts use callbacks that disconnect on container removal, avoiding retained timers during multiplayer teardown.
-- Solitaire recycle undo restores every waste card face up, preserving the visible fan.
-- Card presses keep drag detection active when the pointer leaves before the next frame.
-- Rejected and same-pile Solitaire drops no longer create undo records; added the example project’s missing gamepad accept binding.
-- Extracted editor card/container previews and network snapshot handling from the core classes, preserving public APIs and saved scenes. Restored container previews on tree re-entry.
-- Fixed idle-animation tween retention and delayed idle callbacks accessing freed cards.
-- Slot-to-slot swaps now respect both slots' placement conditions and emit normal remove/add notifications.
-- Server-authoritative requests resolve on disconnect or manager removal, and offline board cleanup no longer queries an absent multiplayer peer.
-- Network-applied card data is isolated per card, preserving resource IDs and source paths without mutating shared templates.
-- Fixed Macau seat remapping broadcasting incomplete client state during multi-peer joins.
-- Fixed addon-only first-install compilation and autoload persistence across editor shutdown; disabling the plugin still removes its own autoload.
-- Export the layout-cache JSON with the plugin, and avoid rewriting unchanged generated layout IDs.
-- Added Godot-only release packaging for addon, example-project, and Asset Library
-  archives. Each includes `addons/simple_cards/LICENSE` copied from the root license.
+- **Godot 4.7.2 Required** — The addon now requires Godot 4.7.2 or newer.
+- **Runtime Autoload Renamed** — `CG` is now `CardGlobal`. The separate `CardGlobal` script class and `get_instance()` lookup were removed; access the autoload directly.
+- **Layout Scene Structure** — `CardLayout` uses a `Container` root with visual Controls as direct children. Texture-based faces use `CardViewportLayout` with their Controls inside a child `SubViewport`.
 
 ## Version 2.13
 
