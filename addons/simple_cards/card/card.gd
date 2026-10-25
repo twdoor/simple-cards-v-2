@@ -94,14 +94,14 @@ var _pending_layout_switch: bool = false
 		if Engine.is_editor_hint() and is_node_ready():
 			_editor_setup_layout()
 
-## Front face layout ID. Resolved to [member CardGlobal.def_front_layout] if empty at runtime.
+## Front face layout ID. Resolved to [code]CardGlobal.def_front_layout[/code] if empty at runtime.
 @export var front_layout_name: StringName = &"":
 	set(value):
 		front_layout_name = value
 		if Engine.is_editor_hint() and is_node_ready():
 			_editor_setup_layout()
 
-## Back face layout ID. Resolved to [member CardGlobal.def_back_layout] if empty at runtime.
+## Back face layout ID. Resolved to [code]CardGlobal.def_back_layout[/code] if empty at runtime.
 @export var back_layout_name: StringName = &"":
 	set(value):
 		back_layout_name = value
@@ -118,6 +118,7 @@ var layout_name: StringName = &"":
 var current_layout_name: StringName = &""
 var _local_face_override: int = -1
 var _snapshot: RefCounted
+var _motion: CardMotion
 
 ## If true uses front_layout else uses back_layout.
 var is_front_face: bool = true:
@@ -136,8 +137,8 @@ func _validate_property(property: Dictionary) -> void:
 
 func _init(card_resource: CardResource = null) -> void:
 	if Engine.is_editor_hint(): return
-	name = "card_" + str(CardGlobal.get_instance().card_index)
-	CardGlobal.get_instance().card_index += 1
+	name = "card_" + str(CardGlobal.card_index)
+	CardGlobal.card_index += 1
 	if card_resource:
 		card_data = card_resource
 
@@ -151,11 +152,11 @@ func _ready() -> void:
 		_editor_ready()
 		return
 
-	# Resolve empty layout names to CG defaults at runtime.
+	# Resolve empty layout names to CardGlobal defaults at runtime.
 	if front_layout_name.is_empty():
-		front_layout_name = CardGlobal.get_instance().def_front_layout
+		front_layout_name = CardGlobal.def_front_layout
 	if back_layout_name.is_empty():
-		back_layout_name = CardGlobal.get_instance().def_back_layout
+		back_layout_name = CardGlobal.def_back_layout
 
 	button_down.connect(_on_button_down)
 	button_up.connect(_on_button_up)
@@ -164,9 +165,9 @@ func _ready() -> void:
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 
-	if card_data and CardGlobal.get_instance().get_available_layouts().has(card_data.front_layout_name):
+	if card_data and CardGlobal.get_available_layouts().has(card_data.front_layout_name):
 		front_layout_name = card_data.front_layout_name
-	if card_data and CardGlobal.get_instance().get_available_layouts().has(card_data.back_layout_name):
+	if card_data and CardGlobal.get_available_layouts().has(card_data.back_layout_name):
 		back_layout_name = card_data.back_layout_name
 
 	_setup_layout(true)
@@ -192,7 +193,7 @@ func _editor_setup_layout() -> void:
 
 
 ## Editor-only: creates a CardLayout by reading layout_cache.json directly,
-## bypassing CG (which may not be available in editor context).
+## bypassing CardGlobal (which may not be available in editor context).
 ## Reuses LayoutCache (already @tool) to avoid duplicating JSON logic.
 func _editor_create_layout(layout_id: StringName) -> CardLayout:
 	return load("res://addons/simple_cards/editor/card_editor_preview.gd").create_layout(layout_id)
@@ -223,7 +224,7 @@ func _drag(delta: float) -> void:
 
 	global_position = lerp(
 		global_position,
-		CardGlobal.get_instance().get_cursor_position() - _dragging_offset,
+		CardGlobal.get_cursor_position() - _dragging_offset,
 		1 - exp(delta * drag_coef))
 	_set_movement_rotation(delta)
 
@@ -340,14 +341,14 @@ func _is_owned() -> bool:
 func _on_button_down() -> void:
 	_released = false
 	set_process(true)
-	_cursor_down_pos = CardGlobal.get_instance().get_cursor_position()
+	_cursor_down_pos = CardGlobal.get_cursor_position()
 
 func _on_button_up() -> void:
 	_released = true
 	if holding:
 		holding = false
 		set_process(false)
-		CardGlobal.get_instance().current_held_item = null
+		CardGlobal.current_held_item = null
 		drag_ended.emit(self)
 
 		if !_is_owned():
@@ -362,14 +363,14 @@ func _on_button_up() -> void:
 
 func _check_for_hold() -> void:
 	if !_released and !holding:
-		var current_cursor_pos = CardGlobal.get_instance().get_cursor_position()
+		var current_cursor_pos = CardGlobal.get_cursor_position()
 		var drag_distance = _cursor_down_pos.distance_to(current_cursor_pos)
 
 		if drag_distance > drag_threshold and !undraggable:
 			rotation = 0
 			holding = true
 			_dragging_offset = center_pos
-			CardGlobal.get_instance().current_held_item = self
+			CardGlobal.current_held_item = self
 			drag_started.emit(self)
 
 func _on_focus_entered() -> void:
@@ -409,7 +410,7 @@ func _on_mouse_entered() -> void:
 		return
 	hovered = true
 	card_hovered.emit()
-	if !CardGlobal.get_instance().current_held_item and get_focus_mode_with_override() != Control.FOCUS_NONE:
+	if !CardGlobal.current_held_item and get_focus_mode_with_override() != Control.FOCUS_NONE:
 		var focused_card := get_viewport().gui_get_focus_owner() as Card
 		if focused_card and not focused_card._released:
 			return
@@ -421,7 +422,7 @@ func _on_mouse_exited() -> void:
 	hovered = false
 	card_unhovered.emit()
 	# Releasing focus during a press makes BaseButton cancel it with button_up.
-	if _released and !holding and !CardGlobal.get_instance().current_held_item and has_focus():
+	if _released and !holding and !CardGlobal.current_held_item and has_focus():
 		release_focus()
 
 func _queue_interaction_state_sync() -> void:
@@ -462,7 +463,7 @@ func _is_cursor_over_card() -> bool:
 	if disabled or mouse_filter == Control.MOUSE_FILTER_IGNORE:
 		return false
 
-	var local_cursor := CardGlobal.get_instance().get_local_cursor_position(self)
+	var local_cursor: Vector2 = CardGlobal.get_local_cursor_position(self)
 	return Rect2(Vector2.ZERO, size).has_point(local_cursor)
 
 #endregion
@@ -471,68 +472,22 @@ func _is_cursor_over_card() -> bool:
 
 ## Tween the scale.
 func tween_scale(desired_scale: Vector2 = Vector2.ONE, duration: float = 0.2) -> void:
-	if _scale_tween:
-		_scale_tween.kill()
-	_scale_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BOUNCE)
-	_scale_tween.tween_property(self, "scale", desired_scale, duration)
+	_get_motion().tween_scale(self, desired_scale, duration)
+
 
 ## Tween the rotation.
 func tween_rotation(desired_rotation: float = 0, duration: float = 0.2) -> void:
-	if _rotation_tween:
-		_rotation_tween.kill()
-	_rotation_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
-	_rotation_tween.tween_property(self, "rotation_degrees", desired_rotation, duration)
+	_get_motion().tween_rotation(self, desired_rotation, duration)
+
 
 ## Tween the position. If [param global] is true, tweens [code]global_position[/code].
 func tween_position(desired_position: Vector2, duration: float = .3, global: bool = false) -> void:
-	if _pos_tween:
-		_pos_tween.kill()
-
-	if duration <= 0.0:
-		if global:
-			global_position = desired_position
-		else:
-			position = desired_position
-		_queue_interaction_state_sync()
-		return
-
-	_pos_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	if global:
-		_pos_tween.tween_property(self, "global_position", desired_position, duration)
-	else:
-		_pos_tween.tween_property(self, "position", desired_position, duration)
-	if _pos_tween:
-		_pos_tween.finished.connect(_queue_interaction_state_sync, CONNECT_ONE_SHOT)
+	_get_motion().tween_position(self, desired_position, duration, global)
 
 
 ## Tweens to a container-local target while preserving visual continuity across reparenting.
 func tween_to_container_position(target: CardContainer, target_position: Vector2, duration: float = .3, emit_complete: bool = false) -> void:
-	if duration <= 0.0:
-		position = target_position
-		_queue_interaction_state_sync()
-		if emit_complete:
-			move_completed.emit(self)
-		return
-
-	var from_center := get_global_transform() * pivot_offset
-	if _pos_tween:
-		_pos_tween.kill()
-	_pos_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	_pos_tween.tween_method(func(weight: float) -> void:
-		if !is_instance_valid(target):
-			return
-		# Interpolate the visual center so rotation cannot shift the path or
-		# make the final local-position assignment snap at a different endpoint.
-		var target_center: Vector2 = target.get_global_transform() * (target_position + pivot_offset)
-		global_position = from_center.lerp(target_center, weight) - get_global_transform().basis_xform(pivot_offset)
-	, 0.0, 1.0, duration)
-	if _pos_tween:
-		_pos_tween.finished.connect(func():
-			position = target_position
-			_queue_interaction_state_sync()
-			if emit_complete:
-				move_completed.emit(self)
-		, CONNECT_ONE_SHOT)
+	_get_motion().tween_to_container_position(self, target, target_position, duration, emit_complete)
 
 func _set_movement_rotation(delta: float) -> void:
 	var desired_rotation: float = clamp(
@@ -549,15 +504,7 @@ func _set_movement_rotation(delta: float) -> void:
 
 ## Kills all active tweens on this card.
 func kill_all_tweens() -> void:
-	if _scale_tween:
-		_scale_tween.kill()
-		_scale_tween = null
-	if _rotation_tween:
-		_rotation_tween.kill()
-		_rotation_tween = null
-	if _pos_tween:
-		_pos_tween.kill()
-		_pos_tween = null
+	_get_motion().kill_all_tweens(self)
 
 #endregion
 
@@ -582,9 +529,9 @@ func _setup_layout(no_animations: bool = false) -> void:
 		_layout = null
 
 	var requested_layout := _get_requested_layout_id()
-	var fallback_layout := CardGlobal.get_instance().def_front_layout if is_front_face else CardGlobal.get_instance().def_back_layout
-	current_layout_name = CardGlobal.get_instance().resolve_layout_id(requested_layout, fallback_layout)
-	_layout = CardGlobal.get_instance().create_layout(requested_layout, fallback_layout)
+	var fallback_layout: StringName = CardGlobal.def_front_layout if is_front_face else CardGlobal.def_back_layout
+	current_layout_name = CardGlobal.resolve_layout_id(requested_layout, fallback_layout)
+	_layout = CardGlobal.create_layout(requested_layout, fallback_layout)
 
 	if not _layout:
 		push_error("Card: Failed to create layout")
@@ -709,7 +656,7 @@ func apply_network_state(state: Dictionary, _config: MoveConfig = null) -> void:
 func _get_network_manager() -> CardNetworkManager:
 	if Engine.is_editor_hint() or not is_inside_tree():
 		return null
-	return CardGlobal.get_instance().get_network_manager()
+	return CardGlobal.get_network_manager()
 
 
 func _exit_tree() -> void:
@@ -720,7 +667,7 @@ func _exit_tree() -> void:
 			_layout.queue_free()
 			_layout = null
 		return
-	var net = CardGlobal.get_instance().get_network_manager()
+	var net = CardGlobal.get_network_manager()
 	if net:
 		net.unregister_card(self)
 	kill_all_tweens()
@@ -732,3 +679,9 @@ func _get_snapshot() -> RefCounted:
 		_snapshot = load("res://addons/simple_cards/network/card_snapshot.gd").new()
 		_snapshot.reset_resource(card_data)
 	return _snapshot
+
+
+func _get_motion() -> CardMotion:
+	if not _motion:
+		_motion = CardMotion.new()
+	return _motion

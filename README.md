@@ -50,6 +50,10 @@ A flexible, UI-based card system plugin for **Godot 4.7.2+**. Build card games, 
 2. Copy the `addons/simple_cards` folder into your project's `addons` directory
 3. Go to **Project → Project Settings → Plugins** and enable **SimpleCards**
 
+The plugin registers the `CardGlobal` autoload. Access it directly, for example
+`CardGlobal.get_available_layouts()` or `CardGlobal.holding_card.connect(...)`.
+It is a runtime singleton; editor previews use their own layout cache.
+
 ---
 
 ## Quick Start
@@ -73,7 +77,7 @@ Then create `.tres` files using your new resource type to define individual card
 
 ### 2. Create a Card Layout
 
-Layouts define how cards look. Open **Card Layouts** and click **New**. Choose **CardLayout** for direct UI rendering, or **CardViewportLayout** when you need a shader applied to the entire composed face. The type picker also lists custom named subclasses in your project.
+Layouts define how cards look. Open **Card Layouts** and click **New**. Choose **CardLayout** for direct UI rendering, or **CardViewportLayout** for an ordered stack of shaders applied to the entire composed face. The type picker also lists custom named subclasses in your project.
 
 Direct layouts contain ordinary Controls. Viewport layouts put those Controls inside `SubViewport`. Both use `card_size` and the same resource and animation APIs.
 
@@ -114,7 +118,22 @@ func get_layout_template() -> PackedScene:
 
 Without an override, the type inherits its base's starter scene. The template root must be a `CardLayout`; the created scene receives your selected script, a new layout ID, and its tags.
 
-When migrating an older viewport layout, change its script to `extends CardViewportLayout` and its scene root to `Container`, keeping `SubViewport` and its contents. For direct rendering, use `extends CardLayout`, remove `SubViewport`, and move the visual Controls under the layout (use a child Control to preserve custom anchors and transforms).
+For viewport effects, add ShaderMaterials to the layout's **Shader Stack** and give
+each material a unique **Resource Name**, such as `Foil`. Entries run top to bottom.
+Access live materials, shaders, and uniforms by name or index:
+
+```gdscript
+var face := card.get_layout() as CardViewportLayout
+if face:
+    face.set_shader_parameter(&"Foil", &"strength", 0.6)
+    var foil := face.get_shader_material(&"Foil")
+    create_tween().tween_property(foil, "shader_parameter/strength", 1.0, 0.3)
+```
+
+Materials are isolated per card at runtime. For static faces, turn off **Live Source**;
+call `request_render()` after changing child visuals. Premultiplied shaders avoid
+alpha-conversion passes. See [CardViewportLayout](github/API.md#cardviewportlayout)
+for alpha conventions, caching, and rendering costs.
 
 
 ### 3. Spawn Cards
@@ -228,3 +247,14 @@ You can give it a try here: https://twdoor.itch.io/gui
 ---
 
 **Good luck! -Tw**
+
+## Development
+
+Open `tests/run_tests.gd` in Godot's Script Editor and use **File > Run**
+(Ctrl+Shift+X) for validation in temporary project copies.
+See [Validation](github/VALIDATION.md) for the headless command, coverage, and limitations.
+
+Read [Architecture](github/ARCHITECTURE.md) for ownership and extension boundaries.
+
+For release ZIPs, run `tools/build_release.gd` as an EditorScript. It packages
+the addon license automatically. See [Building a release](github/RELEASING.md).

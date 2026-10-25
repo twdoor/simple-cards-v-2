@@ -29,6 +29,7 @@ const PreviewPile = preload("res://examples/balatro/preview_pile.gd")
 @onready var gold_button: Button = %GoldButton
 @onready var silv_button: Button = %SilvButton
 @onready var none_button: Button = %NoneButton
+@onready var shiny_button: Button = %ShinyButton
 
 @onready var club_button: Button = %ClubButton
 @onready var diamond_button: Button = %DiamButton
@@ -53,6 +54,7 @@ func _ready() -> void:
 	gold_button.pressed.connect(_on_gold_pressed)
 	silv_button.pressed.connect(_on_silv_pressed)
 	none_button.pressed.connect(_on_none_pressed)
+	shiny_button.pressed.connect(_on_shiny_pressed)
 	club_button.pressed.connect(_on_club_pressed)
 	diamond_button.pressed.connect(_on_diamond_pressed)
 	heart_button.pressed.connect(_on_heart_pressed)
@@ -88,6 +90,12 @@ func _on_silv_pressed() -> void:
 func _on_none_pressed() -> void:
 	for card: Card in balatro_hand.selected:
 		card.card_data.current_modifier = StandardCardResource.Modifier.NONE
+		card.refresh_layout()
+	balatro_hand.clear_selected()
+
+func _on_shiny_pressed() -> void:
+	for card: Card in balatro_hand.selected:
+		card.card_data.is_shiny = !card.card_data.is_shiny
 		card.refresh_layout()
 	balatro_hand.clear_selected()
 
@@ -235,6 +243,7 @@ func _set_ui_enabled(enabled: bool) -> void:
 	gold_button.disabled = !enabled
 	silv_button.disabled = !enabled
 	none_button.disabled = !enabled
+	shiny_button.disabled = !enabled
 	club_button.disabled = !enabled
 	diamond_button.disabled = !enabled
 	heart_button.disabled = !enabled
@@ -252,6 +261,7 @@ func _set_interaction_enabled(enabled: bool) -> void:
 	gold_button.disabled = !enabled
 	silv_button.disabled = !enabled
 	none_button.disabled = !enabled
+	shiny_button.disabled = !enabled
 	club_button.disabled = !enabled
 	diamond_button.disabled = !enabled
 	heart_button.disabled = !enabled

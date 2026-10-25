@@ -1,12 +1,5 @@
-##The global singleton calls used by the SimpleCards plugin. [color=red]Do not instantiate[/color]
-class_name CardGlobal extends Control
-
-
-## Internal singleton lookup that also allows scripts to compile before the
-## plugin registers the CG autoload in a newly installed project.
-static func get_instance() -> CardGlobal:
-	var tree := Engine.get_main_loop() as SceneTree
-	return tree.root.get_node_or_null("CG") as CardGlobal if tree else null
+## Runtime autoload for shared card state and layout lookup. Access as CardGlobal.
+extends Control
 
 
 ##Emitted when a card starts being held/dragged
@@ -123,7 +116,7 @@ func _load_layouts_from_cache() -> void:
 
 	var json = JSON.new()
 	var error = json.parse(file.get_as_text())
-	if error != OK:
+	if error != OK or not json.data is Dictionary:
 		push_warning("CardGlobal: Failed to parse layout cache, using defaults only")
 		_register_default_layouts()
 		layouts_loaded.emit()
@@ -133,6 +126,12 @@ func _load_layouts_from_cache() -> void:
 	
 	for path in cache_data.keys():
 		var layout_data = cache_data[path]
+		var message := LayoutValidation.entry_error(str(path), layout_data)
+		if message.is_empty():
+			message = LayoutValidation.id_error(layout_data.layout_id, cache_data, str(path))
+		if not message.is_empty():
+			push_warning("CardGlobal: Skipping invalid layout %s: %s" % [path, message])
+			continue
 		
 		if not layout_data.get("enabled", true):
 			continue
@@ -252,15 +251,14 @@ func create_layout(layout_id: StringName = &"", fallback_id: StringName = &"") -
 		push_error("CardGlobal: Layout not found at " + path)
 		return null
 	
-	var scene = load(path)
+	var scene := load(path) as PackedScene
 	if not scene:
 		push_error("CardGlobal: Failed to load scene at " + path)
 		return null
 	
-	var instance = scene.instantiate()
-	if not instance is CardLayout:
+	var instance := LayoutValidation.instantiate_layout(scene)
+	if not instance:
 		push_error("CardGlobal: Scene at %s does not extend CardLayout" % path)
-		instance.queue_free()
 		return null
 	
 	return instance

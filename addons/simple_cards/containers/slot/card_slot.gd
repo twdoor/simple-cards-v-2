@@ -72,8 +72,8 @@ func _container_ready() -> void:
 	max_cards = 1
 	card_move_duration = 0.15
 
-	CardGlobal.get_instance().holding_card.connect(_on_card_held)
-	CardGlobal.get_instance().dropped_card.connect(_on_card_dropped)
+	CardGlobal.holding_card.connect(_on_card_held)
+	CardGlobal.dropped_card.connect(_on_card_dropped)
 
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
@@ -92,10 +92,10 @@ func _container_ready() -> void:
 func _exit_tree() -> void:
 	super._exit_tree()
 	if Engine.is_editor_hint(): return
-	if CardGlobal.get_instance().holding_card.is_connected(_on_card_held):
-		CardGlobal.get_instance().holding_card.disconnect(_on_card_held)
-	if CardGlobal.get_instance().dropped_card.is_connected(_on_card_dropped):
-		CardGlobal.get_instance().dropped_card.disconnect(_on_card_dropped)
+	if CardGlobal.holding_card.is_connected(_on_card_held):
+		CardGlobal.holding_card.disconnect(_on_card_held)
+	if CardGlobal.dropped_card.is_connected(_on_card_dropped):
+		CardGlobal.dropped_card.disconnect(_on_card_dropped)
 
 #endregion
 
@@ -250,12 +250,19 @@ func _settle_card(card: Card, duration: float) -> void:
 #region Drop Detection
 
 func _process(_delta: float) -> void:
-	var cursor_pos = CardGlobal.get_instance().get_cursor_position()
+	# Script reloads can re-enable processing without running _ready() again.
+	if Engine.is_editor_hint():
+		set_process(false)
+		return
+	if not is_instance_valid(CardGlobal):
+		set_process(false)
+		return
+	var cursor_pos = CardGlobal.get_cursor_position()
 	var is_over = get_global_rect().has_point(cursor_pos)
 
 	if is_over and not _card_over:
 		_card_over = true
-		_card_currently_over = CardGlobal.get_instance().current_held_item
+		_card_currently_over = CardGlobal.current_held_item
 		card_entered.emit(_card_currently_over)
 		_handle_card_entered(_card_currently_over)
 
@@ -427,8 +434,8 @@ func _force_return_card(card: Card) -> void:
 	if cards.has(card):
 		card.holding = false
 		_settle_card(card, card_move_duration)
-		if CardGlobal.get_instance().current_held_item == card:
-			CardGlobal.get_instance().current_held_item = null
+		if CardGlobal.current_held_item == card:
+			CardGlobal.current_held_item = null
 
 
 ## Removes the card from the slot and reparents it to [member abandon_reparent_target].

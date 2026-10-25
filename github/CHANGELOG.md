@@ -1,12 +1,42 @@
 # Changelog
 
-## Unreleased — Stabilization
+## Version 2.14 — 2026-10-25
+
+- Macau returns to its lobby and clears the interrupted match when a player
+  disconnects, allowing a fresh client to rejoin and the host to start a new match.
+- Standard-deck perspective resets on hover loss independently of focus, including
+  pressed cards and multi-card interactions. Reset also clears the stored rotation;
+  standalone/editor layouts safely handle a missing owning Card.
+- Shader uniform updates now refresh only the affected effect captures and their
+  dependents, preserving cached face artwork and upstream effects. Added
+  `request_shader_render()` for direct material edits with capture caching.
+- Added ordered ShaderMaterial stacks to `CardViewportLayout`, with named/indexed
+  shader and uniform access, per-card materials, effect bypass, padding, capture
+  scaling, and optional caching. The final shader draws directly in the canvas;
+  premultiplied stacks skip alpha-conversion captures.
+- **Breaking:** Renamed the runtime autoload from `CG` to `CardGlobal` and removed
+  the separate `CardGlobal` script class and `get_instance()` lookup. Use
+  `CardGlobal` directly. This release targets Godot 4.7.2+.
+- Added isolated Godot 4.7.2 validation and CI, covering installation, core behavior,
+  both layout types, multiplayer regressions, and existing example startup.
+- Validation runs entirely in Godot, including fresh addon installs, an editor
+  lifecycle probe. Run `tests/run_tests.gd` as an EditorScript in the main project;
+  CI uses a headless entry point sharing the same runner.
+- Added named, typed `CardMotion` and `ContainerFocusNavigation` helpers.
+- Fixed tool slots running runtime drop detection in the editor and instant
+  arrangements leaving old motion tweens active.
+- Centralized layout validation, including duplicate IDs and generated-constant
+  collisions. Scene metadata scanning and editing now operate on the root node;
+  the dock displays invalid metadata instead of silently generating conflicting IDs.
+- Extracted card motion and container focus navigation behind existing APIs, and
+  shared registry handling between the built-in multiplayer managers.
+- Added architecture, validation, and release guides.
 
 - StackShape has an optional Randomization group with per-axis position limits, rotation limits, and a seed. Variation stays stable per card during rearrangement; disabling it restores a straight stack.
 
 - Bobbing restores a layout’s resting position when reparented, preventing cards from retaining a visual offset after moving into a stack. It animates position without changing the face’s size offsets.
 
-- CardLayout now renders direct UI; optional CardViewportLayout provides composed textures for whole-card shaders. New Layout discovers custom named subclasses and uses their starter templates. Default and standard-deck faces no longer create per-card viewports.
+- CardLayout renders direct UI; CardViewportLayout composes face textures for shader stacks. New Layout discovers custom named subclasses and uses their starter templates. Built-in default faces use direct rendering; the standard-deck front uses cached viewport rendering for shine and perspective.
 
 - Card Layouts now uses a movable editor dock with side, bottom, and floating placements, plus a responsive list/details layout for narrow and wide panels. Requires Godot 4.7.2+.
 
@@ -23,6 +53,8 @@
 - Fixed Macau seat remapping broadcasting incomplete client state during multi-peer joins.
 - Fixed addon-only first-install compilation and autoload persistence across editor shutdown; disabling the plugin still removes its own autoload.
 - Export the layout-cache JSON with the plugin, and avoid rewriting unchanged generated layout IDs.
+- Added Godot-only release packaging for addon, example-project, and Asset Library
+  archives. Each includes `addons/simple_cards/LICENSE` copied from the root license.
 
 ## Version 2.13
 

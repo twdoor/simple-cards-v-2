@@ -6,6 +6,20 @@ Simple Cards includes experimental opt-in card synchronization through scene-loc
 
 This guide covers the built-in multiplayer path. For custom transports, custom authority models, or non-Godot networking backends, see [Custom Multiplayer](CUSTOM_MULTIPLAYER.md).
 
+
+## Maintenance scope
+
+Multiplayer remains experimental. The current maintenance priority is preserving
+the existing commands, visibility policies, snapshots, and manager lifecycle.
+Transport additions and new prediction modes are deferred until these behaviors
+have reliable regression coverage. The built-in managers share registration and
+lookup internally; their authority policies remain separate.
+
+Run the validation command in [Validation](VALIDATION.md) after networking changes.
+It covers permissions, hidden snapshots, per-card resource isolation, pending
+request cleanup, both managers' registry behavior, and peer-to-peer transfer
+results. It does not replace a two-peer gameplay check before releasing.
+
 ## What The Addon Handles
 
 The card network layer synchronizes card and container state:
@@ -30,7 +44,7 @@ Use `CardServerAuthoritativeNetwork` when one peer must validate card actions. T
 
 Use `CardPeerToPeerNetwork` only for trusted/local games. Each peer applies its own card actions and broadcasts snapshots to the other peers. It is useful for LAN prototypes and cooperative tools, but it is not cheat-resistant.
 
-Offline scenes do not need a network node. If no manager registers on `CG`, all card APIs stay local-only.
+Offline scenes do not need a network node. If no manager registers on `CardGlobal`, all card APIs stay local-only.
 
 ## Quickstart
 
@@ -433,7 +447,7 @@ A typical server-authoritative flow:
 ## Debug Checklist
 
 - A `CardNetwork` node exists at the same scene path on every multiplayer peer.
-- `CG.get_network_manager()` returns the scene's `CardNetwork` node.
+- `CardGlobal.get_network_manager()` returns the scene's `CardNetwork` node.
 - The server is peer `1`.
 - Containers have stable `network_id` values.
 - Private hands have `OWNER_ONLY` visibility and the correct `network_owner_peer_id`.
@@ -446,6 +460,10 @@ A typical server-authoritative flow:
 ## Example Scenes
 
 Open `examples/multiplayer/p2p_macau.tscn` for a complete trusted peer-to-peer Macau sample. It uses `CardPeerToPeerNetwork` for card/container sync and small game-specific RPCs for host-coordinated turn validation.
+
+If a player disconnects, the current match ends and the host returns to the
+lobby. A fresh client can join again, and the host can start a new match. The
+sample does not resume the disconnected player's previous hand or turn.
 
 The sample supports 2 to 6 players. It uses one standard deck for 2 to 3 players and two standard decks for 4 to 6 players. Each instance keeps one visible local `PlayerHand`; other active seats get background `CardPile` containers on demand so the network has stable zones without hand layout, reordering, or idle animation work. Because this is a trusted P2P example, the draw pile uses public network identity while the UI still shows backs; this keeps draw animations smooth. Use hidden draw piles in server-authoritative or custom infrastructure when deck secrecy matters.
 

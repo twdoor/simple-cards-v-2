@@ -11,13 +11,14 @@ config_version=5
 [application]
 
 config/name="SimpleCards"
+config/version="2.14"
 run/main_scene="uid://brvun6l03k0hu"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://github/assets/simple_card_v2.png"
 
 [autoload]
 
-CG="*res://addons/simple_cards/card_global.gd"
+CardGlobal="*uid://di2oxtaq5vhmh"
 
 [display]
 

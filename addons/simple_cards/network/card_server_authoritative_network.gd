@@ -1,10 +1,10 @@
 ## Server-authoritative multiplayer coordinator for Simple Cards.
 ##
 ## Add this as a scene node, commonly named CardNetwork, in multiplayer scenes.
-## It registers itself through CG and routes card/container commands through a
+## It registers itself through CardGlobal and routes card/container commands through a
 ## single authoritative server.
 ## @experimental: Multiplayer support may change before it is considered stable.
-class_name CardServerAuthoritativeNetwork extends CardNetworkManager
+class_name CardServerAuthoritativeNetwork extends RegisteredCardNetwork
 
 
 class PendingCommand extends RefCounted:
@@ -36,9 +36,6 @@ const REVISION_TOLERANCE := 512
 @export_group("")
 
 
-var _cards_by_id: Dictionary = {}
-var _containers_by_id: Dictionary = {}
-var _resources_by_id: Dictionary = {}
 var _next_card_sequence: int = 1
 var _routing_suppression: int = 0
 var _server_command_depth: int = 0
@@ -120,71 +117,6 @@ func _should_route_client_command() -> bool:
 	return not is_server_peer()
 
 
-func register_container(container: CardContainer) -> void:
-	if not is_instance_valid(container):
-		return
-	ensure_container_id(container)
-	_containers_by_id[String(container.network_id)] = container
-
-
-func unregister_container(container: CardContainer) -> void:
-	if not container:
-		return
-	var id := String(container.network_id)
-	if _containers_by_id.get(id) == container:
-		_containers_by_id.erase(id)
-
-
-func register_card(card: Card) -> void:
-	if not is_instance_valid(card):
-		return
-	ensure_card_id(card)
-	_cards_by_id[String(card.network_id)] = card
-	if card.card_data:
-		register_resource(card.card_data)
-
-
-func unregister_card(card: Card) -> void:
-	if not card:
-		return
-	var id := String(card.network_id)
-	if _cards_by_id.get(id) == card:
-		_cards_by_id.erase(id)
-
-
-func register_resource(resource: CardResource) -> void:
-	if not resource:
-		return
-	var id := String(resource.get_network_resource_id())
-	if id.is_empty():
-		return
-	_resources_by_id[id] = resource
-
-
-func get_card(card_id: StringName) -> Card:
-	var card = _cards_by_id.get(String(card_id))
-	if card and is_instance_valid(card):
-		return card as Card
-	_cards_by_id.erase(String(card_id))
-	return null
-
-
-func get_container(container_id: StringName) -> CardContainer:
-	var container = _containers_by_id.get(String(container_id))
-	if container and is_instance_valid(container):
-		return container as CardContainer
-	_containers_by_id.erase(String(container_id))
-	return null
-
-
-func get_resource(resource_id: StringName) -> CardResource:
-	var resource = _resources_by_id.get(String(resource_id))
-	if resource and is_instance_valid(resource):
-		return resource as CardResource
-	_resources_by_id.erase(String(resource_id))
-	return null
-
-
 func ensure_card_id(card: Card) -> StringName:
 	if not card:
 		return &""
@@ -206,18 +138,6 @@ func ensure_card_id(card: Card) -> StringName:
 
 func assign_card_id(card: Card) -> StringName:
 	return ensure_card_id(card)
-
-
-func ensure_container_id(container: CardContainer) -> StringName:
-	if not container:
-		return &""
-	if not container.network_id.is_empty():
-		return container.network_id
-	if container.is_inside_tree():
-		container.network_id = StringName(str(container.get_path()))
-	else:
-		container.network_id = StringName("sc_container_%d" % container.get_instance_id())
-	return container.network_id
 
 
 func request_move(card: Card, target: CardContainer, config: Card.MoveConfig = null) -> void:
@@ -996,18 +916,6 @@ func _remove_cards_missing_from_snapshot(snapshot: Dictionary) -> void:
 		if container and container.cards.has(card):
 			container._raw_unregister(card)
 		card.queue_free()
-
-
-func _cleanup_registries() -> void:
-	for id in _cards_by_id.keys():
-		if not is_instance_valid(_cards_by_id[id]):
-			_cards_by_id.erase(id)
-	for id in _containers_by_id.keys():
-		if not is_instance_valid(_containers_by_id[id]):
-			_containers_by_id.erase(id)
-	for id in _resources_by_id.keys():
-		if not is_instance_valid(_resources_by_id[id]):
-			_resources_by_id.erase(id)
 
 
 func _on_peer_connected(peer_id: int) -> void:

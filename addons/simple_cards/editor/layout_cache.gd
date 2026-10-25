@@ -13,27 +13,7 @@ signal cache_updated
 ## Structure: { "path": { "layout_id": String, "tags": Array, "enabled": bool, "last_modified": int } }
 var layouts: Dictionary = {}
 
-var _id_regex: RegEx
-var _tags_regex: RegEx
-var _tag_regex: RegEx
-var _id_write_regex: RegEx
-var _tags_write_regex: RegEx
-var _is_layout_write_regex: RegEx
-
-
 func _init() -> void:
-	_id_regex = RegEx.new()
-	_id_regex.compile('metadata/layout_id\\s*=\\s*"([^"]*)"')
-	_tags_regex = RegEx.new()
-	_tags_regex.compile('metadata/tags\\s*=\\s*\\[([^\\]]*)\\]')
-	_tag_regex = RegEx.new()
-	_tag_regex.compile('"([^"]*)"')
-	_id_write_regex = RegEx.new()
-	_id_write_regex.compile('(metadata/layout_id\\s*=\\s*)"[^"]*"')
-	_tags_write_regex = RegEx.new()
-	_tags_write_regex.compile('(metadata/tags\\s*=\\s*)\\[[^\\]]*\\]')
-	_is_layout_write_regex = RegEx.new()
-	_is_layout_write_regex.compile('metadata/is_layout\\s*=\\s*true')
 	load_cache()
 
 
@@ -48,8 +28,13 @@ func load_cache() -> void:
 	if file:
 		var json = JSON.new()
 		var error = json.parse(file.get_as_text())
-		if error == OK:
+		if error == OK and json.data is Dictionary:
 			layouts = json.data
+			for path in layouts.keys():
+				var message := LayoutValidation.entry_error(str(path), layouts[path])
+				if not message.is_empty():
+					push_warning("LayoutCache: %s: %s" % [path, message])
+					layouts.erase(path)
 		else:
 			push_warning("LayoutCache: Failed to parse cache, starting fresh")
 			layouts = {}
@@ -58,6 +43,10 @@ func load_cache() -> void:
 
 
 func save_cache() -> void:
+	var problems := LayoutValidation.errors(layouts)
+	if not problems.is_empty():
+		push_warning("LayoutCache: Fix layout metadata before saving:\n" + "\n".join(problems))
+		return
 	var file = FileAccess.open(CACHE_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(_sorted_layouts(), "\t"))
@@ -220,29 +209,32 @@ func _parse_scene_file(scene_path: String) -> Dictionary:
 	if not file:
 		return {}
 	
-	var content = file.get_as_text()
-	
-	if not "metadata/is_layout = true" in content:
-		return {}
-	
-	var result = {
+	var content := _root_section(file.get_as_text())
+	var is_layout := false
+	var result := {
 		"layout_id": "",
 		"tags": [],
 		"last_modified": FileAccess.get_modified_time(scene_path)
 	}
-	
-	var id_match = _id_regex.search(content)
-	if id_match:
-		result.layout_id = id_match.get_string(1)
+	for line in content.split("\n"):
+		var assignment := line.split("=", true, 1)
+		if assignment.size() != 2:
+			continue
+		match assignment[0].strip_edges():
+			"metadata/is_layout":
+				is_layout = assignment[1].strip_edges() == "true"
+			"metadata/layout_id":
+				var value = str_to_var(assignment[1])
+				if value is String:
+					result.layout_id = value
+			"metadata/tags":
+				var value = str_to_var(assignment[1])
+				if value is Array:
+					for tag in value:
+						if tag is String:
+							result.tags.append(tag)
+	return result if is_layout else {}
 
-	var tags_match = _tags_regex.search(content)
-	if tags_match:
-		var tags_str = tags_match.get_string(1)
-		var tag_matches = _tag_regex.search_all(tags_str)
-		for tag_match in tag_matches:
-			result.tags.append(tag_match.get_string(1))
-	
-	return result
 
 
 func _update_layout_entry(path: String, info: Dictionary) -> void:
@@ -365,18 +357,11 @@ func set_layout_id(path: String, new_id: String) -> bool:
 		return false
 
 	new_id = _normalize_layout_id(new_id)
-	if new_id.is_empty():
-		push_error("LayoutCache: Layout ID cannot be empty")
+	var message := LayoutValidation.id_error(new_id, layouts, path)
+	if not message.is_empty():
+		push_error("LayoutCache: " + message)
 		return false
-	if not new_id.is_valid_identifier():
-		push_error("LayoutCache: Layout ID '%s' must be a valid identifier" % new_id)
-		return false
-	
-	for other_path in layouts.keys():
-		if other_path != path and layouts[other_path].layout_id == new_id:
-			push_error("LayoutCache: Layout ID '%s' already exists" % new_id)
-			return false
-	
+
 	layouts[path].layout_id = new_id
 	_write_metadata_to_scene(path)
 	save_cache()
@@ -446,33 +431,37 @@ func _write_metadata_to_scene(scene_path: String) -> void:
 		push_error("LayoutCache: Cannot write scene file: %s" % scene_path)
 
 
+func _root_section(content: String) -> String:
+	var start := content.find("[node ")
+	if start < 0:
+		return ""
+	var end := content.find("\n[", start)
+	return content.substr(start, end - start) if end >= 0 else content.substr(start)
+
+
 func _upsert_layout_metadata(content: String, metadata: Dictionary) -> String:
-	var layout_id_text := JSON.stringify(String(metadata.layout_id))
-	var tags_text := JSON.stringify(metadata.tags)
-
-	if _id_write_regex.search(content):
-		content = _id_write_regex.sub(content, "$1%s" % layout_id_text)
-	else:
-		content = _insert_root_metadata_line(content, "metadata/layout_id = %s" % layout_id_text)
-
-	if _tags_write_regex.search(content):
-		content = _tags_write_regex.sub(content, "$1%s" % tags_text)
-	else:
-		content = _insert_root_metadata_line(content, "metadata/tags = %s" % tags_text)
-
-	if not _is_layout_write_regex.search(content):
-		content = _insert_root_metadata_line(content, "metadata/is_layout = true")
-
-	return content
+	var root := _root_section(content)
+	if root.is_empty():
+		return content
+	return content.replace(root, _upsert_root_metadata(root, metadata))
 
 
-func _insert_root_metadata_line(content: String, line: String) -> String:
+func _upsert_root_metadata(content: String, metadata: Dictionary) -> String:
+	var values := {
+		"metadata/layout_id": JSON.stringify(String(metadata.layout_id)),
+		"metadata/tags": JSON.stringify(metadata.tags),
+		"metadata/is_layout": "true"
+	}
 	var lines := content.split("\n")
-	for i in range(lines.size()):
-		if lines[i].strip_edges().begins_with("[node"):
-			lines.insert(i + 1, line)
-			return "\n".join(lines)
-	return content + "\n" + line
+	for i in lines.size():
+		var key := lines[i].get_slice("=", 0).strip_edges()
+		if key in values:
+			lines[i] = "%s = %s" % [key, values[key]]
+			values.erase(key)
+	for key in values:
+		lines.insert(1, "%s = %s" % [key, values[key]])
+	return "\n".join(lines)
+
 
 
 func _normalize_layout_id(layout_id: String) -> String:
@@ -491,19 +480,7 @@ func _normalize_tags(tags: Array) -> Array[String]:
 
 
 func _layout_id_to_const_name(layout_id: String) -> String:
-	var const_name := layout_id.to_upper()
-	var sanitized := ""
-	for i in const_name.length():
-		var c := const_name.substr(i, 1)
-		var code := c.unicode_at(0)
-		var valid := (code >= 65 and code <= 90) or (code >= 48 and code <= 57) or c == "_"
-		sanitized += c if valid else "_"
-	if sanitized.is_empty():
-		sanitized = "LAYOUT"
-	var first_code := sanitized.substr(0, 1).unicode_at(0)
-	if first_code >= 48 and first_code <= 57:
-		sanitized = "LAYOUT_" + sanitized
-	return sanitized
+	return LayoutValidation.constant_name(layout_id)
 
 
 func _find_layout_path(layout_id: String, include_disabled: bool = false) -> String:

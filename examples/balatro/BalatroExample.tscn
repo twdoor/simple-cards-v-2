@@ -68,7 +68,6 @@ metadata/_custom_type_script = "uid://bgmqt21bcemq6"
 
 [sub_resource type="Resource" id="Resource_gmp31"]
 script = ExtResource("9_gmp31")
-random_seed = null
 metadata/_custom_type_script = "uid://cle02hultetj5"
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rmqmx"]
@@ -158,6 +157,13 @@ custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 tooltip_text = "Select at least a card to remove effects"
 text = "None"
+
+[node name="ShinyButton" type="Button" parent="MarginContainer/HBoxContainer/VBoxContainer" unique_id=538441626]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+tooltip_text = "Toggle shine on selected cards"
+text = "Shiny"
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer/HBoxContainer" unique_id=1990714488]
 layout_mode = 2

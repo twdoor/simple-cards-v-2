@@ -1,7 +1,7 @@
 ## Base class for scene-local Simple Cards network managers.
 ##
 ## Add a subclass node, such as [CardServerAuthoritativeNetwork], to a multiplayer
-## scene. The node registers itself on [CardGlobal] so cards and containers can
+## scene. The node registers itself on [code]CardGlobal[/code] so cards and containers can
 ## route optional networking through the active scene manager.
 ## @experimental: Multiplayer support may change before it is considered stable.
 @abstract
@@ -42,13 +42,13 @@ var _next_hidden_wire_sequence: int = 1
 
 
 func _ready() -> void:
-	CardGlobal.get_instance().set_network_manager(self)
+	CardGlobal.set_network_manager(self)
 	_register_existing_nodes()
 	_register_existing_nodes.call_deferred()
 
 
 func _exit_tree() -> void:
-	CardGlobal.get_instance().clear_network_manager(self)
+	CardGlobal.clear_network_manager(self)
 
 
 func is_server_peer() -> bool:

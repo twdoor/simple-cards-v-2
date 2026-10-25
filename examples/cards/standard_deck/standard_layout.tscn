@@ -1,9 +1,37 @@
 [gd_scene format=3 uid="uid://lnx1x5uhufo4"]
 
 [ext_resource type="Script" uid="uid://cscn0sc5gt01y" path="res://examples/cards/standard_deck/standard_layout.gd" id="1_2dmvv"]
+[ext_resource type="Shader" uid="uid://c333b5l056yhp" path="res://examples/cards/standard_deck/perspective_shader.gdshader" id="2_0q0o6"]
 [ext_resource type="Script" uid="uid://c535lguvmfhkb" path="res://addons/simple_cards/card/card_layout/card_animation_resource/prebuild_animations/scale_animation.gd" id="2_cho7o"]
 [ext_resource type="FontFile" uid="uid://fpoco0u13011" path="res://examples/cards/standard_deck/KarenFat.ttf" id="2_jahet"]
 [ext_resource type="Texture2D" uid="uid://clwd04qm16woo" path="res://examples/cards/standard_deck/heart.png" id="3_2yl1v"]
+[ext_resource type="Shader" uid="uid://ehrod6ppoe5k" path="res://examples/cards/standard_deck/shine_shader.gdshader" id="3_5lbfn"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5lbfn"]
+resource_name = "shine"
+shader = ExtResource("3_5lbfn")
+shader_parameter/shine_color = Color(1, 1, 1, 1)
+shader_parameter/progress = 0.55
+shader_parameter/width = 0.16
+shader_parameter/angle = 0.6
+shader_parameter/intensity = 1.1
+shader_parameter/bands = 1.0
+shader_parameter/band_gap = 0.12
+shader_parameter/band_falloff = 0.45
+shader_parameter/hardness = 0.0
+shader_parameter/tail_color = Color(1, 1, 1, 1)
+shader_parameter/auto_speed = 0.400000019
+shader_parameter/auto_pause = 1.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0q0o6"]
+resource_name = "persp"
+shader = ExtResource("2_0q0o6")
+shader_parameter/perspective_enabled = true
+shader_parameter/fov = 90.0
+shader_parameter/cull_back = true
+shader_parameter/y_rot = 0.0
+shader_parameter/x_rot = 0.0
+shader_parameter/inset = 0.0
 
 [sub_resource type="Resource" id="Resource_cho7o"]
 resource_local_to_scene = true
@@ -32,9 +60,12 @@ corner_radius_bottom_left = 8
 corner_detail = 16
 
 [node name="CardLayout" type="Container" unique_id=1665435466]
+custom_minimum_size = Vector2(80, 112)
 offset_right = 80.0
 offset_bottom = 112.0
 script = ExtResource("1_2dmvv")
+shader_stack = Array[ShaderMaterial]([SubResource("ShaderMaterial_5lbfn"), SubResource("ShaderMaterial_0q0o6")])
+live_source = false
 card_size = Vector2i(80, 112)
 anim_group_checked = true
 focus_in_animation = SubResource("Resource_cho7o")
@@ -44,47 +75,44 @@ metadata/layout_id = "standard_layout"
 metadata/tags = ["front"]
 metadata/_custom_type_script = "uid://dm115oleoggyt"
 
-[node name="Content" type="Control" parent="."]
-layout_mode = 2
+[node name="SubViewport" type="SubViewport" parent="." unique_id=1880904308]
+disable_3d = true
+transparent_bg = true
+handle_input_locally = false
+gui_disable_input = true
+size = Vector2i(80, 112)
+size_2d_override = Vector2i(80, 112)
+render_target_update_mode = 1
 
+[node name="Content" type="MarginContainer" parent="SubViewport" unique_id=292277851]
+offset_right = 80.0
+offset_bottom = 112.0
 
-[node name="CardColor" type="PanelContainer" parent="Content" unique_id=31199842]
+[node name="CardColor" type="PanelContainer" parent="SubViewport/Content" unique_id=31199842]
 unique_name_in_owner = true
 self_modulate = Color(1, 0.88235295, 0.81960785, 1)
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_jahet")
 
-[node name="Texture" type="TextureRect" parent="Content" unique_id=2082568373]
+[node name="Texture" type="TextureRect" parent="SubViewport/Content" unique_id=2082568373]
 unique_name_in_owner = true
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+layout_mode = 2
 texture = ExtResource("3_2yl1v")
 stretch_mode = 3
 
-[node name="MarginContainer" type="MarginContainer" parent="Content" unique_id=356276679]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="MarginContainer" type="MarginContainer" parent="SubViewport/Content" unique_id=356276679]
+layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 6
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="Content/MarginContainer" unique_id=523016408]
+[node name="HBoxContainer2" type="HBoxContainer" parent="SubViewport/Content/MarginContainer" unique_id=523016408]
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
 
-[node name="Value2" type="Label" parent="Content/MarginContainer/HBoxContainer2" unique_id=266221668]
+[node name="Value2" type="Label" parent="SubViewport/Content/MarginContainer/HBoxContainer2" unique_id=266221668]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.14117648, 0.14117648, 0.14117648, 1)
@@ -92,7 +120,7 @@ theme_override_fonts/font = ExtResource("2_jahet")
 text = "Test"
 vertical_alignment = 1
 
-[node name="Texture2" type="TextureRect" parent="Content/MarginContainer/HBoxContainer2" unique_id=1894252015]
+[node name="Texture2" type="TextureRect" parent="SubViewport/Content/MarginContainer/HBoxContainer2" unique_id=1894252015]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 2
@@ -100,28 +128,21 @@ texture = ExtResource("3_2yl1v")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="MarginContainer2" type="MarginContainer" parent="Content" unique_id=1522935363]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 80.0
-offset_top = 112.0
-offset_right = 80.0
-offset_bottom = 112.0
-grow_horizontal = 2
-grow_vertical = 2
-scale = Vector2(-1, -1)
+[node name="MarginContainer2" type="MarginContainer" parent="SubViewport/Content" unique_id=1522935363]
+layout_mode = 2
+offset_transform_enabled = true
+offset_transform_scale = Vector2(-1, -1)
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 6
 
-[node name="HBoxContainer" type="HBoxContainer" parent="Content/MarginContainer2" unique_id=1602824395]
+[node name="HBoxContainer" type="HBoxContainer" parent="SubViewport/Content/MarginContainer2" unique_id=1602824395]
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
 
-[node name="Value1" type="Label" parent="Content/MarginContainer2/HBoxContainer" unique_id=687406357]
+[node name="Value1" type="Label" parent="SubViewport/Content/MarginContainer2/HBoxContainer" unique_id=687406357]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.14117648, 0.14117648, 0.14117648, 1)
@@ -129,7 +150,7 @@ theme_override_fonts/font = ExtResource("2_jahet")
 text = "Test"
 vertical_alignment = 1
 
-[node name="Texture1" type="TextureRect" parent="Content/MarginContainer2/HBoxContainer" unique_id=1382904147]
+[node name="Texture1" type="TextureRect" parent="SubViewport/Content/MarginContainer2/HBoxContainer" unique_id=1382904147]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 2

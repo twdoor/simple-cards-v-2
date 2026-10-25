@@ -13,7 +13,7 @@
 	},
 	"res://examples/cards/standard_deck/standard_back_layout.tscn": {
 		"enabled": true,
-		"last_modified": 1791018975.0,
+		"last_modified": 1792755926.0,
 		"layout_id": "standard_back_layout",
 		"tags": [
 			"back"
@@ -21,7 +21,7 @@
 	},
 	"res://examples/cards/standard_deck/standard_layout.tscn": {
 		"enabled": true,
-		"last_modified": 1791018975.0,
+		"last_modified": 1792755927.0,
 		"layout_id": "standard_layout",
 		"tags": [
 			"front"

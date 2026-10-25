@@ -21,7 +21,7 @@ The addon does not require your transport to send `Card`, `CardContainer`, `Card
 
 ## Core Idea
 
-Cards and containers call into `CG.get_network_manager()` when a network manager is active. Your manager decides whether public card APIs should:
+Cards and containers call into `CardGlobal.get_network_manager()` when a network manager is active. Your manager decides whether public card APIs should:
 
 - run locally,
 - become a network command,
@@ -44,7 +44,7 @@ func is_applying_remote_state() -> bool:
     return _applying_remote_state or _routing_suppression > 0
 ```
 
-When your node enters the tree, `CardNetworkManager._ready()` registers it on `CG` and scans the current scene for cards and containers. If you override `_ready()` or `_exit_tree()`, call `super`.
+When your node enters the tree, `CardNetworkManager._ready()` registers it on `CardGlobal` and scans the current scene for cards and containers. If you override `_ready()` or `_exit_tree()`, call `super`.
 
 ```gdscript
 func _ready() -> void:

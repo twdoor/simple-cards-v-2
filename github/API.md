@@ -335,17 +335,94 @@ func _focus_in() -> void:
 **Notes**:
 
 - Set `card_size` to change the face dimensions at runtime. The Card and its container update automatically. A zero size initializes from the scene size.
-- For a shader on the whole composed face, use `CardViewportLayout` and assign the material to the layout. For direct layouts, assign materials to the individual visual Controls.
+- For shaders on the whole composed face, use `CardViewportLayout.shader_stack`. For direct layouts, assign materials to the individual visual Controls.
 
 ---
 
 ### CardViewportLayout
 
-Optional subclass of `CardLayout` that draws the contents of a child `SubViewport` as a single texture. The layout root is a `Container`. Put the face's Controls inside `SubViewport`; assign a material to the layout to shade the composed image. `card_size` also resizes the viewport, and a zero size initializes from its size. The default template renders when its texture is visible and uses premultiplied-alpha blending. Custom whole-face shaders should use `render_mode blend_premul_alpha` when preserving the viewport texture’s premultiplied colors, or unpremultiply the sampled RGB when using ordinary mix blending.
+Composes Controls inside a child named `SubViewport`, then applies `shader_stack`
+from top to bottom. Each entry is a `ShaderMaterial` receiving the previous result
+as `TEXTURE`. Empty entries and non-canvas shaders are skipped. The root remains a
+`Container`; card sizing, interaction, resource setup, and animations use the same
+APIs as `CardLayout`.
+
+Expand each material's **Shader Parameters** in the Inspector to configure it.
+Set its **Resource Name** to a unique name for script access. At runtime, the
+layout copies materials per card, while sharing shader code and texture resources.
+Use the accessors below to change live instances; `shader_stack` holds the source
+materials. Reassign the array after adding, removing, or reordering entries.
+
+| Property | Behavior |
+| --- | --- |
+| `shader_stack: Array[ShaderMaterial]` | Ordered effect materials. An empty stack displays the composed face. |
+| `shader_alpha_mode` | `ShaderAlphaMode.STRAIGHT` (default) or `PREMULTIPLIED`, for the entire stack. |
+| `effect_padding: int = 0` | Transparent logical pixels around the face for outlines/displacement. Does not enlarge card layout or hit bounds. |
+| `render_scale: float = 1.0` | Capture resolution multiplier, from 0.25 to 2.0. Lower values reduce texture area and detail. |
+| `live_source: bool = true` | Refresh the face capture while used. Disable for static child visuals. |
+| `live_effects: bool = true` | Refresh intermediate shader captures while used. Disable when intermediate effects are static. |
+
+All effect selectors below accept an array index or a unique Resource Name
+(`String` or `StringName`). Missing or ambiguous names return null/false; indices
+include empty and disabled entries.
+
+| Method | Result |
+| --- | --- |
+| `get_shader_material(effect) -> ShaderMaterial` | Live material, suitable for `tween_property(material, "shader_parameter/strength", ...)`. |
+| `get_shader(effect) -> Shader` | Shader resource assigned to that material. Shader code is shared. |
+| `get_shader_parameter(effect, parameter) -> Variant` | Current uniform value. |
+| `get_shader_parameters(effect) -> Dictionary[StringName, Variant]` | Exposed uniform names and current values, including shader defaults. |
+| `set_shader_parameter(effect, parameter, value) -> bool` | Changes a known uniform and refreshes only that effect's output and downstream captures. Source/upstream captures stay cached; targets are retained. |
+| `set_shader_enabled(effect, enabled) -> bool` | Bypasses/restores an effect, releasing/rebuilding its capture stages and retaining its parameters. |
+| `request_render()` | Refreshes face and intermediate captures once when caching is enabled. |
+| `request_shader_render(effect) -> bool` | Refreshes only the selected effect's output and downstream captures after a direct material edit. Does not recapture source content. |
+| `get_source_texture() -> Texture2D` | Padded, unshaded composed face texture. |
+| `get_rendered_rect() -> Rect2` | Local drawing bounds including padding. |
+
+**Alpha and shader coordinates**
+
+`STRAIGHT` supports ordinary `canvas_item` texture-processing shaders using
+`blend_mix`. The layout converts premultiplied viewport pixels to straight RGB
+before each shader, preventing repeated darkening of translucent edges.
+`PREMULTIPLIED` skips those conversions: every shader must consume and preserve
+premultiplied RGB and use `render_mode blend_premul_alpha`. Alpha changes must
+also adjust RGB. Mixing these conventions, additive blending, and `blend_disabled`
+outputs are outside this stack's supported alpha contract.
+
+UVs cover the padded image; `TEXTURE_PIXEL_SIZE` describes the scaled capture.
+Shader authors must account for padding when positioning effects against the
+original face. Geometry expansion in intermediate passes is clipped to the capture
+bounds; increase padding when needed. The final shader can expand its drawing
+geometry without another capture. Screen-reading shaders see their intermediate
+viewport, or the game's canvas for the final shader. They are not interchangeable
+with texture-processing shaders. Shaders should apply vertex tint/modulation as
+appropriate for their alpha convention.
+
+**Cost and caching**
+
+The last effect draws directly on an internal TextureRect in the main canvas.
+There is no extra capture of the final shaded result. For N active effects,
+`PREMULTIPLIED` uses N capture targets; `STRAIGHT` uses 2N. An empty stack uses
+one source target. Disabled effects allocate no passes. Parameter edits retain
+existing targets; stack, shader, padding, and resolution changes rebuild them.
+Hidden layouts disable all captures. Live captures use `UPDATE_WHEN_VISIBLE`.
+
+For a static face with an animated final shader, disable **Live Source**; with
+one premultiplied effect this leaves one cached face target and a canvas draw.
+Disable **Live Effects** only when intermediate shaders are static. The final
+shader still runs in the main canvas, including its `TIME` uniform and vertex
+stage. Lower `render_scale` reduces capture area quadratically, subject to pixel
+rounding. Combining effects into a single shader further reduces captures; the
+layout does not merge arbitrary shader source automatically.
+
+`setup()` and `display_updated` request fresh captures. When changing child
+Controls yourself, call `request_render()` or emit `display_updated`. Direct
+material edits/tweens need `request_shader_render(effect)` while **Live Effects**
+is off; `set_shader_parameter()` does this automatically. A uniform change on
+the final canvas shader needs no capture update. Parameter changes never refresh
+the source capture, so hover animation can run over cached face artwork.
 
 `get_layout_template()` returns the viewport starter scene. Custom named subclasses can override this method to supply a scene containing their required nodes and materials. Registered, concrete descendants of either layout base appear in **Card Layouts → New**; constructors must have no required arguments. Use `@tool` for live editor previews. Templates must have a `CardLayout` root, and the selected type's script is attached to the newly saved scene.
-
-Existing viewport scenes should use `extends CardViewportLayout` and a `Container` root, retaining their `SubViewport` hierarchy. The bundled default and standard-deck faces now use direct rendering.
 
 ### <img src="assets/icon_card_animation.png"> CardAnimationResource
 
@@ -988,7 +1065,7 @@ func reshuffle():
 
 ### CardNetworkManager (Experimental)
 
-Experimental abstract base class for scene-local card network managers. Add a concrete subclass node, such as `CardServerAuthoritativeNetwork`, to a multiplayer scene. The node registers itself on `CG`; offline scenes without a network node keep local-only behavior.
+Experimental abstract base class for scene-local card network managers. Add a concrete subclass node, such as `CardServerAuthoritativeNetwork`, to a multiplayer scene. The node registers itself on `CardGlobal`; offline scenes without a network node keep local-only behavior.
 
 Use [Multiplayer](MULTIPLAYER.md) for the built-in managers and [Custom Multiplayer](CUSTOM_MULTIPLAYER.md) when implementing your own `CardNetworkManager`.
 
@@ -1100,9 +1177,10 @@ The P2P manager still uses stable network IDs, ownership fields, visibility poli
 
 ---
 
-### CardGlobal (CG)
+### CardGlobal
 
-The global singleton providing shared state and utilities. Access via `CG`.
+The runtime autoload providing shared state and utilities. Access it directly via
+`CardGlobal`; its script has no `class_name` and is not an instantiable public type.
 
 #### Properties
 
@@ -1156,12 +1234,12 @@ func refresh_layouts() -> void
 ```gdscript
 func _ready():
     # Set default layouts using LayoutID constants
-    CG.def_front_layout = LayoutID.MY_CARD_FRONT
-    CG.def_back_layout = LayoutID.CARD_BACK
+    CardGlobal.def_front_layout = LayoutID.MY_CARD_FRONT
+    CardGlobal.def_back_layout = LayoutID.CARD_BACK
     
     # Listen for drag events
-    CG.holding_card.connect(_on_card_pickup)
-    CG.dropped_card.connect(_on_card_drop)
+    CardGlobal.holding_card.connect(_on_card_pickup)
+    CardGlobal.dropped_card.connect(_on_card_drop)
 
 func _on_card_pickup(card: Card):
     # Highlight valid drop zones
@@ -1192,8 +1270,8 @@ card.front_layout_name = "my_card_front"  # Could have typos!
 card.front_layout_name = LayoutID.MY_CARD_FRONT  # Autocomplete and compile-time checking!
 
 # Set default layouts
-CG.def_front_layout = LayoutID.STANDARD_LAYOUT
-CG.def_back_layout = LayoutID.STANDARD_BACK_LAYOUT
+CardGlobal.def_front_layout = LayoutID.STANDARD_LAYOUT
+CardGlobal.def_back_layout = LayoutID.STANDARD_BACK_LAYOUT
 
 # Check if a layout exists
 if LayoutID.is_valid(some_layout_id):

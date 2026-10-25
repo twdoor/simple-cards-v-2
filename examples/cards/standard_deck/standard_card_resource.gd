@@ -8,6 +8,8 @@ class_name StandardCardResource extends CardResource
 @export var card_suit: Suit = Suit.CLUBS
 @export_range(2,14) var value: int = 2 ## 14 = Ace, 11 = Jack, 12 = Queen, 13 = King
 
+@export var is_shiny: bool = false
+
 ## Changes the card's background color in the layout.
 enum Modifier {
 	NONE,

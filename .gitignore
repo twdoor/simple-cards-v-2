@@ -3,6 +3,13 @@
 .nomedia
 .releases/
 
+# Local logs, editor backups, and OS metadata
+*.log
+*~
+*.bak
+.DS_Store
+Thumbs.db
+
 # Godot-specific ignores
 .import/
 export.cfg

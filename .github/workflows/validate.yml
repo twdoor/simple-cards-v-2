@@ -1,0 +1,19 @@
+name: Validate
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  godot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.7.2
+        run: |
+          curl --fail --location --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip /tmp/godot.zip -d /tmp/godot
+          echo "GODOT=/tmp/godot/Godot_v4.7.2-stable_linux.x86_64" >> "$GITHUB_ENV"
+      - name: Validate
+        run: |
+          "$GODOT" --headless --editor --path . --import --quit
+          "$GODOT" --headless --path . --script tests/run_tests_headless.gd

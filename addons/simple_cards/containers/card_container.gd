@@ -127,6 +127,7 @@ var _batch_mode: bool = false
 var _idle_restart_gen: int = 0
 var _editor_preview: RefCounted
 var _snapshot: RefCounted
+var _focus_navigation: ContainerFocusNavigation
 
 
 func _get_editor_preview() -> RefCounted:
@@ -138,6 +139,8 @@ func _get_editor_preview() -> RefCounted:
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
+		# Tool subclasses must not run their runtime process loops in the editor.
+		set_process(false)
 		_get_editor_preview()._preview_card_size = _get_editor_preview()._editor_get_layout_card_size(preview_layout_name)
 		_queue_preview_layout_update()
 		return
@@ -155,7 +158,7 @@ func _exit_tree() -> void:
 		_editor_preview._clear_preview_visual_cards()
 	if Engine.is_editor_hint(): return
 	_stop_idle()
-	var net = CardGlobal.get_instance().get_network_manager()
+	var net = CardGlobal.get_network_manager()
 	if net:
 		net.unregister_container(self)
 
@@ -337,48 +340,10 @@ func _compute_layout() -> void:
 
 ## Applies focus state and directional neighbors to all cards based on the shape.
 func _update_focus_chain() -> void:
-	var card_count = cards.size()
-	if card_count == 0: return
-
-	if not cards_focusable:
-		for card in cards:
-			card.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_DISABLED
-			card.focus_neighbor_left = ^""
-			card.focus_neighbor_right = ^""
-			card.focus_neighbor_top = ^""
-			card.focus_neighbor_bottom = ^""
-			card.focus_previous = ^""
-			card.focus_next = ^""
-		return
-
-	for i in card_count:
-		var card = cards[i]
-		card.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_INHERITED
-
-		card.focus_neighbor_left = _neighbor_path(card, i, "left", card_count)
-		card.focus_neighbor_right = _neighbor_path(card, i, "right", card_count)
-		card.focus_neighbor_top = _neighbor_path(card, i, "up", card_count)
-		card.focus_neighbor_bottom = _neighbor_path(card, i, "down", card_count)
-
-		card.focus_previous = card.get_path_to(cards[i - 1]) if i > 0 else ^""
-		card.focus_next = card.get_path_to(cards[i + 1]) if i < card_count - 1 else ^""
-
+	_get_focus_navigation().update(self)
 
 func _neighbor_path(card: Card, index: int, direction: String, card_count: int) -> NodePath:
-	if not shape:
-		match direction:
-			"left":
-				var left_index = index - 1
-				return card.get_path_to(cards[left_index]) if left_index >= 0 else ^""
-			"right":
-				var right_index = index + 1
-				return card.get_path_to(cards[right_index]) if right_index < card_count else ^""
-			_:
-				return ^""
-
-	var target = shape.get_focus_neighbor(index, direction, card_count)
-	if target == -1: return ^""
-	return card.get_path_to(cards[target])
+	return _get_focus_navigation().neighbor_path(self, card, index, direction, card_count)
 
 
 ## Returns the local position a card should occupy after layout.
@@ -716,7 +681,7 @@ func _on_shape_changed() -> void:
 func _get_network_manager() -> CardNetworkManager:
 	if Engine.is_editor_hint() or not is_inside_tree():
 		return null
-	return CardGlobal.get_instance().get_network_manager()
+	return CardGlobal.get_network_manager()
 
 
 func _queue_preview_layout_update() -> void:
@@ -818,3 +783,9 @@ func _get_snapshot() -> RefCounted:
 	if not _snapshot:
 		_snapshot = load("res://addons/simple_cards/network/container_snapshot.gd").new()
 	return _snapshot
+
+
+func _get_focus_navigation() -> ContainerFocusNavigation:
+	if not _focus_navigation:
+		_focus_navigation = ContainerFocusNavigation.new()
+	return _focus_navigation

@@ -8,6 +8,7 @@ var layout_list: VBoxContainer
 var layout_scroll: ScrollContainer
 var search_box: LineEdit
 var tag_filter: OptionButton
+var validation_label: Label
 var refresh_button: Button
 var create_button: Button
 var details_panel: VBoxContainer
@@ -92,6 +93,9 @@ func _build_ui() -> void:
 
 	var toolbar = HBoxContainer.new()
 	library.add_child(toolbar)
+	validation_label = Label.new()
+	validation_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	library.add_child(validation_label)
 	tag_filter = OptionButton.new()
 	tag_filter.fit_to_longest_item = false
 	tag_filter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -504,6 +508,9 @@ func _set_item_selected(item: Control, selected: bool) -> void:
 #region Signal Handlers
 
 func _on_cache_updated() -> void:
+	var problems := LayoutValidation.errors(cache.layouts)
+	validation_label.text = "\n".join(problems)
+	validation_label.visible = not problems.is_empty()
 	_preview_cache.clear()
 	_populate_tag_filter()
 	_populate_layout_list()
@@ -571,7 +578,7 @@ func _on_layout_type_selected(index: int) -> void:
 		"CardLayout":
 			create_type_description.text = "Direct UI. A lightweight container for labels, artwork, and other Controls."
 		"CardViewportLayout":
-			create_type_description.text = "Viewport rendering. Apply a shader to the composed card face; edit visuals inside SubViewport."
+			create_type_description.text = "Viewport rendering with an ordered Shader Stack. Edit face visuals inside SubViewport."
 		_:
 			create_type_description.text = "Custom layout: %s" % _layout_types[index].path
 	_validate_create_dialog()
@@ -608,13 +615,6 @@ func _on_id_submitted(new_id: String) -> void:
 		return
 
 	new_id = new_id.strip_edges()
-	if new_id.is_empty():
-		push_error("Layout ID cannot be empty")
-		return
-
-	if not new_id.is_valid_identifier():
-		push_error("Layout ID must be a valid identifier")
-		return
 
 	if not cache.set_layout_id(selected_path, new_id):
 		_populate_details(selected_path)
@@ -669,12 +669,8 @@ func _validate_create_dialog() -> void:
 
 	if create_type_picker.selected < 0 or _layout_types.is_empty():
 		error_msg = "No creatable layout types found"
-	elif layout_id.is_empty():
-		error_msg = "Layout ID cannot be empty"
-	elif not layout_id.is_valid_identifier():
-		error_msg = "Layout ID cannot contain special characters"
-	elif cache.layout_id_exists(layout_id):
-		error_msg = "Layout ID '%s' already exists" % layout_id
+	else:
+		error_msg = LayoutValidation.id_error(layout_id, cache.layouts)
 
 	if error_msg.is_empty() and path.is_empty():
 		error_msg = "Please select a save location"
@@ -765,11 +761,9 @@ func _save_new_layout(script_path: String, scene_path: String, layout_id: String
 	prototype.free()
 	if not template:
 		return ERR_CANT_CREATE
-	var instance := template.instantiate()
-	if not instance is CardLayout:
-		instance.free()
+	var layout := LayoutValidation.instantiate_layout(template)
+	if not layout:
 		return ERR_INVALID_DATA
-	var layout := instance as CardLayout
 	var template_size := layout.card_size
 	if layout.get_script() != script:
 		layout.set_script(script)

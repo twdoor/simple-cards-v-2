@@ -2,9 +2,6 @@
 
 [ext_resource type="Script" path="res://addons/simple_cards/card/card_layout/card_viewport_layout.gd" id="1_0a68r"]
 
-[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_viewport"]
-blend_mode = 4
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0a68r"]
 bg_color = Color(0, 0.72156864, 0.3019608, 0.4862745)
 border_width_left = 2
@@ -19,7 +16,6 @@ corner_radius_bottom_left = 4
 corner_detail = 16
 
 [node name="CardLayout" type="Container" unique_id=1181186639]
-material = SubResource("CanvasItemMaterial_viewport")
 offset_right = 80.0
 offset_bottom = 112.0
 script = ExtResource("1_0a68r")

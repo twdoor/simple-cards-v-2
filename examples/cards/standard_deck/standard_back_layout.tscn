@@ -30,6 +30,7 @@ corner_radius_bottom_left = 8
 corner_detail = 16
 
 [node name="CardLayout" type="Container" unique_id=1997329546]
+custom_minimum_size = Vector2(80, 112)
 offset_right = 80.0
 offset_bottom = 112.0
 script = ExtResource("1_0a68r")
@@ -42,15 +43,7 @@ metadata/layout_id = "standard_back_layout"
 metadata/tags = ["back"]
 metadata/_custom_type_script = "uid://dm115oleoggyt"
 
-[node name="Content" type="Control" parent="."]
-layout_mode = 2
-
-
-[node name="CardColor" type="PanelContainer" parent="Content" unique_id=841881415]
+[node name="CardColor" type="PanelContainer" parent="." unique_id=841881415]
 unique_name_in_owner = true
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_0dbed")

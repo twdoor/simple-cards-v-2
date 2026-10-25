@@ -675,17 +675,25 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	if not multiplayer.is_server():
 		return
 
-	if phase == Phase.PLAYING:
-		phase = Phase.GAME_OVER
+	var match_ended := phase != Phase.WAITING
+	if match_ended:
+		phase = Phase.WAITING
 		winner_peer_id = 0
-		_broadcast_game_state("Peer %d disconnected. Match ended." % peer_id)
-		return
+		draw_active = false
+		draw_amount = 0
+		card_network.begin_suppressed_routing()
+		_clear_table()
+		card_network.end_suppressed_routing()
 
 	player_peer_ids.erase(peer_id)
 	if player_peer_ids.is_empty():
 		player_peer_ids = [HOST_PEER_ID]
 	_configure_player_hands()
-	_broadcast_game_state("Peer %d disconnected. %d/%d players in lobby." % [peer_id, player_peer_ids.size(), MAX_PLAYERS])
+	var message := "Peer %d disconnected. %d/%d players in lobby." % [peer_id, player_peer_ids.size(), MAX_PLAYERS]
+	if match_ended:
+		message += " Match ended; players can rejoin before a new match."
+	_broadcast_game_state(message)
+	card_network.bump_revision_and_broadcast()
 
 
 func _disconnect_peer(peer_id: int) -> void:
