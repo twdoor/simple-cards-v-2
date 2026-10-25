@@ -23,7 +23,7 @@
 
 ### Breaking Changes
 
-- **Godot 4.7.2 Required** — The addon now requires Godot 4.7.2 or newer.
+- **Godot 4.7.2 Required** — The addon now requires Godot 4.7.2 or newer. Limited testing on 4.5.2 showed that core gameplay and shaders can run, but the editor plugin fails because `EditorDock`, `add_dock()`, and `remove_dock()` are unavailable, preventing automatic autoload registration. Newer Control corner transforms also render incorrectly. Disabling the plugin and registering `CardGlobal` manually allows basic runtime use, but 4.5 remains unsupported; multiplayer connections and exports were not tested.
 - **Runtime Autoload Renamed** — `CG` is now `CardGlobal`. The separate `CardGlobal` script class and `get_instance()` lookup were removed; access the autoload directly.
 - **Layout Scene Structure** — `CardLayout` uses a `Container` root with visual Controls as direct children. Texture-based faces use `CardViewportLayout` with their Controls inside a child `SubViewport`.
 
